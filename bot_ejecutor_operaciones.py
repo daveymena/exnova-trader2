@@ -82,12 +82,12 @@ try:
     
     # Obtener balance
     time.sleep(1)
-    if api.profile and hasattr(api.profile, 'balance'):
-        balance = api.profile.balance
+    balance = 0
+    if api.profile and hasattr(api.profile, 'balance') and api.profile.balance is not None:
+        balance = float(api.profile.balance)
         log(f"💰 Balance: ${balance:.2f}")
     else:
-        balance = 0
-        log("⚠️  No se pudo obtener balance")
+        log("⚠️  No se pudo obtener balance (usando predeterminado)")
     
     # Activos disponibles
     assets = [
