@@ -7,6 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-bot_path = Path(__file__).parent / "bot_rapido.py"
+bot_path = Path(__file__).parent / "bot_final.py"
 
 subprocess.run([sys.executable, str(bot_path)])
