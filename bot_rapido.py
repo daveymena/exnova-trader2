@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-🚀 BOT OPERADOR RÁPIDO - Ejecuta operaciones sin restricciones
-Optimizado para ejecución rápida
+🚀 BOT OPERADOR ULTRA RÁPIDO - Versión simplificada
+Ejecuta operaciones directamente sin validaciones innecesarias
 """
 
 import os
@@ -38,7 +38,7 @@ def log(msg):
         f.write(f"[{datetime.now().strftime('%H:%M:%S')}] {msg}\n")
 
 print("\n" + "="*70)
-print("   🚀 BOT OPERADOR RÁPIDO - SIN RESTRICCIONES")
+print("   🚀 BOT OPERADOR ULTRA RÁPIDO")
 print("="*70)
 print(f"\n📧 Cuenta: {EMAIL}")
 print(f"💼 Modo: {ACCOUNT_TYPE}")
@@ -46,7 +46,7 @@ print(f"💰 Capital: ${CAPITAL_PER_TRADE}")
 print(f"\nPresiona Ctrl+C para detener.\n")
 
 log("\n" + "="*70)
-log(f"🚀 BOT OPERADOR - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+log(f"🚀 BOT OPERADOR ULTRA - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 log("="*70)
 
 try:
@@ -56,7 +56,7 @@ try:
     log("🔗 Conectando a Exnova...")
     api = ExnovaAPI(host="api.exnova.com", username=EMAIL, password=PASSWORD)
     
-    print("⏳ Estableciendo conexión WebSocket...")
+    log("⏳ Estableciendo conexión...")
     api.connect()
     time.sleep(3)
     
@@ -92,78 +92,91 @@ try:
             direction = random.choice(['call', 'put'])
             confidence = random.uniform(0.55, 0.95)
             
-            log(f"\n📊 OPERACIÓN #{trade_num}: {asset} {direction.upper()} ({confidence:.0%})")
+            log(f"\n📊 #{trade_num}: {asset} {direction.upper()} ({confidence:.0%})")
             
-            # Ejecutar
-            result = api.buyv2_order(
-                asset=asset,
-                amount=int(CAPITAL_PER_TRADE * 100),
-                action=direction,
-                expiration=max(1, EXPIRATION_TIME // 60)
-            )
-            
-            if result and hasattr(result, 'id'):
-                trade_id = result.id
-                log(f"   ✅ Ejecutada - ID: {trade_id}")
+            # Ejecutar operación - FIRMA CORRECTA: api.buy(amount, asset, action, duration)
+            try:
+                log(f"   ⏳ Ejecutando...")
+                status, order_id = api.buy(
+                    amount=CAPITAL_PER_TRADE,  # Cantidad en dinero
+                    asset=asset,
+                    action=direction,
+                    duration=1  # 1 minuto
+                )
                 
-                # Esperar
-                log(f"   ⏳ Esperando {EXPIRATION_TIME}s...")
-                time.sleep(min(EXPIRATION_TIME + 2, 65))
+                if status and order_id:
+                    log(f"   ✅ Operación ejecutada - ID: {order_id}")
+                    
+                    # Esperar a que expire (65 segundos)
+                    log(f"   ⏳ Esperando 65s para resultado...")
+                    time.sleep(65)
+                    
+                    # Verificar resultado
+                    try:
+                        result_status, profit = api.check_win_v4(order_id)
+                        
+                        if result_status == "win":
+                            wins += 1
+                            pnl += profit
+                            log(f"   ✅ GANADA: +${profit:.2f}")
+                        elif result_status == "loss":
+                            losses += 1
+                            pnl -= CAPITAL_PER_TRADE
+                            log(f"   ❌ PERDIDA: -${CAPITAL_PER_TRADE:.2f}")
+                        else:
+                            log(f"   ⏸️  RESULTADO: {result_status}")
+                        
+                        trades += 1
+                        
+                        # Guardar
+                        trade_data = {
+                            'id': trade_num,
+                            'timestamp': datetime.now().isoformat(),
+                            'asset': asset,
+                            'direction': direction,
+                            'order_id': str(order_id),
+                            'outcome': result_status,
+                            'pnl': profit if result_status == "win" else -CAPITAL_PER_TRADE,
+                        }
+                        
+                        with open(TRADES_FILE, 'a') as f:
+                            f.write(json.dumps(trade_data) + '\n')
+                    
+                    except Exception as e:
+                        log(f"   ⚠️  Error verificando resultado: {str(e)[:60]}")
                 
-                # Resultado
-                try:
-                    win_status, profit = api.check_win_v4(trade_id)
-                    
-                    if win_status == "win":
-                        wins += 1
-                        pnl += profit
-                        log(f"   ✅ GANADA: +${profit:.2f}")
-                    else:
-                        losses += 1
-                        pnl -= CAPITAL_PER_TRADE
-                        log(f"   ❌ PERDIDA: -${CAPITAL_PER_TRADE:.2f}")
-                    
-                    trades += 1
-                    
-                    # Guardar
-                    trade_data = {
-                        'id': trade_num,
-                        'timestamp': datetime.now().isoformat(),
-                        'asset': asset,
-                        'direction': direction,
-                        'outcome': win_status,
-                        'pnl': profit if win_status == "win" else -CAPITAL_PER_TRADE,
-                    }
-                    
-                    with open(TRADES_FILE, 'a') as f:
-                        f.write(json.dumps(trade_data) + '\n')
-                
-                except Exception as e:
-                    log(f"   ⚠️  Error verificando: {e}")
+                else:
+                    log(f"   ❌ No se pudo ejecutar")
+                    time.sleep(5)
             
-            else:
-                log(f"   ❌ Error ejecutando")
+            except Exception as e:
+                log(f"   ❌ Error: {str(e)[:80]}")
+                time.sleep(5)
             
-            # Stats cada 10
-            if trade_num % 10 == 0 and trades > 0:
+            # Stats cada 5
+            if trade_num % 5 == 0 and trades > 0:
                 wr = (wins / trades * 100)
-                log(f"\n📈 STATS: {trades} operaciones | Win: {wins} | Loss: {losses} | WR: {wr:.1f}% | PnL: ${pnl:.2f}\n")
+                log(f"\n📈 STATS: Trades={trades} | Wins={wins} | Loss={losses} | WR={wr:.1f}% | PnL=${pnl:.2f}\n")
             
-            # Esperar
+            # Esperar entre operaciones (5 segundos es la expiracion mínima)
             log("   ⏱️  Esperando 5s para siguiente...")
             time.sleep(5)
         
+        except KeyboardInterrupt:
+            raise
         except Exception as e:
-            log(f"❌ Error: {e}")
+            log(f"❌ Error en operación: {e}")
             time.sleep(5)
 
 except KeyboardInterrupt:
     log(f"\n⏹️  DETENIDO")
     if trades > 0:
-        log(f"📊 Operaciones: {trades} | Ganancias: {wins} | Pérdidas: {losses} | WR: {(wins/trades*100):.1f}% | PnL: ${pnl:.2f}")
+        log(f"📊 Trades={trades} | Wins={wins} | Loss={losses} | WR={((wins/trades)*100):.1f}% | PnL=${pnl:.2f}")
 
 except Exception as e:
     log(f"❌ Error fatal: {e}")
+    import traceback
+    log(traceback.format_exc())
 
 finally:
     log(f"✅ Datos guardados en {TRADES_FILE}")
