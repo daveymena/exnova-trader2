@@ -42,22 +42,27 @@ log(f"🚀 BOT INICIADO - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 log("="*70)
 
 try:
-    from exnovaapi.api import ExnovaAPI
+    from exnovaapi.stable_api import Exnova
     
     # Conectar
     log("🔗 Conectando a Exnova...")
-    api = ExnovaAPI(host="api.exnova.com", username=EMAIL, password=PASSWORD)
+    api = Exnova(EMAIL, PASSWORD)
     api.connect()
     
-    # Sincronizar tiempo
-    log("⏳ Sincronizando tiempo...")
-    time.sleep(5)
+    # Sincronizar tiempo - esperar más
+    log("⏳ Sincronizando tiempo (esperando 15 segundos)...")
+    time.sleep(15)
     
-    if not (api.timesync and api.timesync.server_timestamp):
-        log("❌ No se sincronizó el tiempo")
-        sys.exit(1)
+    # Verificar sincronización
+    timestamp = api.get_server_timestamp()
+    if timestamp and timestamp > 0:
+        log(f"✅ Tiempo sincronizado: {timestamp}")
+    else:
+        log("⚠️  Continuando de todas formas...")
     
-    log("✅ Conectado y sincronizado")
+    # Obtener balance
+    balance = api.get_balance()
+    log(f"💰 Balance: ${balance:.2f}")
     
     # Activos
     assets = ['EURUSD-OTC', 'GBPUSD-OTC', 'USDJPY-OTC']
