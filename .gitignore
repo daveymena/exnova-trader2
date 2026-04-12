@@ -46,3 +46,9 @@ models/*.zip
 # IDE
 .vscode/
 .idea/
+
+# Archivos sensibles
+operation_memory.json
+bot.lock
+trade_analysis.json
+*.log
