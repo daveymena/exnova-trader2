@@ -55,22 +55,9 @@ class Config:
     
     # ============= AI/LLM =============
     USE_LLM = os.getenv("USE_LLM", "True").lower() == "true"
-    USE_GROQ = os.getenv("USE_GROQ", "True").lower() == "true"
-    
-    # Soporte para múltiples llaves de Groq (fallback automático)
-    GROQ_API_KEYS = [
-        os.getenv("VITE_GROQ_API_KEY", ""),
-        os.getenv("VITE_GROQ_API_KEY_2", ""),
-        os.getenv("VITE_GROQ_API_KEY_3", ""),
-        os.getenv("VITE_GROQ_API_KEY_4", "")
-    ]
-    # Filtrar llaves vacías
-    GROQ_API_KEYS = [key for key in GROQ_API_KEYS if key.strip()]
-    GROQ_API_KEY = GROQ_API_KEYS[0] if GROQ_API_KEYS else ""
-    
-    # Modelo más liviano y rápido para trading
+
+    # Solo Ollama (sin Groq ni otras APIs externas)
     OLLAMA_MODEL = os.getenv("VITE_OLLAMA_MODEL", os.getenv("OLLAMA_MODEL", "llama3.2:1b"))
-    OLLAMA_MODEL_FAST = "phi3:mini"  # Modelo ultra-liviano como alternativa
     OLLAMA_BASE_URL = os.getenv("VITE_OLLAMA_BASE_URL", os.getenv("OLLAMA_BASE_URL", "https://ollama-ollama.ginee6.easypanel.host"))
     OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
     
@@ -102,10 +89,7 @@ TRADING_END_HOUR = Config.TRADING_END_HOUR
 TRADING_END_MINUTE = Config.TRADING_END_MINUTE
 MIN_VOLATILITY_TO_START = Config.MIN_VOLATILITY_TO_START
 USE_LLM = Config.USE_LLM
-USE_GROQ = Config.USE_GROQ
-GROQ_API_KEY = Config.GROQ_API_KEY
 OLLAMA_MODEL = Config.OLLAMA_MODEL
-OLLAMA_MODEL_FAST = Config.OLLAMA_MODEL_FAST
 OLLAMA_BASE_URL = Config.OLLAMA_BASE_URL
 OLLAMA_URL = Config.OLLAMA_URL
 BACKEND_URL = Config.BACKEND_URL
