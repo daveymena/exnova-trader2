@@ -62,24 +62,15 @@ async def main():
     balance = market_data.get_balance()
     print(f"✅ Conectado | Balance actual: ${balance:.2f}\n")
 
-    # --- INICIO IA INTELIGENTE (GROQ) ---
-    from core.smart_signal_parser import SmartSignalParser
+    # --- SISTEMA DE IA (OLLAMA + MEMORIA) ---
+    from ai_learning import create_learner
     try:
-        smart_parser = SmartSignalParser()
-        print("🧠 Cerebro IA (Groq) ACTIVADO para análisis de señales")
+        learner = create_learner()
+        print("🧠 Sistema de IA ACTIVADO (Ollama + Memoria de operaciones)")
     except Exception as e:
-        print(f"⚠️ No se pudo cargar IA Groq: {e}")
-        smart_parser = None
-
-    # --- INICIO IA LOCAL (MEMORIA) ---
-    from ai.local_ai_analyzer import LocalAIAnalyzer
-    try:
-        local_ai = LocalAIAnalyzer()
-        print("🧠 IA Local (Memoria) ACTIVADA para evitar pérdidas recurrentes")
-    except Exception as e:
-        print(f"⚠️ No se pudo cargar IA Local: {e}")
-        local_ai = None
-    # -------------------------------
+        print(f"⚠️ No se pudo cargar IA: {e}")
+        learner = None
+    # ----------------------------------------
 
     # Variables de estado para evitar duplicados y vaciado
     last_signal_signature = None
@@ -156,35 +147,26 @@ async def main():
                         sims[f'exp_{t}min'] = 'WIN' if sim_win else 'LOSS'
                 deep_analysis['time_simulation'] = sims
 
-            # Registrar experiencia
-            if local_ai:
-                local_ai.record_experience(asset, direction, result, indicators, deep_analysis)
-                print(f"🧠 Aprendizaje Profundo Guardado para {asset}")
+            # Registrar experiencia en sistema de IA
+            if learner:
+                operation_data = {
+                    'asset': asset,
+                    'direction': direction,
+                    'result': result,
+                    'profit': profit,
+                    'indicators': indicators,
+                    'deep_analysis': deep_analysis
+                }
+                learner.record_operation(operation_data)
+                print(f"🧠 Experiencia registrada para {asset}")
         except Exception as e:
-            print(f"⚠️ Error en Deep Learning: {e}")
-            if local_ai:
-                local_ai.record_experience(asset, direction, result, indicators)
+            print(f"⚠️ Error guardando experiencia: {e}")
 
     async def process_telegram_signal(signal_data):
         nonlocal last_signal_signature, last_trade_time
         
         try:
-            # 1. PARSER INTELIGENTE (IA)
-            if smart_parser and 'raw_message' in signal_data:
-                print("🧠 IA analizando...")
-                ai_signal = smart_parser.parse_with_ai(signal_data['raw_message'])
-                if ai_signal:
-                    if ai_signal.get('asset'): signal_data['asset'] = ai_signal['asset']
-                    if ai_signal.get('direction'): signal_data['direction'] = ai_signal['direction']
-                    if ai_signal.get('expiration'): signal_data['expiration'] = ai_signal['expiration']
-                    
-                    # Espera programada
-                    wait_s = ai_signal.get('seconds_to_wait', 0)
-                    if wait_s > 0:
-                        print(f"⏳ Esperando {wait_s}s para hora exacta...")
-                        await asyncio.sleep(wait_s)
-
-            # 2. DEFINIR DATOS CLAVE
+            # 1. DEFINIR DATOS CLAVE
             asset = signal_data.get('asset')
             direction = signal_data.get('direction')
             expiration = signal_data.get('expiration', 5)
@@ -218,11 +200,18 @@ async def main():
                 print(f"🛑 STOP LOSS DIARIO ALCANZADO (Balance: {current_balance}). Pausando operaciones...")
                 return
 
-            # D) Memoria IA
-            if local_ai:
-                is_safe, reason = local_ai.evaluate_trade_safety(asset, direction, expiration)
-                if not is_safe:
-                    print(f"🛑 IA LOCAL BLOQUEÓ OPERACIÓN: {reason}")
+            # D) Memoria IA - Verificar si patrón ha fallado antes
+            if learner:
+                current_context = {
+                    'asset': asset,
+                    'direction': direction,
+                    'rsi': indicators.get('rsi', 50),
+                    'price': indicators.get('close', 0),
+                    'timestamp': datetime.now().isoformat()
+                }
+                should_enter, reason = learner.should_enter_trade(current_context)
+                if not should_enter:
+                    print(f"🛑 IA BLOQUEÓ OPERACIÓN: {reason}")
                     return
 
             # CAPTURAR INSTANTÁNEA DE MERCADO (RSI, MACD)
