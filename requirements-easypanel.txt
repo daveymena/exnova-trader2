@@ -4,3 +4,4 @@ numpy>=1.24.0
 websocket-client>=1.6.0
 python-dotenv>=1.0.0
 colorlog>=6.7.0
+psutil>=5.9.0
