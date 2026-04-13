@@ -93,3 +93,6 @@
 {"id": 182, "timestamp": "2026-04-12T22:13:33.094759", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 35.8", "outcome": "loose", "pnl": -1.0}
 {"id": 183, "timestamp": "2026-04-12T22:15:02.018642", "asset": "USDJPY-OTC", "direction": "call", "confidence": 65, "reason": "RSI 27.2 + negative momentum", "outcome": "loose", "pnl": -1.0}
 {"id": 184, "timestamp": "2026-04-12T22:16:16.137318", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 71.3", "outcome": "loose", "pnl": -1.0}
+{"id": 186, "timestamp": "2026-04-12T22:18:01.785911", "asset": "USDCAD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 25.1", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 188, "timestamp": "2026-04-12T22:19:24.099183", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 35.7", "outcome": "loose", "pnl": -1.0}
+{"id": 189, "timestamp": "2026-04-12T22:21:01.771394", "asset": "USDJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 16.1", "outcome": "win", "pnl": 0.8400000000000001}
