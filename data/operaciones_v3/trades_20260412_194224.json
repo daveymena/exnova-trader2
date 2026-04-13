@@ -82,3 +82,11 @@
 {"id": 142, "timestamp": "2026-04-12T21:55:17.196664", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 21.8", "outcome": "loose", "pnl": -1.0}
 {"id": 143, "timestamp": "2026-04-12T21:56:31.174922", "asset": "EURJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 31.2", "outcome": "win", "pnl": 0.8700000000000001}
 {"id": 144, "timestamp": "2026-04-12T21:58:01.666007", "asset": "USDCAD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 1.4", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 145, "timestamp": "2026-04-12T21:59:15.625964", "asset": "EURUSD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 36.8", "outcome": "loose", "pnl": -1.0}
+{"id": 148, "timestamp": "2026-04-12T22:01:01.740710", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 22.8", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 149, "timestamp": "2026-04-12T22:02:15.608162", "asset": "EURJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 27.9", "outcome": "loose", "pnl": -1.0}
+{"id": 150, "timestamp": "2026-04-12T22:03:29.570661", "asset": "USDCAD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 36.1", "outcome": "loose", "pnl": -1.0}
+{"id": 152, "timestamp": "2026-04-12T22:05:01.913171", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 33.9 + negative momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 154, "timestamp": "2026-04-12T22:07:01.727287", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 26.7 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 155, "timestamp": "2026-04-12T22:08:15.629487", "asset": "EURJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 34.0", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 156, "timestamp": "2026-04-12T22:09:29.577701", "asset": "USDCAD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 30.0", "outcome": "loose", "pnl": -1.0}
