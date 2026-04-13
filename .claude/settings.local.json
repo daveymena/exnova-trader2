@@ -4,7 +4,8 @@
       "WebSearch",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(python -m py_compile ai_learning.py bot_con_ia.py)"
     ]
   }
 }
