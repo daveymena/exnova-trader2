@@ -12,14 +12,8 @@ services:
       - EXNOVA_PASSWORD=${EXNOVA_PASSWORD}
       - ACCOUNT_TYPE=${ACCOUNT_TYPE:-PRACTICE}
 
-      # API Keys para IA (OpenCode y Bot)
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - GROQ_API_KEY=${GROQ_API_KEY:-}
-      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
-
-      # Ollama
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://ollama-ollama.ginee6.easypanel.host}
+      # IA: Solo Ollama (recomendado para Easypanel)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://biblia-ollama.ginee6.easypanel.host}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
 
     volumes:
