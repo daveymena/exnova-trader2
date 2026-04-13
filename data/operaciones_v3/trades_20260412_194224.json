@@ -1,0 +1,84 @@
+{"id": 5, "timestamp": "2026-04-12T19:46:22.730583", "asset": "EURJPY-OTC", "direction": "call", "confidence": 65, "reason": "RSI 29.8 + negative momentum", "outcome": null, "pnl": -1.0}
+{"id": 9, "timestamp": "2026-04-12T19:48:02.787049", "asset": "USDJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 71.6 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 11, "timestamp": "2026-04-12T19:49:24.941201", "asset": "EURJPY-OTC", "direction": "call", "confidence": 65, "reason": "RSI 26.9 + negative momentum", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 12, "timestamp": "2026-04-12T19:51:01.738593", "asset": "USDCAD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 37.7", "outcome": "loose", "pnl": -1.0}
+{"id": 13, "timestamp": "2026-04-12T19:52:15.649945", "asset": "EURUSD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 31.8", "outcome": "loose", "pnl": -1.0}
+{"id": 14, "timestamp": "2026-04-12T19:53:29.564661", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 75.5", "outcome": "loose", "pnl": -1.0}
+{"id": 15, "timestamp": "2026-04-12T19:55:05.449503", "asset": "USDJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 82.9", "outcome": "loose", "pnl": -1.0}
+{"id": 16, "timestamp": "2026-04-12T19:56:19.295600", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 79.2", "outcome": "loose", "pnl": -1.0}
+{"id": 18, "timestamp": "2026-04-12T19:58:01.393092", "asset": "USDCAD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 80.7", "outcome": "loose", "pnl": -1.0}
+{"id": 20, "timestamp": "2026-04-12T20:00:01.678199", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 69.7 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 21, "timestamp": "2026-04-12T20:01:15.723262", "asset": "USDJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 74.4 + positive momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 24, "timestamp": "2026-04-12T20:03:01.202911", "asset": "USDCAD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 68.0 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 25, "timestamp": "2026-04-12T20:04:15.103271", "asset": "EURUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 74.1", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 26, "timestamp": "2026-04-12T20:05:28.965714", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 64.9", "outcome": "loose", "pnl": -1.0}
+{"id": 27, "timestamp": "2026-04-12T20:07:01.870017", "asset": "USDJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 35.9", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 30, "timestamp": "2026-04-12T20:08:33.084599", "asset": "USDCAD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 75.7", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 31, "timestamp": "2026-04-12T20:10:01.503143", "asset": "EURUSD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 67.4 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 32, "timestamp": "2026-04-12T20:11:15.386708", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 75.6", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 33, "timestamp": "2026-04-12T20:12:29.217744", "asset": "USDJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 76.8", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 35, "timestamp": "2026-04-12T20:14:01.492781", "asset": "EURJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 72.0 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 36, "timestamp": "2026-04-12T20:15:15.451432", "asset": "USDCAD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 86.0", "outcome": "loose", "pnl": -1.0}
+{"id": 37, "timestamp": "2026-04-12T20:16:29.316905", "asset": "EURUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 82.0", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 38, "timestamp": "2026-04-12T20:18:01.236686", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 10.0", "outcome": "loose", "pnl": -1.0}
+{"id": 39, "timestamp": "2026-04-12T20:19:15.147947", "asset": "USDJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 29.1", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 41, "timestamp": "2026-04-12T20:21:01.253220", "asset": "EURJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 85.2", "outcome": "loose", "pnl": -1.0}
+{"id": 44, "timestamp": "2026-04-12T20:22:31.605183", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 85.2", "outcome": "loose", "pnl": -1.0}
+{"id": 45, "timestamp": "2026-04-12T20:24:01.511709", "asset": "USDJPY-OTC", "direction": "call", "confidence": 65, "reason": "RSI 32.6 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 47, "timestamp": "2026-04-12T20:27:24.309835", "asset": "EURJPY-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 62.0", "outcome": null, "pnl": -1.0}
+{"id": 53, "timestamp": "2026-04-12T20:29:21.792205", "asset": "EURJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 8.4", "outcome": "loose", "pnl": -1.0}
+{"id": 54, "timestamp": "2026-04-12T20:30:35.921901", "asset": "USDCAD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 0.4", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 56, "timestamp": "2026-04-12T20:32:02.013440", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 25.9 + negative momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 59, "timestamp": "2026-04-12T20:33:35.126884", "asset": "EURJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 33.5", "outcome": "loose", "pnl": -1.0}
+{"id": 63, "timestamp": "2026-04-12T20:36:10.880814", "asset": "USDJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 68.7 + positive momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 64, "timestamp": "2026-04-12T20:37:27.937425", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 28.6 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 66, "timestamp": "2026-04-12T20:39:06.830632", "asset": "USDCAD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 31.1 + negative momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 68, "timestamp": "2026-04-12T20:40:32.440777", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 83.8", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 69, "timestamp": "2026-04-12T20:43:47.066975", "asset": "USDJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 68.3 + positive momentum", "outcome": null, "pnl": -1.0}
+{"id": 70, "timestamp": "2026-04-12T20:47:05.999364", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 33.3 + negative momentum", "outcome": null, "pnl": -1.0}
+{"id": 71, "timestamp": "2026-04-12T20:48:22.191820", "asset": "EURJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 19.1", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 72, "timestamp": "2026-04-12T20:49:36.206084", "asset": "USDCAD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 62.5", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 73, "timestamp": "2026-04-12T20:51:01.680817", "asset": "EURUSD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 66.5 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 74, "timestamp": "2026-04-12T20:52:15.737704", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 67.3", "outcome": "loose", "pnl": -1.0}
+{"id": 75, "timestamp": "2026-04-12T20:53:29.702765", "asset": "USDJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 94.9", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 76, "timestamp": "2026-04-12T20:55:01.625839", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 34.1 + negative momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 77, "timestamp": "2026-04-12T20:56:15.555145", "asset": "EURJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 72.6 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 80, "timestamp": "2026-04-12T20:58:01.483945", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 22.8", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 81, "timestamp": "2026-04-12T21:01:15.570333", "asset": "USDJPY-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 70.5", "outcome": null, "pnl": -1.0}
+{"id": 82, "timestamp": "2026-04-12T21:02:31.136244", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 19.0", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 84, "timestamp": "2026-04-12T21:04:01.905954", "asset": "USDCAD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 68.2 + positive momentum", "outcome": "loose", "pnl": -1.0}
+{"id": 85, "timestamp": "2026-04-12T21:05:15.970310", "asset": "EURUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 9.4", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 86, "timestamp": "2026-04-12T21:06:29.918537", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 25.6 + negative momentum", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 87, "timestamp": "2026-04-12T21:08:01.902838", "asset": "USDJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 89.4", "outcome": "loose", "pnl": -1.0}
+{"id": 88, "timestamp": "2026-04-12T21:09:16.083743", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 76.2", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 89, "timestamp": "2026-04-12T21:10:30.051083", "asset": "EURJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 94.1", "outcome": "loose", "pnl": -1.0}
+{"id": 91, "timestamp": "2026-04-12T21:12:01.396128", "asset": "EURUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 77.4", "outcome": "equal", "pnl": -1.0}
+{"id": 92, "timestamp": "2026-04-12T21:13:15.400291", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 13.3", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 94, "timestamp": "2026-04-12T21:15:01.239053", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 34.9 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 95, "timestamp": "2026-04-12T21:16:15.150898", "asset": "EURJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 95.5", "outcome": "loose", "pnl": -1.0}
+{"id": 96, "timestamp": "2026-04-12T21:17:29.163062", "asset": "USDCAD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 31.1 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 99, "timestamp": "2026-04-12T21:19:01.603254", "asset": "USDJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 17.1", "outcome": "loose", "pnl": -1.0}
+{"id": 100, "timestamp": "2026-04-12T21:20:15.615649", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 79.1", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 101, "timestamp": "2026-04-12T21:21:29.586684", "asset": "EURJPY-OTC", "direction": "put", "confidence": 75, "reason": "RSI overbought: 90.2", "outcome": "loose", "pnl": -1.0}
+{"id": 102, "timestamp": "2026-04-12T21:23:01.504515", "asset": "USDCAD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 37.1", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 104, "timestamp": "2026-04-12T21:24:23.634461", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 15.2", "outcome": "loose", "pnl": -1.0}
+{"id": 105, "timestamp": "2026-04-12T21:27:37.660699", "asset": "USDJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 18.3", "outcome": null, "pnl": -1.0}
+{"id": 106, "timestamp": "2026-04-12T21:29:01.687101", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 37.5", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 107, "timestamp": "2026-04-12T21:30:15.797270", "asset": "EURJPY-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 62.7", "outcome": "loose", "pnl": -1.0}
+{"id": 108, "timestamp": "2026-04-12T21:31:29.745001", "asset": "USDCAD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 69.9 + positive momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 109, "timestamp": "2026-04-12T21:33:01.712025", "asset": "EURUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 15.5", "outcome": "loose", "pnl": -1.0}
+{"id": 110, "timestamp": "2026-04-12T21:34:19.712725", "asset": "GBPUSD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 66.2 + positive momentum", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 112, "timestamp": "2026-04-12T21:36:02.144076", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 66.4", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 118, "timestamp": "2026-04-12T21:38:04.696266", "asset": "AUDUSD-OTC", "direction": "put", "confidence": 65, "reason": "RSI 70.1 + positive momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 123, "timestamp": "2026-04-12T21:40:01.599644", "asset": "USDJPY-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 66.3", "outcome": "loose", "pnl": -1.0}
+{"id": 127, "timestamp": "2026-04-12T21:42:01.458009", "asset": "EURUSD-OTC", "direction": "put", "confidence": 55, "reason": "RSI high: 62.0", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 129, "timestamp": "2026-04-12T21:43:23.742141", "asset": "USDJPY-OTC", "direction": "put", "confidence": 65, "reason": "RSI 70.0 + positive momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 130, "timestamp": "2026-04-12T21:45:01.729734", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 65, "reason": "RSI 27.4 + negative momentum", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 131, "timestamp": "2026-04-12T21:46:15.547542", "asset": "EURJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 7.4", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 134, "timestamp": "2026-04-12T21:49:46.151105", "asset": "GBPUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 17.1", "outcome": null, "pnl": -1.0}
+{"id": 135, "timestamp": "2026-04-12T21:51:01.978048", "asset": "USDJPY-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 16.1", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 136, "timestamp": "2026-04-12T21:52:16.171591", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 22.4", "outcome": "loose", "pnl": -1.0}
+{"id": 141, "timestamp": "2026-04-12T21:54:03.092907", "asset": "USDJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 34.4", "outcome": "win", "pnl": 0.8400000000000001}
+{"id": 142, "timestamp": "2026-04-12T21:55:17.196664", "asset": "AUDUSD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 21.8", "outcome": "loose", "pnl": -1.0}
+{"id": 143, "timestamp": "2026-04-12T21:56:31.174922", "asset": "EURJPY-OTC", "direction": "call", "confidence": 55, "reason": "RSI low: 31.2", "outcome": "win", "pnl": 0.8700000000000001}
+{"id": 144, "timestamp": "2026-04-12T21:58:01.666007", "asset": "USDCAD-OTC", "direction": "call", "confidence": 75, "reason": "RSI oversold: 1.4", "outcome": "win", "pnl": 0.8400000000000001}

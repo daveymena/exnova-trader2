@@ -1,0 +1,39 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Instalar dependencias del sistema
+RUN apt-get update && apt-get install -y \
+    gcc \
+    curl \
+    git \
+    nodejs \
+    npm \
+    vim \
+    nano \
+    && rm -rf /var/lib/apt/lists/*
+
+# Instalar OpenCode CLI globalmente
+RUN npm install -g opencode-ai
+
+# Instalar dependencias Python
+COPY requirements-easypanel.txt requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copiar todo el proyecto
+COPY . .
+
+# Crear directorios necesarios
+RUN mkdir -p data models logs
+
+# Script de entrada flexible
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Variables de entorno
+ENV PYTHONUNBUFFERED=1
+ENV ACCOUNT_TYPE=PRACTICE
+ENV PATH="/usr/local/bin:/usr/bin:/bin:/app"
+
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bot"]

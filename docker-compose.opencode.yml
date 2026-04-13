@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.opencode
+    container_name: exnova-trading-opencode
+    environment:
+      # Credenciales Exnova (Obligatorias)
+      - EXNOVA_EMAIL=${EXNOVA_EMAIL}
+      - EXNOVA_PASSWORD=${EXNOVA_PASSWORD}
+      - ACCOUNT_TYPE=${ACCOUNT_TYPE:-PRACTICE}
+
+      # API Keys para IA (OpenCode y Bot)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GROQ_API_KEY=${GROQ_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+
+      # Ollama
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-https://ollama-ollama.ginee6.easypanel.host}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2:1b}
+
+    volumes:
+      # Montar código para que OpenCode pueda editar
+      - .:/app
+      # Persistir datos
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./models:/app/models
+
+    # Mantener contenedor vivo para acceso interactivo
+    stdin_open: true
+    tty: true
+
+    # IMPORTANTE: No reiniciar automáticamente para evitar múltiples instancias
+    restart: "no"
+
+    # Comando por defecto - dejar en modo espera
+    # Cambia a 'bot' para iniciar el bot automáticamente
+    # Cambia a 'opencode' para iniciar OpenCode directamente
+    command: >
+      sh -c "echo 'Esperando comandos...' &&
+             echo 'Ejecuta en la terminal: /entrypoint.sh bot' &&
+             echo 'O para OpenCode: /entrypoint.sh opencode' &&
+             tail -f /dev/null"
