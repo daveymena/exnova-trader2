@@ -1,54 +1,189 @@
-# 🚀 Despliegue del Bot Inteligente en Easypanel
+# 🚀 DESPLIEGUE EN EASYPANEL - GUÍA RÁPIDA
 
-Este documento explica cómo subir tu bot con **Aprendizaje Adaptativo** y **Multi-Agentes** a Easypanel para que funcione 24/7 en la nube.
+## ✅ Estado del Código en Git
 
-## 📋 Requisitos en Easypanel
-
-1.  **Proyecto**: Crea un nuevo proyecto en Easypanel.
-2.  **Servicio**: Crea un servicio tipo "App" desde tu repositorio de GitHub.
-3.  **Configuración de Build**: Easypanel detectará automáticamente el `Dockerfile`.
-
-## ⚙️ Variables de Entorno (Environment Variables)
-
-Configura las siguientes variables en la sección de **Environment** de tu App:
-
-| Variable | Valor Sugerido | Descripción |
-| :--- | :--- | :--- |
-| `BROKER_NAME` | `exnova` | Broker a utilizar |
-| `ACCOUNT_TYPE` | `PRACTICE` | **CRÍTICO**: Usa siempre PRACTICE para aprender |
-| `EXNOVA_EMAIL` | `tu@email.com` | Tu correo de Exnova |
-| `EXNOVA_PASSWORD` | `tu_password` | Tu contraseña de Exnova |
-| `HEADLESS_MODE` | `True` | Activa el inicio automático sin menús |
-| `USE_LLM` | `True` | Activa la validación por IA |
-| `USE_GROQ` | `True` | Activa el uso de Groq |
-| `VITE_GROQ_API_KEY` | `gsk_...` | Tu llave de Groq principal |
-| `VITE_GROQ_API_KEY_2` | `gsk_...` | Llaves de respaldo para rotación |
-| `VITE_OLLAMA_BASE_URL` | `https://tu-ollama.host` | Tu servidor de Ollama (opcional) |
-
-## 💾 Persistencia de Datos (Mundo Real)
-
-Para que el bot **no olvide lo que aprendió** cuando se reinicie el servidor, debes configurar estos volúmenes en la pestaña **Mounts / Volumes**:
-
-*   **Ruta Host / Nombre**: `bot_data` -> **Ruta Contenedor**: `/app/data`
-*   **Ruta Host / Nombre**: `bot_models` -> **Ruta Contenedor**: `/app/models`
-
-## 🧠 ¿Cómo funciona el Aprendizaje en la Nube?
-
-En la nube, el bot activará automáticamente el **Ajuste Inteligente de Umbral**:
-
-1.  **Monitorización continua**: Analiza sus últimos 20 resultados en tiempo real.
-2.  **Auto-Ajuste**:
-    *   Si el Win Rate baja del 60%, el bot sube el umbral de confianza (se vuelve más exigente).
-    *   Si el Win Rate sube del 85%, optimiza el volumen de operaciones pero manteniendo la calidad.
-3.  **Rotación de IA**: Si tu llave de Groq se agota, el bot rotará a la siguiente llave configurada en las variables de entorno sin detenerse.
-
-## 🛡️ Estilo de Trading: "Aprendizaje Drástico"
-
-El bot ha sido programado para:
-*   **Aprender de las pérdidas**: Identifica qué activos están fallando y aplica filtros de volatilidad específicos.
-*   **Auto-Protección**: Si el mercado se vuelve errático, el umbral de confianza sube automáticamente hasta un 90% para evitar entradas falsas.
-*   **Operación Inteligente**: Solo ejecuta si la estrategia técnica Y el agente de IA (Groq/Ollama) están de acuerdo.
+Todo está subido y listo para desplegar:
+- ✅ OpenCode integrado
+- ✅ Sistema de control de operaciones robusto
+- ✅ Manejo de pérdidas con aprendizaje
+- ✅ Solo Ollama configurado (sin otras IAs)
 
 ---
 
-**Nota**: Una vez desplegado, puedes monitorear todo desde la pestaña **Logs** de Easypanel. Verás los diálogos de los agentes y cómo se ajustan los umbrales de aprendizaje en tiempo real.
+## 📦 Archivos Principales Subidos
+
+| Archivo | Propósito |
+|---------|-----------|
+| `Dockerfile.opencode` | Docker con Python + Node.js + OpenCode |
+| `docker-compose.opencode.yml` | Configuración completa para Easypanel |
+| `entrypoint.sh` | Script de entrada flexible |
+| `bot_con_ia_v2.py` | Bot con control de operaciones robusto |
+| `ai_learning.py` | Sistema de IA y aprendizaje |
+| `operation_lock.py` | Lock atómico para prevenir operaciones dobles |
+
+---
+
+## 🚀 PASOS PARA DESPLEGAR EN EASYPANEL
+
+### 1. Crear Servicio
+```
+En Easypanel:
+1. Click "Create Service"
+2. Seleccionar "Docker Compose"
+3. Elegir tu repositorio GitHub
+4. Branch: main
+5. Docker Compose File: docker-compose.opencode.yml
+```
+
+### 2. Configurar Variables de Entorno
+
+```bash
+# OBLIGATORIAS - Credenciales Exnova
+EXNOVA_EMAIL=tu_email@gmail.com
+EXNOVA_PASSWORD=tu_password
+ACCOUNT_TYPE=PRACTICE
+
+# IA - Solo Ollama
+OLLAMA_BASE_URL=https://biblia-ollama.ginee6.easypanel.host
+OLLAMA_MODEL=llama3.2:1b
+```
+
+### 3. Deploy
+```
+Click "Deploy" y esperar a que construya la imagen
+```
+
+---
+
+## 🖥️ USAR EL SERVICIO
+
+### Opción A: Ejecutar el Bot (Versión Segura)
+```bash
+# En la terminal de Easypanel:
+/entrypoint.sh bot
+```
+
+### Opción B: Ejecutar Bot V2 (Más Seguro)
+```bash
+# Usa el sistema de lock robusto:
+python bot_con_ia_v2.py
+```
+
+### Opción C: Usar OpenCode
+```bash
+# Para editar código con IA:
+/entrypoint.sh opencode
+```
+
+### Opción D: Shell Interactivo
+```bash
+# Para ejecutar comandos manualmente:
+/entrypoint.sh shell
+```
+
+---
+
+## 🆘 COMANDOS DE EMERGENCIA
+
+### Detener Todo:
+```bash
+python emergency_stop.py
+```
+
+### Liberar Locks Manualmente:
+```bash
+rm -f data/locks/operation.lock
+rm -f /tmp/bot.lock
+```
+
+### Ver Estado del Lock:
+```python
+python -c "from operation_lock import get_lock; print(get_lock().is_locked())"
+```
+
+---
+
+## 📋 COMPORTAMIENTO DEL BOT V2
+
+### Control de Operaciones:
+- ✅ **Una operación a la vez** (imposible operar doble)
+- ✅ **Lock atómico** con verificación de proceso vivo
+- ✅ **Limpieza automática** de locks huérfanos
+
+### Manejo de Pérdidas:
+- 🕐 **Cooldown**: 5 minutos de pausa tras cada pérdida
+- 🛑 **Límite**: Máximo 3 pérdidas consecutivas
+- 🧠 **Aprendizaje**: Evita patrones que fallaron 3+ veces
+- 📊 **Umbral adaptativo**: Ajusta confianza según resultados
+
+---
+
+## 📊 Qué Verás en los Logs
+
+```
+🚀 TRADING BOT V2 - CONTROL ROBUSTO
+====================================
+✅ Lock atómico activado
+
+[1] Inicializando sistema de IA...
+   Operaciones registradas: 0
+   Umbral actual: 70.0%
+   Pérdidas consecutivas: 0/3
+   Cooldown activo: No
+   Operación en curso: No
+
+[CICLO #1] - 16:30:45
+A) Escaneando mercado...
+   ⏳ Sin oportunidad clara, esperando 30s...
+```
+
+Si hay operación activa:
+```
+⛔ LOCK ACTIVO: Operación en curso
+   Esperando 10 segundos...
+```
+
+---
+
+## ⚠️ NOTAS IMPORTANTES
+
+1. **Restart Policy**: `restart: "no"` - No reinicia automáticamente
+2. **Lock**: Previene operaciones simultáneas automáticamente
+3. **Persistencia**: Los datos se guardan en volúmenes montados
+4. **OpenCode**: Disponible en `/app` para editar código
+
+---
+
+## 🔧 Solución de Problemas
+
+### Si hay operaciones dobles:
+```bash
+# 1. Detener todo
+python emergency_stop.py
+
+# 2. Limpiar locks
+rm -f data/locks/* /tmp/bot*
+
+# 3. Reiniciar con V2
+python bot_con_ia_v2.py
+```
+
+### Si el bot no inicia:
+Verifica variables de entorno:
+```bash
+echo $EXNOVA_EMAIL
+echo $ACCOUNT_TYPE
+```
+
+---
+
+## ✅ CHECKLIST PRE-DEPLOY
+
+- [ ] Variables de entorno configuradas en Easypanel
+- [ ] Repositorio conectado a Easypanel
+- [ ] Archivo seleccionado: `docker-compose.opencode.yml`
+- [ ] Cuenta de Exnova tiene saldo (PRACTICE)
+
+---
+
+**Listo para deploy! 🚀**
