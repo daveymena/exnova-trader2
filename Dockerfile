@@ -15,14 +15,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# 1. Dependencias
+# 1. Copiar requirements primero (para cachear mejor)
 COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 2. Código
-COPY . .
+# 2. Copiar código del bot (estructura completa)
+COPY bot/ ./bot/
+COPY run_live.py ./run_live.py
+COPY .env.example ./.env.example
 
-# 3. Directorios persistentes
+# 3. Crear directorios persistentes
 RUN mkdir -p /app/bot/data /app/bot/logs /app/bot/models /app/logs
 
 # 4. Variables de entorno (sobreescribir en EasyPanel)

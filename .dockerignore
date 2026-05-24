@@ -1,0 +1,69 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+run_live.lock
+
+# Documentación (no necesaria en Docker)
+*.md
+ANALISIS_*.md
+RESUMEN_*.md
+GUIA_*.md
+ESTADO_*.md
+POSTMORTEM_*.md
+TRADE_ANALYSIS_*.md
+AUDITORIA_*.md
+CONCLUSION_*.md
+INTEGRACION_*.md
+INDICE_*.md
+README_SISTEMA_*.md
+
+# Archivos de prueba
+test_*.py
+debug_*.py
+authenticate_*.py
+list_github_*.py
+run_ai_*.py
+run_bot_*.py
+run_complete_*.py
+run_live_v*.py
+run_simple_*.py
+run_24_*.ps1
+start_*.ps1
+bot_operating.py
+dashboard_*.py
+use_copilot_*.py
+
+# Directorios no necesarios
+.agents/
+.local/
+data/
+lib/
+
+# Archivos problemáticos
+bot/nul
+nul
