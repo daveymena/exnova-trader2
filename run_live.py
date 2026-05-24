@@ -58,11 +58,28 @@ atexit.register(release_lock)
 from dotenv import load_dotenv
 load_dotenv()
 
-from config import Config
+# ─── Importar módulos de forma robusta ──────────────────────────────────────
+import importlib.util
+
+def load_module(module_name, file_path):
+    """Cargar un módulo desde una ruta específica."""
+    spec = importlib.util.spec_from_file_location(module_name, file_path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+# Cargar config_assets directamente
+bot_dir = os.path.join(app_dir, 'bot')
+config_assets = load_module('config_assets', os.path.join(bot_dir, 'config_assets.py'))
+config = load_module('config', os.path.join(bot_dir, 'config.py'))
+
+# Ahora importar el resto normalmente
 from config_assets import (
     get_activos_activos, get_config_sensibilidad,
     get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING
 )
+from config import Config
 from data.market_data import MarketDataHandler
 from core.advanced_risk_manager import initialize_risk_manager, RiskConfig
 from brain.adaptive_learner import get_adaptive_learner
