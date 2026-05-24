@@ -864,7 +864,6 @@ class LiveTrader(QThread):
                                 
                                 # ⚖️ FILTRO DE CONSISTENCIA 24/7 (Punto de Equilibrio)
                                 allow_trade, consistency_reason = self.consistency_manager.should_allow_trade(self.current_asset)
-                                allow_trade = True # 🔓 MODO BERSERKER ACTIVADO
                                 if not allow_trade:
                                     self.signals.log_message.emit(f"\n{consistency_reason}")
                                     self.best_opportunity = None
@@ -933,7 +932,6 @@ class LiveTrader(QThread):
                                         pattern_type=pattern_type,
                                         current_conditions=current_conditions
                                     )
-                                    should_trade = True # 🔓 MODO BERSERKER ACTIVADO
                                     
                                     self.signals.log_message.emit(f"   {filter_reason}")
                                     
@@ -1043,28 +1041,36 @@ class LiveTrader(QThread):
                             micro_reason = ""
                             
                             if direction == "call":
-                                # 🎯 BUSCANDO VENTAJA EN CALL (COMPRA)
                                 advantage = (signal_price - micro_price) / signal_price * 100
-                                # RELAJADO: Solo advertir, no cancelar
-                                if micro_price < signal_price * 0.9990: 
-                                    self.signals.log_message.emit(f"   ⚠️ VOLATILIDAD ALTA: Precio {advantage:.3f}% abajo. Operando con precaución.")
-                                elif micro_price > signal_price * 1.0010: 
-                                    self.signals.log_message.emit(f"   ⚠️ PRECIO SUBIENDO: Precio {advantage:.3f}% arriba. Intentando entrar.")
+                                if micro_price < signal_price * 0.9985:
+                                    execute_micro = False
+                                    micro_reason = f"Precio cayó {abs(advantage):.3f}% en 1s, reversión no confirmada"
+                                    self.signals.log_message.emit(f"   🛑 CANCELADO: {micro_reason}")
+                                elif micro_price > signal_price * 1.0030:
+                                    execute_micro = False
+                                    micro_reason = f"Precio subió {advantage:.3f}% muy rápido, riesgo de agotamiento"
+                                    self.signals.log_message.emit(f"   🛑 CANCELADO: {micro_reason}")
+                                elif micro_price < signal_price * 0.9995:
+                                    self.signals.log_message.emit(f"   ⚠️ ADVERTENCIA: Precio {advantage:.3f}% abajo, entrando con cautela")
+                                    execute_micro = True
                                 else:
                                     self.signals.log_message.emit(f"   ✅ MICRO-VALIDACIÓN OK: {advantage:.4f}% de margen")
-                                execute_micro = True
                                     
                             elif direction == "put":
-                                # 🎯 BUSCANDO VENTAJA EN PUT (VENTA)
                                 advantage = (micro_price - signal_price) / signal_price * 100
-                                # RELAJADO: Solo advertir, no cancelar
-                                if micro_price > signal_price * 1.0010: 
-                                    self.signals.log_message.emit(f"   ⚠️ VOLATILIDAD ALTA: Precio {advantage:.3f}% arriba. Operando con precaución.")
-                                elif micro_price < signal_price * 0.9990: 
-                                    self.signals.log_message.emit(f"   ⚠️ PRECIO BAJANDO: Precio {advantage:.3f}% abajo. Intentando entrar.")
+                                if micro_price > signal_price * 1.0015:
+                                    execute_micro = False
+                                    micro_reason = f"Precio subió {advantage:.3f}% en 1s, reversión no confirmada"
+                                    self.signals.log_message.emit(f"   🛑 CANCELADO: {micro_reason}")
+                                elif micro_price < signal_price * 0.9970:
+                                    execute_micro = False
+                                    micro_reason = f"Precio cayó {abs(advantage):.3f}% muy rápido, riesgo de agotamiento"
+                                    self.signals.log_message.emit(f"   🛑 CANCELADO: {micro_reason}")
+                                elif micro_price > signal_price * 1.0005:
+                                    self.signals.log_message.emit(f"   ⚠️ ADVERTENCIA: Precio {advantage:.3f}% arriba, entrando con cautela")
+                                    execute_micro = True
                                 else:
                                     self.signals.log_message.emit(f"   ✅ MICRO-VALIDACIÓN OK: {advantage:.4f}% de margen")
-                                execute_micro = True
                             else:
                                 execute_micro = True
                             

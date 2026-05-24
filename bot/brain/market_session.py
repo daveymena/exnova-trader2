@@ -57,30 +57,31 @@ class MarketSession:
         },
         "ASIA": {
             # 00:00-07:00 UTC — baja volatilidad, rangos estrechos
-            "min_confidence":    0.38,
-            "zone_tolerance":    0.0018,
-            "min_zone_strength": 0.40,
-            "expiration_mult":   1.5,
-            "trade_freq":        "LOW",
-            "description":       "Sesión Asiática: baja volatilidad",
+            # SOLO trades de MUY alta calidad (menos liquidez = spreads más amplios)
+            "min_confidence":    0.55,
+            "zone_tolerance":    0.0012,
+            "min_zone_strength": 0.60,
+            "expiration_mult":   2.0,
+            "trade_freq":        "VERY_LOW",
+            "description":       "Sesión Asiática: baja volatilidad, solo mejores setups",
         },
         "PACIFIC": {
             # 21:00-24:00 UTC — transicion baja liquidez
-            "min_confidence":    0.45,
-            "zone_tolerance":    0.0015,
-            "min_zone_strength": 0.45,
-            "expiration_mult":   1.2,
+            "min_confidence":    0.52,
+            "zone_tolerance":    0.0012,
+            "min_zone_strength": 0.55,
+            "expiration_mult":   1.5,
             "trade_freq":        "LOW",
-            "description":       "Sesion Pacifico: baja liquidez",
+            "description":       "Sesion Pacifico: baja liquidez, selectivo",
         },
         "DEAD": {
             # Mercado completamente muerto (raro en OTC pero posible)
-            "min_confidence":    0.48,
-            "zone_tolerance":    0.0020,
-            "min_zone_strength": 0.45,
-            "expiration_mult":   2.0,
+            "min_confidence":    0.55,
+            "zone_tolerance":    0.0010,
+            "min_zone_strength": 0.55,
+            "expiration_mult":   2.5,
             "trade_freq":        "VERY_LOW",
-            "description":       "Mercado sin volatilidad: selectividad normal",
+            "description":       "Mercado sin volatilidad: pausar hasta que vuelva",
         },
     }
 

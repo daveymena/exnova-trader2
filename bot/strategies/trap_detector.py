@@ -456,30 +456,41 @@ class TrapDetector:
         Returns:
             tuple: (is_trap, trap_type, trap_score, should_inverse)
         """
-        # Detectar niveles de soporte y resistencia
-        recent = df.tail(20)
-        resistance = recent['high'].max()
-        support = recent['low'].min()
+        # Detectar niveles de soporte y resistencia (usar 100 velas para mayor precisión)
+        lookback = min(100, len(df))
+        recent_medium = df.tail(lookback)
+        resistance = recent_medium['high'].max()
+        support = recent_medium['low'].min()
         current_price = df.iloc[-1]['close']
         
-        # 🚨 NUEVA TRAMPA: Operación en dirección equivocada
-        # NO comprar en resistencia, NO vender en soporte
+        # También calcular niveles de 20 velas para contexto corto
+        recent_short = df.tail(20)
+        short_resistance = recent_short['high'].max()
+        short_support = recent_short['low'].min()
+        
+        # 🚨 TRAMPA: Operación en dirección equivocada
+        # Usar niveles de 100 velas (más fiables) para la verificación
         at_resistance = current_price >= resistance * 0.998
         at_support = current_price <= support * 1.002
         
-        if proposed_action == 'CALL' and at_resistance:
-            # Intentando comprar en resistencia = TRAMPA
-            print(f"   🚨 TRAMPA: Intentando COMPRAR en RESISTENCIA ({resistance:.5f})")
-            print(f"      - Precio actual: {current_price:.5f}")
-            print(f"      - Esto es una trampa común - el precio probablemente rebote a la baja")
-            return True, 'WRONG_DIRECTION_CALL', 80, True  # Invertir a PUT
+        # Verificar si el precio está en el MEDIO del rango (no cerca de extremos)
+        range_short = short_resistance - short_support
+        mid_range = (short_resistance + short_support) / 2
+        dist_from_mid = abs(current_price - mid_range) / range_short if range_short > 0 else 1
         
-        if proposed_action == 'PUT' and at_support:
-            # Intentando vender en soporte = TRAMPA
-            print(f"   🚨 TRAMPA: Intentando VENDER en SOPORTE ({support:.5f})")
+        # Solo considerar WRONG_DIRECTION si el precio está claramente en un extremo del rango
+        if proposed_action == 'CALL' and at_resistance and dist_from_mid > 0.35:
+            print(f"   ⚠️ PRECAUCIÓN: Intentando COMPRAR cerca de resistencia ({resistance:.5f})")
             print(f"      - Precio actual: {current_price:.5f}")
-            print(f"      - Esto es una trampa común - el precio probablemente rebote al alza")
-            return True, 'WRONG_DIRECTION_PUT', 80, True  # Invertir a CALL
+            print(f"      - Se permite solo si hay confirmación fuerte de ruptura")
+            # No invertir automáticamente, solo marcar como riesgo
+            return True, 'WRONG_DIRECTION_CALL', 60, False
+        
+        if proposed_action == 'PUT' and at_support and dist_from_mid > 0.35:
+            print(f"   ⚠️ PRECAUCIÓN: Intentando VENDER cerca de soporte ({support:.5f})")
+            print(f"      - Precio actual: {current_price:.5f}")
+            print(f"      - Se permite solo si hay confirmación fuerte de ruptura")
+            return True, 'WRONG_DIRECTION_PUT', 60, False
         
         # 🚨 NUEVA TRAMPA: Falling Knife (Caída libre)
         falling_knife, knife_score = self.detect_falling_knife(df, proposed_action)
@@ -529,11 +540,13 @@ class TrapDetector:
         # Por ahora, si es sweep, reducimos probabilidad de que sea trampa de ruptura
         
         # Si detectamos una trampa relevante a la acción propuesta
-        if proposed_action == 'CALL' and bull_trap:
-            return True, 'BULL_TRAP', bull_score, True  # Invertir a PUT
+        # NOTA: Ya no invertimos la dirección, solo bloqueamos la operación
+        # La inversión causaba entradas en dirección equivocada
+        if proposed_action == 'CALL' and bull_trap and bull_score >= 60:
+            return True, 'BULL_TRAP', bull_score, False  # Solo bloquear, NO invertir
         
-        if proposed_action == 'PUT' and bear_trap:
-            return True, 'BEAR_TRAP', bear_score, True  # Invertir a CALL
+        if proposed_action == 'PUT' and bear_trap and bear_score >= 60:
+            return True, 'BEAR_TRAP', bear_score, False  # Solo bloquear, NO invertir
         
         # Fakeout o Whipsaw: NO operar
         if fakeout:

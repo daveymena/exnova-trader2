@@ -29,91 +29,114 @@ class MarketDataHandler:
         self.api = None
         self.connected = False
 
-    def connect(self, email, password):
-        print(f"  Conectando a {self.broker_name.upper()} ({self.account_type})...")
-        try:
-            if self.broker_name == "exnova":
-                if Exnova is None:
-                    print("  ERROR: librería exnovaapi no instalada.")
-                    return False
-                self.api = Exnova(email, password, active_account_type=self.account_type)
-                check, reason = self.api.connect()
-                if check and self.api.check_connect():
-                    # Actualizar activos con timeout (opcional, no crítico)
-                    try:
-                        import threading
-                        def update_actives():
-                            try:
-                                self.api.update_ACTIVES_OPCODE()
-                            except:
-                                pass
-                        
-                        thread = threading.Thread(target=update_actives, daemon=True)
-                        thread.start()
-                        thread.join(timeout=5)  # Timeout de 5 segundos
-                        if thread.is_alive():
-                            print("  [WARN] Timeout actualizando activos (continuando de todos modos)")
-                    except Exception as e:
-                        print(f"  [WARN] Error actualizando activos: {e}")
-                    
-                    self.connected = True
-                    print(f"  [OK] Conectado a EXNOVA ({self.account_type})")
+    def connect(self, email, password, max_retries=3):
+        last_error = None
+        for attempt in range(1, max_retries + 1):
+            if attempt > 1:
+                print(f"  Reintento {attempt}/{max_retries}...")
+                import time
+                time.sleep(3)
+            print(f"  Conectando a {self.broker_name.upper()} ({self.account_type})...")
+            try:
+                if self.broker_name == "exnova":
+                    if Exnova is None:
+                        print("  ERROR: librería exnovaapi no instalada.")
+                        continue
+                    self.api = Exnova(email, password, active_account_type=self.account_type)
+                    check, reason = self.api.connect()
+                    if check and self.api.check_connect():
+                        try:
+                            import threading
+                            def update_actives():
+                                try:
+                                    self.api.update_ACTIVES_OPCODE()
+                                except:
+                                    pass
+                            thread = threading.Thread(target=update_actives, daemon=True)
+                            thread.start()
+                            thread.join(timeout=5)
+                            if thread.is_alive():
+                                print("  [WARN] Timeout actualizando activos (continuando de todos modos)")
+                        except Exception as e:
+                            print(f"  [WARN] Error actualizando activos: {e}")
+                        self.connected = True
+                        print(f"  [OK] Conectado a EXNOVA ({self.account_type})")
+                        return True
+                    else:
+                        print(f"  [FAIL] Razón: {reason}")
+                        self.connected = False
+                elif self.broker_name == "iq":
+                    if IQ_Option is None:
+                        print("  ERROR: librería iqoptionapi no instalada.")
+                        continue
+                    self.api = IQ_Option(email, password)
+                    check, reason = self.api.connect()
+                    if check:
+                        self.api.change_balance(self.account_type)
+                        self.connected = True
+                        return True
+                    else:
+                        self.connected = False
                 else:
-                    print(f"  [FAIL] Razón: {reason}")
-                    self.connected = False
-            elif self.broker_name == "iq":
-                if IQ_Option is None:
-                    print("  ERROR: librería iqoptionapi no instalada.")
+                    print(f"  Broker desconocido: {self.broker_name}")
                     return False
-                self.api = IQ_Option(email, password)
-                check, reason = self.api.connect()
-                if check:
-                    self.api.change_balance(self.account_type)
-                    self.connected = True
+            except Exception as e:
+                err_msg = str(e)
+                if "'ConnectionError' object has no attribute 'text'" in err_msg:
+                    print(f"  [WARN] Error de conexión conocido (intento {attempt}/{max_retries})")
                 else:
-                    self.connected = False
-            else:
-                print(f"  Broker desconocido: {self.broker_name}")
-                return False
-        except Exception as e:
-            print(f"  Excepción en connect: {e}")
-            self.connected = False
-        return self.connected
+                    print(f"  Excepción en connect: {e}")
+                self.connected = False
+                last_error = e
+        
+        print(f"  [FAIL] No se pudo conectar tras {max_retries} intentos")
+        return False
 
     def get_candles(self, asset, timeframe, num_candles, end_time=None):
         if not self.connected or not self.api:
             return pd.DataFrame()
+        
+        # Convertir timeframe string a segundos si es necesario
+        interval_seconds = timeframe
+        if isinstance(timeframe, str):
+            tf_map = {
+                "1m": 60, "5m": 300, "15m": 900, "30m": 1800,
+                "1h": 3600, "2h": 7200, "4h": 14400,
+                "1d": 86400, "1w": 604800,
+            }
+            interval_seconds = tf_map.get(timeframe, 60)
+        
         try:
             if end_time is None:
                 end_time = time.time()
             try:
-                candles = self.api.get_candles(asset, timeframe, num_candles, end_time)
+                candles = self.api.get_candles(asset, interval_seconds, num_candles, end_time)
             except TypeError:
-                candles = self.api.get_candles(asset, timeframe, num_candles)
-        except Exception as e:
+                candles = self.api.get_candles(asset, interval_seconds, num_candles)
+        except Exception:
             return pd.DataFrame()
-
+        
         if not candles:
             return pd.DataFrame()
         if isinstance(candles, dict):
             return pd.DataFrame()
-
+        
         df = pd.DataFrame(candles)
         if df.empty:
             return df
-
+        
         rename_map = {'max': 'high', 'min': 'low', 'open': 'open',
                       'close': 'close', 'volume': 'volume', 'from': 'timestamp'}
         df.rename(columns=rename_map, inplace=True)
-
+        
         if 'timestamp' in df.columns:
             df['timestamp'] = pd.to_datetime(df['timestamp'], unit='s')
             df.set_index('timestamp', inplace=True)
-
+        
         for col in ['open', 'high', 'low', 'close', 'volume']:
             if col not in df.columns:
                 df[col] = 0.0
-
+        
         df = df[['open', 'high', 'low', 'close', 'volume']].apply(pd.to_numeric, errors='coerce')
         return df
 
@@ -131,7 +154,9 @@ class MarketDataHandler:
         try:
             candles = self.api.get_candles(asset, 60, 1, time.time())
             if candles and isinstance(candles, list) and len(candles) > 0:
-                return float(candles[-1]['close'])
+                c = candles[-1]
+                if isinstance(c, dict) and 'close' in c:
+                    return float(c['close'])
         except Exception:
             pass
         return 0.0

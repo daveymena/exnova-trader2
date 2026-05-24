@@ -1,77 +1,37 @@
+# Sensible
+.env
+*.key
+*.pem
+*credentials*
+**/token_*.json
+
 # Python
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.Python
-*.egg
 *.egg-info/
 dist/
 build/
-eggs/
-parts/
-var/
-sdist/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
-*.so
 
-# Virtual Environments
-.env
-.venv
-env/
-venv/
-ENV/
-
-# Logs y datos locales (no subir al repo)
-bot/logs/
+# Data & logs
+bot/data/*.json
+bot/data/*.db
+bot/brain/trade_history.json
+bot/brain/learning_state.json
+bot/brain/*memory*.json
 logs/
 *.log
-current_bot.log
+run_live.lock
 
-# Datos de sesión y estado local (no subir)
-bot/data/learning_progress.json
-bot/brain/learning_state.json
-bot/brain/trade_history.json
-bot/brain/zone_reactions.json
-bot/brain/ai_suggestions.json
-bot/brain/orchestrator_executions.json
-bot/brain/recommendations_config.json
-data/
-
-# Credenciales y secretos (NUNCA al repo)
-bot/.env
-.env
-*.env
-secrets.json
-auth.json
-
-# IDEs
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-.idea/
-*.sublime-workspace
-
-# Sistema
+# OS
 .DS_Store
 Thumbs.db
-*.tsbuildinfo
+desktop.ini
 
-# Node
-node_modules/
-dist/
-tmp/
-out-tsc/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
 
-# Replit
-.cache/
-.local/
-.agents/
-
-# GitHub / CI
-.cursor/
-.github/instructions/
+# EasyPanel
+.env.local

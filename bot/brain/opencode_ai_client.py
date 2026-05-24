@@ -249,64 +249,92 @@ RESPONDE SOLO CON ESTE JSON:
     # ── Interno ────────────────────────────────────────────────────────────────
 
     def _call(self, model: str, messages: List[Dict], tag: str = "") -> Optional[Dict]:
-        """Realiza la llamada al endpoint OpenAI-compatible y parsea el JSON."""
-        t0 = time.time()
-        try:
-            resp = requests.post(
-                f"{self.base_url}/chat/completions",
-                headers=self.headers,
-                json={
-                    "model":       model,
-                    "messages":    messages,
-                    "temperature": 0.3,
-                    "max_tokens":  400,
-                },
-                timeout=TIMEOUT_SECONDS,
-            )
-            elapsed = time.time() - t0
-            self._track_time(elapsed)
-
-            if resp.status_code != 200:
-                self.calls_failed += 1
-                try:
-                    print(f"[!] OpenCode AI [{tag}] HTTP {resp.status_code}: {resp.text[:200]}")
-                except Exception:
-                    pass
-                return None
-
-            data    = resp.json()
-            content = data["choices"][0]["message"]["content"].strip()
-            result  = self._parse_json(content)
-
-            if result is not None:
-                self.calls_made += 1
-                try:
-                    print(f"[AI] OpenCode [{tag}] OK en {elapsed:.1f}s | modelo={model.split('/')[-1]}")
-                except Exception:
-                    pass
-                return result
-            else:
-                self.calls_failed += 1
-                try:
-                    print(f"[!] OpenCode AI [{tag}] JSON inválido: {content[:150]}")
-                except Exception:
-                    pass
-                return None
-
-        except requests.exceptions.Timeout:
-            self.calls_failed += 1
+        """Realiza la llamada al endpoint OpenAI-compatible con reintentos y parsea el JSON."""
+        max_retries = 3
+        retry_delay = 5
+        
+        for attempt in range(1, max_retries + 1):
+            t0 = time.time()
             try:
-                print(f"[!] OpenCode AI [{tag}] Timeout ({TIMEOUT_SECONDS}s) — continuando sin IA")
-            except Exception:
-                pass
-            return None
-        except Exception as e:
-            self.calls_failed += 1
-            try:
-                print(f"[!] OpenCode AI [{tag}] Error: {e}")
-            except Exception:
-                pass
-            return None
+                resp = requests.post(
+                    f"{self.base_url}/chat/completions",
+                    headers=self.headers,
+                    json={
+                        "model":       model,
+                        "messages":    messages,
+                        "temperature": 0.3,
+                        "max_tokens":  400,
+                    },
+                    timeout=TIMEOUT_SECONDS,
+                )
+                elapsed = time.time() - t0
+                self._track_time(elapsed)
+
+                if resp.status_code == 200:
+                    data    = resp.json()
+                    content = data["choices"][0]["message"]["content"].strip()
+                    result  = self._parse_json(content)
+
+                    if result is not None:
+                        self.calls_made += 1
+                        try:
+                            print(f"[AI] OpenCode [{tag}] OK en {elapsed:.1f}s | modelo={model.split('/')[-1]}")
+                        except Exception:
+                            pass
+                        return result
+                    else:
+                        try:
+                            print(f"[!] OpenCode AI [{tag}] JSON inválido en intento {attempt}/{max_retries}: {content[:150]}")
+                        except Exception:
+                            pass
+                        if attempt < max_retries:
+                            time.sleep(retry_delay)
+                            continue
+                        self.calls_failed += 1
+                        return None
+                
+                elif resp.status_code == 429:
+                    try:
+                        print(f"[!] OpenCode AI [{tag}] Límite de velocidad (429) en intento {attempt}/{max_retries}. Esperando {retry_delay}s...")
+                    except Exception:
+                        pass
+                    if attempt < max_retries:
+                        time.sleep(retry_delay)
+                        continue
+                    self.calls_failed += 1
+                    return None
+                else:
+                    try:
+                        print(f"[!] OpenCode AI [{tag}] Error HTTP {resp.status_code} en intento {attempt}/{max_retries}: {resp.text[:200]}")
+                    except Exception:
+                        pass
+                    if attempt < max_retries:
+                        time.sleep(retry_delay)
+                        continue
+                    self.calls_failed += 1
+                    return None
+
+            except requests.exceptions.Timeout:
+                try:
+                    print(f"[!] OpenCode AI [{tag}] Timeout en intento {attempt}/{max_retries}...")
+                except Exception:
+                    pass
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                    continue
+                self.calls_failed += 1
+                return None
+            except Exception as e:
+                try:
+                    print(f"[!] OpenCode AI [{tag}] Error en intento {attempt}/{max_retries}: {e}")
+                except Exception:
+                    pass
+                if attempt < max_retries:
+                    time.sleep(retry_delay)
+                    continue
+                self.calls_failed += 1
+                return None
+        return None
 
     def _parse_json(self, content: str) -> Optional[Dict]:
         """Extrae y parsea el primer objeto JSON de un texto."""

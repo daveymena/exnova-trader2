@@ -21,7 +21,7 @@ class RiskConfig:
     max_trades_per_day: int = 999    # sin límite diario — el riesgo lo regula
     cooldown_after_loss_seconds: int = 120
     stop_after_consecutive_losses: int = 4
-    min_confidence_threshold: float = 0.65
+    min_confidence_threshold: float = 0.40  # Bajado de 0.65 para permitir patterns con conf 40-65%
     volatility_adjustment: bool = True
 
 

@@ -496,20 +496,19 @@ class MarketAI:
             context.get("expected_direction", "NEUTRAL")
         )
 
-        # Threshold dinámico para operar
-        # Mas permisivo: con 3+ evidencias a favor, umbral baja
-        trade_threshold = 0.35 if len(ev_for) >= 3 else 0.42
+        # Threshold dinámico para operar (suavizado)
+        trade_threshold = 0.20 if len(ev_for) >= 2 else 0.28
 
         should_trade = net_score >= trade_threshold and direction != "NEUTRAL"
 
-        # Label de setup (umbrales mas bajos para generar mas senales)
-        if score_100 >= 70:
+        # Label de setup (umbrales suavizados)
+        if score_100 >= 50:
             label = "EXCELENTE"
-        elif score_100 >= 55:
+        elif score_100 >= 35:
             label = "BUENO"
-        elif score_100 >= 40:
+        elif score_100 >= 20:
             label = "MODERADO"
-        elif score_100 >= 25:
+        elif score_100 >= 10:
             label = "DEBIL"
         else:
             label = "SKIP"
@@ -517,7 +516,7 @@ class MarketAI:
         if label == "SKIP":
             should_trade = False
         # DEBIL no bloquea automaticamente
-        if label == "DEBIL" and net_score >= 0.35 and direction != "NEUTRAL":
+        if label == "DEBIL" and net_score >= 0.15 and direction != "NEUTRAL":
             should_trade = True
 
         evidence_for_text  = [e.description for e in ev_for]

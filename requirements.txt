@@ -1,0 +1,31 @@
+# ============= EXNOVA TRADING BOT v5.1 - DEPENDENCIAS CONSOLIDADAS =============
+# Instalar con: pip install -r requirements.txt
+
+# ─── Core Python ──────────────────────────────────────────────────────────────
+python-dotenv>=1.0.0
+requests>=2.31.0
+websocket-client==1.8.0
+
+# ─── Data & Analysis ──────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.24.0
+ta>=0.11.0
+
+# ─── UI & Output ──────────────────────────────────────────────────────────────
+rich>=13.0.0
+
+# ─── AI & LLM ──────────────────────────────────────────────────────────────────
+openai>=1.0.0
+groq>=0.4.0
+
+# ─── Opcional: Visualización ──────────────────────────────────────────────────
+matplotlib>=3.4.0
+plotly>=5.0.0
+
+# ─── Opcional: Logging avanzado ───────────────────────────────────────────────
+loguru>=0.6.0
+
+# ─── Desarrollo & Testing ─────────────────────────────────────────────────────
+pytest>=7.0.0
+black>=22.0.0
+flake8>=4.0.0

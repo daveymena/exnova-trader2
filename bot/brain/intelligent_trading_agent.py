@@ -13,12 +13,12 @@ from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 from datetime import datetime
 
-from copilot_auth_real import get_copilot_auth_real
-from incoherence_detector import get_incoherence_detector
-from local_ai_predictor import get_local_ai_predictor
-from trade_persistence import get_trade_persistence
-from github_models_client import get_github_models_client
-from opencode_ai_client import get_opencode_client
+from .copilot_auth_real import get_copilot_auth_real
+from .incoherence_detector import get_incoherence_detector
+from .local_ai_predictor import get_local_ai_predictor
+from .trade_persistence import get_trade_persistence
+from .github_models_client import get_github_models_client
+from .opencode_ai_client import get_opencode_client
 
 
 class IntelligentTradingAgent:
@@ -164,11 +164,11 @@ class IntelligentTradingAgent:
                 'AUDUSD-OTC': {'status': 'ACTIVE', 'bias': 'NEUTRAL', 'confidence': 0.60, 'volume_mult': 0.8}
             },
             'validation_rules': {
-                'require_pattern': True,
-                'pattern_confidence_min': 0.75,
-                'rsi_extremes_only': True,
-                'zone_hold_rate_min': 0.75,
-                'min_confidence': 0.70
+                'require_pattern': False,
+                'pattern_confidence_min': 0.30,
+                'rsi_extremes_only': False,
+                'zone_hold_rate_min': 0.30,
+                'min_confidence': 0.30
             }
         }
 
@@ -311,9 +311,9 @@ class IntelligentTradingAgent:
         
         analysis['confidence'] = min(100, max(0, analysis['confidence']))
         
-        if analysis['confidence'] >= 80:
+        if analysis['confidence'] >= 55:
             analysis['decision'] = 'STRONG_ENTER'
-        elif analysis['confidence'] >= 70:
+        elif analysis['confidence'] >= 20:
             analysis['decision'] = 'ENTER'
         else:
             analysis['decision'] = 'WAIT'
@@ -351,7 +351,18 @@ class IntelligentTradingAgent:
                 analysis['ai_response'] = ai_analysis
                 analysis['confidence'] = ai_analysis.get('confidence', analysis['confidence'])
                 analysis['direction'] = ai_analysis.get('direction', analysis['direction'])
-                analysis['decision'] = ai_analysis.get('decision', analysis['decision'])
+                # IA solo puede mejorar una decisión o bloquear si es SKIP
+                ai_decision = ai_analysis.get('decision', analysis['decision'])
+                if ai_decision == 'SKIP':
+                    analysis['decision'] = 'SKIP'
+                elif analysis['decision'] in ('ENTER', 'STRONG_ENTER'):
+                    pass  # mantener decisión local si ya era ENTER
+                elif ai_decision == 'ENTER' and analysis['decision'] == 'WAIT':
+                    analysis['decision'] = 'ENTER'  # IA mejoró la decisión
+                elif ai_decision == 'WAIT':
+                    pass  # mantener decisión local si IA no está segura
+                else:
+                    analysis['decision'] = ai_decision
                 
                 self.context['ai_calls_made'] += 1
         else:
@@ -362,7 +373,11 @@ class IntelligentTradingAgent:
         # ─────────────────────────────────────────────────────────────────────────
         
         if analysis['direction'] == 'NEUTRAL':
-            analysis['decision'] = 'WAIT'
+            if analysis['decision'] in ('ENTER', 'STRONG_ENTER'):
+                # Usar dirección del motor si las reglas locales no definieron una
+                analysis['direction'] = market_context.get('direction', 'CALL')
+            else:
+                analysis['decision'] = 'WAIT'
         
         self.decisions.append(analysis)
         self.context['decisions_made'] += 1
@@ -392,6 +407,102 @@ class IntelligentTradingAgent:
             deep             = use_deep,
         )
 
+        if not ai_result and self.authenticated:
+            try:
+                print("[*] OpenCode sin tokens/respuesta. Intentando fallback a GitHub Models...")
+                model_to_use = None
+                
+                # Cargar el catálogo si no está cargado
+                if not self.github_models.models_loaded:
+                    self.github_models.load_available_models()
+                    
+                if use_deep:
+                    for mid in self.github_models.available_models.keys():
+                        if 'gpt-4o' in mid.lower() and 'mini' not in mid.lower():
+                            model_to_use = mid
+                            break
+                if not model_to_use:
+                    for mid in self.github_models.available_models.keys():
+                        if 'gpt-4o-mini' in mid.lower():
+                            model_to_use = mid
+                            break
+                if not model_to_use:
+                    for mid in self.github_models.available_models.keys():
+                        if 'gpt-4' in mid.lower() and 'mini' in mid.lower():
+                            model_to_use = mid
+                            break
+                if not model_to_use:
+                    for mid in self.github_models.available_models.keys():
+                        if 'gpt-4' in mid.lower():
+                            model_to_use = mid
+                            break
+                if not model_to_use and self.github_models.available_models:
+                    model_to_use = list(self.github_models.available_models.keys())[0]
+                if not model_to_use:
+                    model_to_use = self.models_config.get('fast', 'openai/gpt-4o-mini')
+
+                print(f"[*] Fallback: usando GitHub Model: {model_to_use}")
+                from opencode_ai_client import SYSTEM_PROMPT_TRADER
+                
+                asset       = market_context.get("asset",    "UNKNOWN")
+                price       = market_context.get("price",    0)
+                rsi         = market_context.get("rsi",      50)
+                trend       = market_context.get("trend",    "NEUTRAL")
+                pattern     = market_context.get("pattern",  "none")
+                zone_type   = market_context.get("zone_type","unknown")
+                zone_level  = market_context.get("zone",     0)
+                zone_str    = market_context.get("zone_strength", 0.0)
+                session     = market_context.get("session",  "DESCONOCIDA")
+                win_rate    = enriched.get("win_rate_bot", 0.52)
+                local_dir   = enriched.get("direction", "NEUTRAL")
+                local_conf  = enriched.get("confidence", 0)
+                local_reason= enriched.get("reasoning", [])
+
+                prompt = f"""Analiza esta señal de trading en opciones binarias OTC y devuelve un JSON:
+
+MERCADO:
+- Activo: {asset}
+- Precio actual: {price}
+- RSI: {rsi:.1f}
+- Tendencia: {trend}
+- Patrón de vela: {pattern}
+- Zona técnica: {zone_type} @ {zone_level} (fuerza={zone_str:.2f})
+- Sesión: {session}
+
+ANÁLISIS LOCAL:
+- Dirección propuesta: {local_dir}
+- Confianza local: {local_conf:.0f}%
+- Incoherencias detectadas: {len(incoherences)}
+- Razonamiento: {'; '.join(local_reason[:3])}
+- Win Rate actual del bot: {win_rate:.1%}
+
+INSTRUCCIÓN: Analiza la coherencia técnica. Revisa si la dirección propuesta tiene sentido con el RSI, zona y patrón.
+Si hay incoherencias, corrígelas. Sé conservador.
+
+RESPONDE SOLO CON ESTE JSON (sin ningún otro texto):
+{{
+    "direction": "CALL" o "PUT" o "NEUTRAL",
+    "confidence": número entre 0 y 100,
+    "decision": "ENTER" o "WAIT" o "SKIP",
+    "reasoning": "explicación técnica breve en español (máximo 120 caracteres)",
+    "risk_level": "LOW" o "MEDIUM" o "HIGH",
+    "correction_applied": true o false
+}}"""
+
+                github_resp = self.github_models.call_model(
+                    model_id = model_to_use,
+                    messages = [
+                        {"role": "system", "content": SYSTEM_PROMPT_TRADER},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature = 0.3,
+                    max_tokens = 400
+                )
+                if github_resp and github_resp.get('content'):
+                    ai_result = self.opencode._parse_json(github_resp['content'])
+            except Exception as e:
+                print(f"[!] Error al usar GitHub Models como fallback: {e}")
+
         if ai_result:
             self.ai_analyses.append(ai_result)
             self.context['ai_calls_made'] += 1
@@ -400,13 +511,13 @@ class IntelligentTradingAgent:
             ai_result.setdefault('direction',  current_analysis.get('direction', 'NEUTRAL'))
             ai_result.setdefault('confidence', current_analysis.get('confidence', 0))
             try:
-                print(f"[AI] Veredicto: {ai_result['decision']} {ai_result['direction']} "
+                print(f"[AI] Veredicto (GitHub Fallback): {ai_result['decision']} {ai_result['direction']} "
                       f"({ai_result['confidence']:.0f}%) — {ai_result.get('reasoning','')[:80]}")
             except Exception:
                 pass
         else:
             try:
-                print("[!] OpenCode AI sin respuesta — usando análisis local")
+                print("[!] OpenCode AI y GitHub Models sin respuesta — usando análisis local")
             except Exception:
                 pass
 
@@ -468,6 +579,71 @@ class IntelligentTradingAgent:
                     trade_result = result,
                     pnl          = pnl,
                 )
+                
+                if not lesson and self.authenticated:
+                    try:
+                        print("[*] OpenCode sin tokens/respuesta en aprendizaje. Intentando fallback a GitHub Models...")
+                        model_to_use = None
+                        
+                        if not self.github_models.models_loaded:
+                            self.github_models.load_available_models()
+                            
+                        for mid in self.github_models.available_models.keys():
+                            if 'gpt-4o-mini' in mid.lower():
+                                model_to_use = mid
+                                break
+                        if not model_to_use and self.github_models.available_models:
+                            model_to_use = list(self.github_models.available_models.keys())[0]
+                        if not model_to_use:
+                            model_to_use = self.models_config.get('fast', 'openai/gpt-4o-mini')
+
+                        from opencode_ai_client import SYSTEM_PROMPT_TRADER
+                        
+                        asset       = trade.get("asset",    "UNKNOWN")
+                        direction   = trade.get("direction","NEUTRAL")
+                        trade_pat   = trade.get("pattern",  "none")
+                        trade_zstr  = trade.get("zone_strength", 0.0)
+                        rsi_entry   = trade.get("rsi_at_touch", 50)
+                        trend_align = trade.get("trend_aligned", False)
+
+                        prompt = f"""Analiza el resultado de este trade cerrado y extrae una lección de mejora:
+
+TRADE EJECUTADO:
+- Activo: {asset}
+- Dirección: {direction}
+- Patrón: {trade_pat}
+- Fuerza de zona: {trade_zstr:.2f}
+- RSI en entrada: {rsi_entry:.1f}
+- Tendencia alineada: {"SI" if trend_align else "NO"}
+- Resultado: {result}
+- PnL: {"+$" if pnl >= 0 else "-$"}{abs(pnl):.2f}
+
+INSTRUCCIÓN: Identifica por qué {("ganó" if result=="WIN" else "perdió")} este trade.
+Proporciona una regla de mejora concreta y ajuste de confianza para futuros trades similares.
+
+RESPONDE SOLO CON ESTE JSON:
+{{
+    "lesson": "lección principal en español (máximo 150 caracteres)",
+    "pattern_confidence_delta": número entre -0.15 y +0.15,
+    "zone_rule": "descripción de qué hacer en zonas similares (máximo 100 caracteres)",
+    "avoid_condition": "condición a evitar en el futuro (máximo 100 caracteres) o null",
+    "reinforce_condition": "condición a reforzar (máximo 100 caracteres) o null"
+}}"""
+
+                        github_resp = self.github_models.call_model(
+                            model_id = model_to_use,
+                            messages = [
+                                {"role": "system", "content": SYSTEM_PROMPT_TRADER},
+                                {"role": "user", "content": prompt}
+                            ],
+                            temperature = 0.3,
+                            max_tokens = 400
+                        )
+                        if github_resp and github_resp.get('content'):
+                            lesson = self.opencode._parse_json(github_resp['content'])
+                    except Exception as e:
+                        print(f"[!] Error al usar GitHub Models como fallback en aprendizaje: {e}")
+
                 if lesson:
                     # Aplicar ajuste de confianza sugerido por la IA
                     delta_ai = lesson.get('pattern_confidence_delta', 0)
@@ -492,7 +668,7 @@ class IntelligentTradingAgent:
                     if len(self.context['ai_lessons']) > 30:
                         self.context['ai_lessons'] = self.context['ai_lessons'][-30:]
                     try:
-                        print(f"[LEARN] IA: {lesson.get('lesson','')[:90]}")
+                        print(f"[LEARN] IA (Fallback): {lesson.get('lesson','')[:90]}")
                     except Exception:
                         pass
             except Exception as ex:
@@ -519,6 +695,75 @@ class IntelligentTradingAgent:
         def _run_eval():
             try:
                 eval_result = self.opencode.evaluate_session_performance(session_trades)
+                
+                if not eval_result and self.authenticated:
+                    try:
+                        print("[*] OpenCode sin tokens/respuesta en evaluacion de sesion. Intentando fallback a GitHub Models...")
+                        model_to_use = None
+                        
+                        if not self.github_models.models_loaded:
+                            self.github_models.load_available_models()
+                            
+                        for mid in self.github_models.available_models.keys():
+                            if 'gpt-4o' in mid.lower() and 'mini' not in mid.lower():
+                                model_to_use = mid
+                                break
+                        if not model_to_use and self.github_models.available_models:
+                            model_to_use = list(self.github_models.available_models.keys())[0]
+                        if not model_to_use:
+                            model_to_use = self.models_config.get('quality', 'openai/gpt-4o')
+
+                        from opencode_ai_client import SYSTEM_PROMPT_TRADER
+                        wins   = sum(1 for t in session_trades if t.get("result") == "WIN")
+                        losses = sum(1 for t in session_trades if t.get("result") == "LOSS")
+                        total  = len(session_trades)
+                        pnl    = sum(t.get("pnl", 0) for t in session_trades)
+
+                        trade_summary = []
+                        for t in session_trades[-8:]:
+                            trade_summary.append(
+                                f"{t.get('asset','?')} {t.get('direction','?')} "
+                                f"({t.get('pattern','?')}) → {t.get('result','?')}"
+                            )
+
+                        prompt = f"""Evalúa el desempeño de esta sesión de trading y proporciona ajustes estratégicos:
+
+SESIÓN ACTUAL:
+- Total trades: {total}
+- Wins: {wins} | Losses: {losses}
+- Win Rate: {(wins/total*100) if total > 0 else 0:.1f}%
+- PnL Total: {'+$' if pnl >= 0 else '-$'}{abs(pnl):.2f}
+
+ÚLTIMOS TRADES:
+{chr(10).join(trade_summary)}
+
+INSTRUCCIÓN: Analiza si hay patrones de error recurrentes. ¿Hay activos o patrones que están fallando?
+¿Debe el bot aumentar o disminuir la selectividad? ¿Pausar algún activo?
+
+RESPONDE SOLO CON ESTE JSON:
+{{
+    "session_grade": "A" o "B" o "C" o "D",
+    "main_issue": "principal problema identificado en español (máximo 120 caracteres)",
+    "recommendation": "acción concreta a tomar (máximo 120 caracteres)",
+    "assets_to_pause": ["lista de activos a pausar, puede estar vacía"],
+    "increase_selectivity": true o false,
+    "confidence_multiplier": número entre 0.7 y 1.3
+}}"""
+
+                        github_resp = self.github_models.call_model(
+                            model_id = model_to_use,
+                            messages = [
+                                {"role": "system", "content": SYSTEM_PROMPT_TRADER},
+                                {"role": "user", "content": prompt}
+                            ],
+                            temperature = 0.3,
+                            max_tokens = 400
+                        )
+                        if github_resp and github_resp.get('content'):
+                            eval_result = self.opencode._parse_json(github_resp['content'])
+                    except Exception as e:
+                        print(f"[!] Error al usar GitHub Models como fallback en evaluacion: {e}")
+
                 if not eval_result:
                     return
 
@@ -529,7 +774,7 @@ class IntelligentTradingAgent:
                 more_select = eval_result.get('increase_selectivity', False)
 
                 try:
-                    print(f"[AI] Eval. sesion: Grado={grade} | {rec[:80]}")
+                    print(f"[AI] Eval. sesion (Fallback): Grado={grade} | {rec[:80]}")
                     if to_pause:
                         print(f"[AI] Activos a pausar: {to_pause}")
                 except Exception:

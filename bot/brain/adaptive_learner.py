@@ -53,11 +53,11 @@ class AdaptiveLearner:
     }
 
     DEFAULT_THRESHOLDS = {
-        "min_zone_strength": 0.40,      # zonas decentes
-        "min_rsi_distance": 8.0,        # RSI algo extremo
-        "min_zone_hold_rate": 0.45,     # hold rate minimo 45%
-        "min_setup_quality": 0.40,      # setups de calidad media
-        "min_score_to_trade": 0.38,     # umbral bajo para operar
+        "min_zone_strength": 0.20,
+        "min_rsi_distance": 3.0,
+        "min_zone_hold_rate": 0.20,
+        "min_setup_quality": 0.20,
+        "min_score_to_trade": 0.15,
     }
 
     def __init__(self, persist_path: str = "brain/learning_state.json"):

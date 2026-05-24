@@ -388,7 +388,7 @@ class IntelligentTrader:
     def _generate_final_decision(self, confluence_analysis: Dict, learning_recommendation: Dict,
                                llm_timing_analysis: Optional[Dict], asset: str, 
                                current_balance: float) -> Dict:
-        """Genera la decisión final de trading"""
+        """Genera la decisión final de trading usando datos objetivos, NO parsing de texto"""
         
         decision = {
             'should_trade': False,
@@ -412,24 +412,32 @@ class IntelligentTrader:
             decision['warnings'].append("Sistema de aprendizaje no recomienda operar")
             return decision
         
-        # 3. Determinar dirección
-        # Priorizar consenso entre sistemas
+        # 3. Determinar dirección usando DATOS OBJETIVOS (NO text-parsing)
+        # Obtener dirección desde las fuentes de datos reales
         directions = []
         
-        # Dirección de confluencias (implícita en las confluencias)
-        for conf in confluence_analysis['confluences']:
-            if 'CALL' in conf.upper():
-                directions.append('CALL')
-            elif 'PUT' in conf.upper():
-                directions.append('PUT')
+        # Dirección desde smart_money_analysis (entry_signal)
+        sm_entry = confluence_analysis.get('individual_confidences', {})
+        if hasattr(self, 'smart_money_analyzer') and hasattr(self.smart_money_analyzer, 'last_direction'):
+            sm_dir = self.smart_money_analyzer.last_direction
+            if sm_dir in ['CALL', 'PUT']:
+                directions.append(sm_dir)
         
-        # Dirección del aprendizaje
-        learning_reasons = learning_recommendation.get('reasons', [])
-        for reason in learning_reasons:
-            if 'CALL' in reason.upper():
-                directions.append('CALL')
-            elif 'PUT' in reason.upper():
-                directions.append('PUT')
+        # Dirección desde basic_structure (entry_signal)
+        if hasattr(self, 'market_structure_analyzer') and hasattr(self.market_structure_analyzer, 'last_direction'):
+            ms_dir = self.market_structure_analyzer.last_direction
+            if ms_dir in ['CALL', 'PUT']:
+                directions.append(ms_dir)
+        
+        # Si no hay direcciones desde objetos, usar los reasons pero de forma estructurada
+        if not directions:
+            # Intentar obtener dirección desde el learning_recommendation
+            learning_reasons = learning_recommendation.get('reasons', [])
+            for reason in learning_reasons:
+                if 'CALL' in reason.upper():
+                    directions.append('CALL')
+                elif 'PUT' in reason.upper():
+                    directions.append('PUT')
         
         # Determinar dirección por mayoría
         if not directions:

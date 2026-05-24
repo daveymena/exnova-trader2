@@ -216,8 +216,14 @@ class ContextAnalyzer:
         if zone is None:
             return {}
 
-        is_at_zone = abs(zone.level - price) / price <= 0.001
-        zone_type = zone.zone_type
+        # zone es un dict, no un objeto con atributos
+        zone_level = zone.get("level", price) if isinstance(zone, dict) else zone.level
+        zone_type = zone.get("zone_type", "support") if isinstance(zone, dict) else zone.zone_type
+        zone_strength = zone.get("strength", 0.5) if isinstance(zone, dict) else zone.strength
+        zone_touches = zone.get("touches", 1) if isinstance(zone, dict) else zone.touches
+        zone_hold_rate = zone.get("hold_rate", 0.5) if isinstance(zone, dict) else zone.hold_rate
+
+        is_at_zone = abs(zone_level - price) / price <= 0.001
 
         # Dirección esperada al estar en la zona
         if zone_type == "support":
@@ -233,12 +239,12 @@ class ContextAnalyzer:
         return {
             "at_zone": is_at_zone,
             "zone_type": zone_type,
-            "zone_strength": zone.strength,
-            "zone_touches": zone.touches,
-            "zone_hold_rate": zone.hold_rate,
+            "zone_strength": zone_strength,
+            "zone_touches": zone_touches,
+            "zone_hold_rate": zone_hold_rate,
             "expected_direction": expected,
             "trend_aligned": trend_aligned,
-            "level": zone.level,
+            "level": zone_level,
         }
 
     def _expected_direction(self, dominant_trend: str, momentum: Dict,
@@ -355,11 +361,13 @@ class ContextAnalyzer:
         # ¿El precio llega a la zona desde arriba o desde abajo?
         approach = "unknown"
         if zone:
-            above_zone = sum(1 for c in closes[:-3] if c > zone.level)
-            below_zone = sum(1 for c in closes[:-3] if c <= zone.level)
-            if zone.zone_type == "support":
+            zone_level = zone.get("level", price) if isinstance(zone, dict) else zone.level
+            zone_type = zone.get("zone_type", "support") if isinstance(zone, dict) else zone.zone_type
+            above_zone = sum(1 for c in closes[:-3] if c > zone_level)
+            below_zone = sum(1 for c in closes[:-3] if c <= zone_level)
+            if zone_type == "support":
                 approach = "falling_to_support" if direction == "down" else "already_at_support"
-            elif zone.zone_type == "resistance":
+            elif zone_type == "resistance":
                 approach = "rising_to_resistance" if direction == "up" else "already_at_resistance"
 
         return {
