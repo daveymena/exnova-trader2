@@ -17,7 +17,6 @@ WORKDIR /app
 
 # 1. Dependencias
 COPY requirements.txt ./requirements.txt
-COPY bot/exnovaapi/requirements.txt ./bot/exnovaapi/requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 2. Código
