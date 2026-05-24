@@ -9,8 +9,15 @@ from datetime import datetime, timedelta
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'bot'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'bot', 'brain'))
+# Agregar rutas de búsqueda para módulos
+app_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, app_dir)  # Raíz del proyecto
+sys.path.insert(0, os.path.join(app_dir, 'bot'))  # bot/
+sys.path.insert(0, os.path.join(app_dir, 'bot', 'brain'))  # bot/brain/
+sys.path.insert(0, os.path.join(app_dir, 'bot', 'core'))  # bot/core/
+sys.path.insert(0, os.path.join(app_dir, 'bot', 'data'))  # bot/data/
+sys.path.insert(0, os.path.join(app_dir, 'bot', 'engine'))  # bot/engine/
+sys.path.insert(0, os.path.join(app_dir, 'bot', 'strategies'))  # bot/strategies/
 
 # ─── Lock de instancia única ──────────────────────────────────────────────
 LOCK_FILE = os.path.join(os.path.dirname(__file__), 'run_live.lock')
