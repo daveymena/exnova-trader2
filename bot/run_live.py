@@ -75,13 +75,13 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 # ─── Constantes ─────────────────────────────────────────────────────────────
 INITIAL_BALANCE    = 10_000.0
-MIN_CONFIDENCE     = 0.75  # AUMENTADO: Solo operar con confianza alta (75%+)
-COOLDOWN_AFTER_LOSS = 180  # Esperar 3min después de pérdida
-MIN_BETWEEN_TRADES  = 90   # Esperar 90s entre trades
-MIN_BETWEEN_SAME_ASSET = 240  # Esperar 4min para mismo activo
-MAX_CONSEC_LOSSES   = 3  # REDUCIDO: Parar después de 3 pérdidas seguidas
-PAUSE_AFTER_WIN_STREAK = 5  # Pausa después de 5 wins
-PAUSE_DURATION = 60  # Pausa de 1 minuto
+MIN_CONFIDENCE     = 0.60  # AJUSTADO: Confianza moderada (60%+) - menos restrictivo
+COOLDOWN_AFTER_LOSS = 120  # Esperar 2min después de pérdida
+MIN_BETWEEN_TRADES  = 45   # Esperar 45s entre trades
+MIN_BETWEEN_SAME_ASSET = 120  # Esperar 2min para mismo activo
+MAX_CONSEC_LOSSES   = 4  # Parar después de 4 pérdidas seguidas
+PAUSE_AFTER_WIN_STREAK = 8  # Pausa después de 8 wins
+PAUSE_DURATION = 45  # Pausa de 45 segundos
 
 # ─── Estado global ──────────────────────────────────────────────────────────
 from collections import deque
@@ -160,11 +160,15 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         if not ob_validation['valid']:
             log(f"[OB M15] ⛔ SIN ORDER BLOCK VÁLIDO. Operación CANCELADA.", "WARNING")
             state["status"] = "ANALIZANDO"
+            state["active_order"] = None  # LIMPIAR LA ORDEN
+            trade_in_progress = False  # LIBERAR EL LOCK
             return False
         
         if not ob_validation['trend_aligned']:
             log(f"[TREND] ⚠️ Tendencia M15 ({ob_validation['trend']}) NO alineada con dirección {direction}. Operación CANCELADA.", "WARNING")
             state["status"] = "ANALIZANDO"
+            state["active_order"] = None  # LIMPIAR LA ORDEN
+            trade_in_progress = False  # LIBERAR EL LOCK
             return False
         
         log(f"[OB M15] ✅ Order Block respetado. Tendencia alineada: {ob_validation['trend']}")
@@ -197,7 +201,8 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     if not agent_result.get('executed', False):
         log(f"[AI] Trade RECHAZADO por Agente IA. Razón: {agent_result.get('reason')}", "WARNING")
         state["status"] = "ANALIZANDO"
-        state["active_order"] = None
+        state["active_order"] = None  # LIMPIAR LA ORDEN
+        trade_in_progress = False  # LIBERAR EL LOCK
         return False
 
     direction = agent_result.get('direction', direction)

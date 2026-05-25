@@ -35,10 +35,10 @@ class IntelligentEngine:
         self.rejection_rules = TradeRejectionRules()
         self.context_analyzer = ContextAnalyzer()
 
-        # Umbrales (suavizados para que el bot aprenda de sus errores)
-        self.MIN_ZONE_STRENGTH = 0.50  # AUMENTADO: Solo zonas fuertes (50%+)
-        self.MIN_AI_SCORE_PHASE_BYPASS = 70  # AUMENTADO: IA muy fuerte para bypass
-        self.MIN_AI_SCORE_TRADE = 50  # AUMENTADO: Score mínimo 50 para trade
+        # Umbrales (muy suavizados para permitir trades)
+        self.MIN_ZONE_STRENGTH = 0.30  # Zonas débiles también (30%+)
+        self.MIN_AI_SCORE_PHASE_BYPASS = 50  # IA moderada para bypass
+        self.MIN_AI_SCORE_TRADE = 25  # Score mínimo 25 para trade (muy permisivo)
 
 
     # ---------------------------------------------------------------------
@@ -373,29 +373,21 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 6. CONFIRMACIÓN 3 FASES (o bypass solo si AI >= 70)
+        # 6. CONFIRMACIÓN 3 FASES (SUAVIZADO - solo informativo, no bloquea)
         # =====================================================================
         phase = self.phase_analyzer.analyze_current_phase(
             df_m1, nearest_zone.get("level", 1.1), nearest_zone.get("zone_type", "support"),
             expected_dir
         )
 
-        if not phase.get("ready", False) and ai_score >= self.MIN_AI_SCORE_PHASE_BYPASS:
+        # Si AI score es bueno, no bloquear por fase
+        if ai_score >= 40:
             phase["ready"] = True
-            phase["message"] = f"Bypass 3-fase por AI score alto ({ai_score:.0f})"
-
-        if not phase.get("ready", False):
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": phase.get("message", "Esperando confirmación 3 fases"),
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            phase["message"] = f"Bypass 3-fase por IA score bueno ({ai_score:.0f})"
+        elif not phase.get("ready", False) and ai_score >= 30:
+            # Si IA es moderada, permitir pero con advertencia
+            phase["ready"] = True
+            phase["message"] = f"Permitido con IA moderada ({ai_score:.0f})"
 
         # =====================================================================
         # 7. TRAMPAS
@@ -421,20 +413,12 @@ class IntelligentEngine:
         # 8. VALIDACIONES ADICIONALES - Evitar operaciones malas
         # =====================================================================
         
-        # 8.1 - VALIDAR RSI EXTREMO
+        # 8.1 - VALIDAR RSI EXTREMO (pero no bloquear, solo advertir)
         rsi_validation = self._validate_rsi_extreme(current_rsi, expected_dir)
+        rsi_penalty = 0.0
         if rsi_validation:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": rsi_validation,
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            # No bloquear, solo reducir confianza
+            rsi_penalty = 0.15  # Reducir confianza 15% si RSI está extremo
         
         # 8.2 - NO OPERAR CERCA DE RESISTENCIAS/SOPORTES
         # Si estamos muy cerca de la zona, esperar a que se aleje
@@ -456,58 +440,41 @@ class IntelligentEngine:
                 "rsi": current_rsi,
             }
         
-        # 8.3 - VALIDAR DIRECCIÓN vs ZONA
-        # CALL (compra) solo en SOPORTE, PUT (venta) solo en RESISTENCIA
+        # 8.3 - VALIDAR DIRECCIÓN vs ZONA (SUAVIZADO - solo advertencia)
         zone_type = nearest_zone.get("zone_type", "support")
-        if expected_dir == "CALL" and zone_type != "support":
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"CALL propuesto pero zona es {zone_type}, no soporte. Rechazado.",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
         
-        if expected_dir == "PUT" and zone_type != "resistance":
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"PUT propuesto pero zona es {zone_type}, no resistencia. Rechazado.",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+        # Si hay conflicto, usar IA como fuente de verdad
+        if expected_dir == "CALL" and zone_type == "resistance":
+            # Conflicto: CALL en resistencia - cambiar a PUT
+            expected_dir = "PUT"
+        elif expected_dir == "PUT" and zone_type == "support":
+            # Conflicto: PUT en soporte - cambiar a CALL
+            expected_dir = "CALL"
         
-        # 8.4 - VERIFICAR QUE ESTAMOS EN INICIO DE MOVIMIENTO
-        # Usar el análisis de fase para confirmar que es el inicio
+        # 8.4 - VERIFICAR QUE ESTAMOS EN INICIO DE MOVIMIENTO (SUAVIZADO - solo informativo)
+        # Ya no bloquea, solo informa
         if phase.get("phase_name") not in ["ENTRY", "EARLY_MOVE", "CONFIRMATION"]:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"No es inicio de movimiento. Fase actual: {phase.get('phase_name', 'unknown')}. Esperar mejor entrada.",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            # No bloquear, solo reducir confianza ligeramente
+            confidence_phase_penalty = 0.05
+        else:
+            confidence_phase_penalty = 0.0
 
         # =====================================================================
         # 9. VALIDACIÓN FINAL - Rechazar si dirección es NEUTRAL
         # =====================================================================
         if expected_dir == "NEUTRAL":
+            # Si IA sugiere NEUTRAL, usar la zona como dirección
+            if ai_dir == "NEUTRAL":
+                expected_dir = zone_dir  # Usar dirección de la zona
+            else:
+                expected_dir = ai_dir  # Usar dirección de IA
+        
+        # Si aún es NEUTRAL, rechazar
+        if expected_dir == "NEUTRAL":
             return {
                 "asset": asset,
                 "action": "WAIT",
-                "reason": f"Dirección NEUTRAL no válida para opciones binarias. Rechazado.",
+                "reason": f"Dirección NEUTRAL no válida. Rechazado.",
                 "confidence": ai_conf,
                 "score": ai_score,
                 "pattern": pattern_name,
@@ -517,10 +484,16 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 10. TRADE - TODO ALINEADO
+        # 11. TRADE - TODO ALINEADO
         # =====================================================================
         final_score = max(ai_score, pat_score)
         confidence = min(0.90, final_score / 100)
+        
+        # Aplicar penalidades
+        if rsi_penalty > 0:
+            confidence = max(0.30, confidence - rsi_penalty)
+        if confidence_phase_penalty > 0:
+            confidence = max(0.30, confidence - confidence_phase_penalty)
 
         # Verificar si la tendencia está alineada (zona + tendencia principal)
         trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)
