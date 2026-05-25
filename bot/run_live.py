@@ -75,16 +75,17 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 # ─── Constantes ─────────────────────────────────────────────────────────────
 INITIAL_BALANCE    = 10_000.0
-MIN_CONFIDENCE     = 0.15
-COOLDOWN_AFTER_LOSS = 60
-MIN_BETWEEN_TRADES  = 30
-MIN_BETWEEN_SAME_ASSET = 120
-MAX_CONSEC_LOSSES   = 8
-PAUSE_AFTER_WIN_STREAK = 10
-PAUSE_DURATION = 30
+MIN_CONFIDENCE     = 0.75  # AUMENTADO: Solo operar con confianza alta (75%+)
+COOLDOWN_AFTER_LOSS = 180  # Esperar 3min después de pérdida
+MIN_BETWEEN_TRADES  = 90   # Esperar 90s entre trades
+MIN_BETWEEN_SAME_ASSET = 240  # Esperar 4min para mismo activo
+MAX_CONSEC_LOSSES   = 3  # REDUCIDO: Parar después de 3 pérdidas seguidas
+PAUSE_AFTER_WIN_STREAK = 5  # Pausa después de 5 wins
+PAUSE_DURATION = 60  # Pausa de 1 minuto
 
 # ─── Estado global ──────────────────────────────────────────────────────────
 from collections import deque
+import threading
 
 state = {
     "running": True,
@@ -99,6 +100,10 @@ state = {
     "last_trade_by_asset": {}, "rejection_stats": {},
 }
 
+# Lock para evitar operaciones simultáneas
+trade_lock = threading.Lock()
+trade_in_progress = False
+
 def log(msg, level="INFO"):
     now = time.strftime("%H:%M:%S")
     print(f"[{now}] [{level}] {msg}", flush=True)
@@ -108,6 +113,8 @@ def log(msg, level="INFO"):
 sm_analyzer = SmartMoneyAnalyzer()
 
 def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, df_m15=None, df_m5=None):
+    global trade_in_progress
+    
     asset = signal["asset"]
     direction = signal["signal"]
     confidence = signal["confidence"]
@@ -124,10 +131,19 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 
     log(f"[ANALISIS LOCAL] Propuesta técnica: {asset} {direction} ${amount:.2f} | {pattern} | zona={zone_str:.2f} | conf={confidence*100:.0f}% | {exp_min}min")
 
-    # ── VERIFICACIÓN: Ya hay una operación activa? ──────────────────────────
-    if state["active_order"] is not None:
-        log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
-        return False
+    # ── LOCK: Evitar operaciones simultáneas ────────────────────────────────
+    with trade_lock:
+        if trade_in_progress:
+            log(f"⏳ Trade saltado - ya hay una operación en progreso", "WARNING")
+            return False
+        
+        if state["active_order"] is not None:
+            log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
+            return False
+        
+        # Marcar que hay una operación en progreso
+        trade_in_progress = True
+        state["active_order"] = f"pending_{time.time()}"
 
     # ── VALIDACIÓN CON ORDER BLOCK M15 ──────────────────────────────────────
     ob_validation = {'valid': False, 'reason': 'No M15 data', 'trend_aligned': False, 'trend': 'neutral'}
@@ -300,16 +316,19 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
+            trade_in_progress = False
             return True
         else:
             log(f"Orden rechazada: {order_id}")
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
+            trade_in_progress = False
             return False
     except Exception as e:
         log(f"Error ejecutando trade: {e}")
         state["status"] = "ANALIZANDO"
         state["active_order"] = None
+        trade_in_progress = False
         return False
 
 # ─── Bucle principal ────────────────────────────────────────────────────────

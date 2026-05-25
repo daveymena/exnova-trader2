@@ -36,9 +36,9 @@ class IntelligentEngine:
         self.context_analyzer = ContextAnalyzer()
 
         # Umbrales (suavizados para que el bot aprenda de sus errores)
-        self.MIN_ZONE_STRENGTH = 0.30
-        self.MIN_AI_SCORE_PHASE_BYPASS = 35
-        self.MIN_AI_SCORE_TRADE = 25
+        self.MIN_ZONE_STRENGTH = 0.50  # AUMENTADO: Solo zonas fuertes (50%+)
+        self.MIN_AI_SCORE_PHASE_BYPASS = 70  # AUMENTADO: IA muy fuerte para bypass
+        self.MIN_AI_SCORE_TRADE = 50  # AUMENTADO: Score mínimo 50 para trade
 
 
     # ---------------------------------------------------------------------
@@ -64,13 +64,13 @@ class IntelligentEngine:
         """
         Valida que RSI no esté extremo (sobrecomprado/overbought o sobrevenido/oversold).
         
-        Si RSI > 75: mercado sobrecomprado → evitar CALL (compra)
-        Si RSI < 25: mercado sobrevenido → evitar PUT (venta)
+        Si RSI > 70: mercado sobrecomprado → evitar CALL (compra)
+        Si RSI < 30: mercado sobrevenido → evitar PUT (venta)
         
         Returns: reason string or None if OK
         """
-        overbought = 75
-        oversold = 25
+        overbought = 70
+        oversold = 30
         
         if zone_dir == "CALL" and rsi > overbought:
             return f"RSI extremo: {rsi:.0f} (sobrecomprado > {overbought}) - evitar CALL"
@@ -316,7 +316,17 @@ class IntelligentEngine:
 
         # Score mínimo de IA (suavizado)
         if ai_score < self.MIN_AI_SCORE_TRADE:
-            pass  # Ya no bloquea por IA baja, el mercado decide
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"IA score bajo: {ai_score:.0f} < {self.MIN_AI_SCORE_TRADE}. Esperar mejor setup.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
 
         # =====================================================================
         # 5. REGLAS DE RECHAZO
@@ -408,7 +418,106 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 8. TRADE - TODO ALINEADO
+        # 8. VALIDACIONES ADICIONALES - Evitar operaciones malas
+        # =====================================================================
+        
+        # 8.1 - VALIDAR RSI EXTREMO
+        rsi_validation = self._validate_rsi_extreme(current_rsi, expected_dir)
+        if rsi_validation:
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": rsi_validation,
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+        
+        # 8.2 - NO OPERAR CERCA DE RESISTENCIAS/SOPORTES
+        # Si estamos muy cerca de la zona, esperar a que se aleje
+        zone_level = nearest_zone.get("level", price)
+        distance_to_zone = abs(price - zone_level)
+        zone_range = nearest_zone.get("range", 0.01)  # Rango de la zona
+        
+        # Si estamos dentro del 30% del rango de la zona, es muy arriesgado
+        if distance_to_zone < zone_range * 0.3:
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"Precio muy cerca de zona ({distance_to_zone:.5f} < {zone_range*0.3:.5f}). Esperar movimiento.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+        
+        # 8.3 - VALIDAR DIRECCIÓN vs ZONA
+        # CALL (compra) solo en SOPORTE, PUT (venta) solo en RESISTENCIA
+        zone_type = nearest_zone.get("zone_type", "support")
+        if expected_dir == "CALL" and zone_type != "support":
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"CALL propuesto pero zona es {zone_type}, no soporte. Rechazado.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+        
+        if expected_dir == "PUT" and zone_type != "resistance":
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"PUT propuesto pero zona es {zone_type}, no resistencia. Rechazado.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+        
+        # 8.4 - VERIFICAR QUE ESTAMOS EN INICIO DE MOVIMIENTO
+        # Usar el análisis de fase para confirmar que es el inicio
+        if phase.get("phase_name") not in ["ENTRY", "EARLY_MOVE", "CONFIRMATION"]:
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"No es inicio de movimiento. Fase actual: {phase.get('phase_name', 'unknown')}. Esperar mejor entrada.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+
+        # =====================================================================
+        # 9. VALIDACIÓN FINAL - Rechazar si dirección es NEUTRAL
+        # =====================================================================
+        if expected_dir == "NEUTRAL":
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"Dirección NEUTRAL no válida para opciones binarias. Rechazado.",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+
+        # =====================================================================
+        # 10. TRADE - TODO ALINEADO
         # =====================================================================
         final_score = max(ai_score, pat_score)
         confidence = min(0.90, final_score / 100)
