@@ -25,8 +25,8 @@ class SmartMoneyAnalyzer:
         Detecta Order Blocks (OB) en M15/M30.
         Un OB es la última vela antes de un movimiento impulsivo fuerte.
         
-        Bullish OB: Vela roja (bajista) antes de 3+ velas verdes consecutivas fuertes
-        Bearish OB: Vela verde (alcista) antes de 3+ velas rojas consecutivas fuertes
+        Bullish OB: Vela roja (bajista) antes de 2+ velas verdes consecutivas fuertes
+        Bearish OB: Vela verde (alcista) antes de 2+ velas rojas consecutivas fuertes
         """
         if len(candles) < 20:
             return {'bullish': [], 'bearish': []}
@@ -34,27 +34,25 @@ class SmartMoneyAnalyzer:
         bullish_obs = []
         bearish_obs = []
         
-        avg_body = abs(candles['close'] - candles['open']).rolling(14).mean()
+        avg_body = abs(candles['close'] - candles['open']).rolling(10).mean()
         
-        for i in range(2, len(candles) - 3):
+        for i in range(2, len(candles) - 2):
             v_base = candles.iloc[i]
             v1 = candles.iloc[i+1]
             v2 = candles.iloc[i+2]
-            v3 = candles.iloc[i+3]
             
             body_base = abs(v_base['close'] - v_base['open'])
             avg = avg_body.iloc[i] if not pd.isna(avg_body.iloc[i]) else body_base
             
-            # Bullish OB: Vela roja (base) + 3 velas verdes fuertes consecutivas
+            # Bullish OB: Vela roja (base) + 2 velas verdes fuertes consecutivas
             if (v_base['close'] < v_base['open'] and
                 v1['close'] > v1['open'] and 
-                v2['close'] > v2['open'] and 
-                v3['close'] > v3['open']):
+                v2['close'] > v2['open']):
                 
                 # El movimiento impulsivo debe ser significativo
-                move_strength = (v3['close'] - v1['close']) / v1['close'] * 100
-                if move_strength > 0.15 and body_base > avg * 0.5:
-                    strength = min(100, 50 + move_strength * 50)
+                move_strength = (v2['close'] - v1['close']) / v1['close'] * 100
+                if move_strength > 0.10 and body_base > avg * 0.3:
+                    strength = min(100, 40 + move_strength * 50)
                     bullish_obs.append({
                         'type': 'bullish',
                         'high': v_base['high'],
@@ -65,15 +63,14 @@ class SmartMoneyAnalyzer:
                         'mitigated': False
                     })
             
-            # Bearish OB: Vela verde (base) + 3 velas rojas fuertes consecutivas
+            # Bearish OB: Vela verde (base) + 2 velas rojas fuertes consecutivas
             if (v_base['close'] > v_base['open'] and
                 v1['close'] < v1['open'] and 
-                v2['close'] < v2['open'] and 
-                v3['close'] < v3['open']):
+                v2['close'] < v2['open']):
                 
-                move_strength = abs((v3['close'] - v1['close']) / v1['close'] * 100)
-                if move_strength > 0.15 and body_base > avg * 0.5:
-                    strength = min(100, 50 + move_strength * 50)
+                move_strength = abs((v2['close'] - v1['close']) / v1['close'] * 100)
+                if move_strength > 0.10 and body_base > avg * 0.3:
+                    strength = min(100, 40 + move_strength * 50)
                     bearish_obs.append({
                         'type': 'bearish',
                         'high': v_base['high'],
@@ -92,28 +89,33 @@ class SmartMoneyAnalyzer:
         Respetado = precio llega al OB y rebota (no lo rompe)
         No respetado = precio rompe el OB con fuerza
         """
-        recent = candles.tail(10)
+        recent = candles.tail(8)
         ob_high = ob['high']
         ob_low = ob['low']
         
         if ob['type'] == 'bullish':
             # Para CALL: precio debe estar DENTRO o CERCA del OB y NO romperlo abajo
-            touches = recent['low'].min() <= ob_low * 1.002
-            broken = (recent['close'] < ob_low * 0.998).any()
-            if broken:
+            touches = recent['low'].min() <= ob_low * 1.005
+            # Se necesitan 2+ velas fuera del OB para considerarlo roto
+            broken_count = (recent['close'] < ob_low * 0.998).sum()
+            if broken_count >= 2:
                 return False, "OB roto por abajo - no respetado"
             if touches:
                 return True, "OB respetado - precio tocó y no rompió"
+            if broken_count == 1:
+                return True, "OB parcialmente tocado - 1 vela fuera, aceptado"
             return False, "Precio aún no llega al OB"
         
         else:  # bearish
             # Para PUT: precio debe estar DENTRO o CERCA del OB y NO romperlo arriba
-            touches = recent['high'].max() >= ob_high * 0.998
-            broken = (recent['close'] > ob_high * 1.002).any()
-            if broken:
+            touches = recent['high'].max() >= ob_high * 0.995
+            broken_count = (recent['close'] > ob_high * 1.002).sum()
+            if broken_count >= 2:
                 return False, "OB roto por arriba - no respetado"
             if touches:
                 return True, "OB respetado - precio tocó y no rompió"
+            if broken_count == 1:
+                return True, "OB parcialmente tocado - 1 vela fuera, aceptado"
             return False, "Precio aún no llega al OB"
     
     def get_trend_from_htf(self, candles_m15: pd.DataFrame, candles_m30: pd.DataFrame = None) -> str:
@@ -153,12 +155,12 @@ class SmartMoneyAnalyzer:
         
         if direction == 'CALL':
             # Buscar el OB alcista más cercano por debajo del precio
-            valid_obs = [ob for ob in obs['bullish'] if ob['low'] <= current_price * 1.005]
+            valid_obs = [ob for ob in obs['bullish'] if ob['low'] <= current_price * 1.01]
             if not valid_obs:
                 valid_obs = [ob for ob in obs['bullish']]
             
             for ob in reversed(valid_obs):
-                if ob['low'] <= current_price <= ob['high'] * 1.003:
+                if ob['low'] * 0.995 <= current_price <= ob['high'] * 1.005:
                     respected, msg = self.check_ob_respect(candles_m15, ob)
                     if respected:
                         aligned = trend in ('bullish', 'neutral')
@@ -170,22 +172,23 @@ class SmartMoneyAnalyzer:
                             'trend': trend
                         }
             
-            # Si no hay OB exacto, verificar tendencia al menos
+            # Si no hay OB exacto, verificar tendencia al menos (neutral también vale)
+            valid = trend in ('bullish', 'neutral')
             return {
-                'valid': trend == 'bullish',
+                'valid': valid,
                 'reason': f"No hay OB alcista cercano. Tendencia: {trend}",
                 'ob': None,
-                'trend_aligned': trend == 'bullish',
+                'trend_aligned': valid,
                 'trend': trend
             }
         
         else:  # PUT
-            valid_obs = [ob for ob in obs['bearish'] if ob['high'] >= current_price * 0.995]
+            valid_obs = [ob for ob in obs['bearish'] if ob['high'] >= current_price * 0.99]
             if not valid_obs:
                 valid_obs = [ob for ob in obs['bearish']]
             
             for ob in reversed(valid_obs):
-                if ob['high'] >= current_price >= ob['low'] * 0.997:
+                if ob['high'] * 1.005 >= current_price >= ob['low'] * 0.995:
                     respected, msg = self.check_ob_respect(candles_m15, ob)
                     if respected:
                         aligned = trend in ('bearish', 'neutral')
@@ -197,11 +200,12 @@ class SmartMoneyAnalyzer:
                             'trend': trend
                         }
             
+            valid = trend in ('bearish', 'neutral')
             return {
-                'valid': trend == 'bearish',
+                'valid': valid,
                 'reason': f"No hay OB bajista cercano. Tendencia: {trend}",
                 'ob': None,
-                'trend_aligned': trend == 'bearish',
+                'trend_aligned': valid,
                 'trend': trend
             }
     

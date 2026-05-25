@@ -146,7 +146,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
         return False
 
-    # ── VALIDACIÓN CON ORDER BLOCK M15 ──────────────────────────────────────
+    # ── ORDER BLOCK M15: potenciador de confianza, NO bloqueante ────────────
     ob_validation = {'valid': False, 'reason': 'No M15 data', 'trend_aligned': False, 'trend': 'neutral'}
     if df_m15 is not None and len(df_m15) >= 20:
         ob_validation = sm_analyzer.validate_trade_with_ob(df_m15, direction)
@@ -156,19 +156,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             ob_type = "alcista" if ob['type'] == 'bullish' else "bajista"
             log(f"[OB M15] Order Block {ob_type} detectado: {ob['low']:.5f}-{ob['high']:.5f} (fuerza: {ob['strength']:.0f}%)")
         
-        log(f"[OB M15] {ob_validation['reason']}")
-        
         if not ob_validation['valid']:
-            log(f"[OB M15] ⛔ SIN ORDER BLOCK VÁLIDO. Operación CANCELADA.", "WARNING")
-            state["status"] = "ANALIZANDO"
-            return False
-        
-        if not ob_validation['trend_aligned']:
-            log(f"[TREND] ⚠️ Tendencia M15 ({ob_validation['trend']}) NO alineada con dirección {direction}. Operación CANCELADA.", "WARNING")
-            state["status"] = "ANALIZANDO"
-            return False
-        
-        log(f"[OB M15] ✅ Order Block respetado. Tendencia alineada: {ob_validation['trend']}")
+            log(f"[OB M15] ⚠️ Sin OB M15, operando solo con señales técnicas", "WARNING")
+        elif not ob_validation['trend_aligned']:
+            log(f"[OB M15] ⚠️ Tendencia ({ob_validation['trend']}) no alineada, pero se procede con precaución", "WARNING")
+        else:
+            log(f"[OB M15] ✅ Order Block respetado. Tendencia alineada: {ob_validation['trend']}")
     else:
         log(f"[OB M15] ⚠️ Sin datos M15, operando con validación técnica solamente", "WARNING")
 
