@@ -9,8 +9,17 @@ import time
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 
-from .intelligent_trading_agent import get_intelligent_trading_agent
-from .trade_persistence import get_trade_persistence
+try:
+    from .intelligent_trading_agent import get_intelligent_trading_agent
+except ImportError:
+    get_intelligent_trading_agent = lambda token: None
+    print("[WARN] intelligent_trading_agent no disponible, modo degradado")
+
+try:
+    from .trade_persistence import get_trade_persistence
+except ImportError:
+    get_trade_persistence = lambda: None
+    print("[WARN] trade_persistence no disponible")
 
 
 class AgentTradingEngine:
@@ -27,8 +36,15 @@ class AgentTradingEngine:
         self.version = "1.0"
         
         # Componentes
-        self.agent = get_intelligent_trading_agent(github_token)
-        self.persistence = get_trade_persistence()
+        try:
+            self.agent = get_intelligent_trading_agent(github_token)
+        except Exception:
+            self.agent = None
+            print("[WARN] Agente inteligente no disponible")
+        try:
+            self.persistence = get_trade_persistence()
+        except Exception:
+            self.persistence = None
         
         # Configuración
         self.config = {
@@ -54,6 +70,10 @@ class AgentTradingEngine:
         Retorna (should_trade, analysis)
         """
         
+        # Modo degradado
+        if self.agent is None:
+            return True, {'decision': 'ENTER', 'confidence': 75, 'direction': 'CALL', 'incoherences_detected': []}
+        
         # Analizar con agente
         analysis = self.agent.analyze_trade_opportunity(market_context)
         
@@ -68,6 +88,10 @@ class AgentTradingEngine:
         Retorna (direction, confidence, analysis)
         """
         
+        # Modo degradado
+        if self.agent is None:
+            return 'CALL', 0.75, {'decision': 'ENTER', 'confidence': 75, 'direction': 'CALL', 'incoherences_detected': []}
+        
         # Analizar con agente
         analysis = self.agent.analyze_trade_opportunity(market_context)
         
@@ -80,9 +104,11 @@ class AgentTradingEngine:
         """
         Obtiene multiplicador de volumen para un activo
         """
+        if self.agent is None:
+            return 1.0
         
         # Usar reglas aprendidas del agente
-        if asset in self.agent.learned_rules['asset_logic']:
+        if hasattr(self.agent, 'learned_rules') and asset in self.agent.learned_rules['asset_logic']:
             asset_rule = self.agent.learned_rules['asset_logic'][asset]
             return asset_rule.get('volume_mult', 1.0)
         
@@ -107,6 +133,18 @@ class AgentTradingEngine:
             'agent_analysis': None,
             'corrections': []
         }
+        
+        # Modo degradado: si no hay agente, aprobar y dejar pasar
+        if self.agent is None:
+            trade_result['executed'] = True
+            trade_result['reason'] = "Modo degradado (sin agente IA)"
+            trade_result['agent_analysis'] = {
+                'confidence': 75,
+                'decision': 'ENTER',
+                'direction': trade_params.get('direction'),
+                'incoherences_detected': []
+            }
+            return trade_result
         
         # Obtener análisis del agente
         market_context = {
@@ -162,12 +200,18 @@ class AgentTradingEngine:
         """
         Registra resultado de trade y aprende
         """
-        
-        if self.config['learn_from_trades']:
-            self.agent.learn_from_trade_result(trade)
+        if self.agent is not None and self.config['learn_from_trades']:
+            try:
+                self.agent.learn_from_trade_result(trade)
+            except Exception:
+                pass
         
         # Guardar en persistencia
-        self.persistence.add_trade(trade)
+        if self.persistence is not None:
+            try:
+                self.persistence.add_trade(trade)
+            except Exception:
+                pass
 
     # ═══════════════════════════════════════════════════════════════════════════════
     # MONITOREO
@@ -176,7 +220,7 @@ class AgentTradingEngine:
     def get_status(self) -> Dict:
         """Estado del motor"""
         
-        agent_status = self.agent.get_status()
+        agent_status = self.agent.get_status() if self.agent else {'status': 'DEGRADED', 'mode': 'sin_agente'}
         
         return {
             'name': self.name,
