@@ -150,18 +150,21 @@ REAL_ASSETS_WHITELIST = {
     "GBPUSD-OTC",    # 75% WR (3/4), +$20.01 PnL
     "AUDUSD-OTC",    # 75% WR (3/4), +$17.74 PnL
     "USDJPY-OTC",    # 66.7% WR (2/3), +$9.24 PnL
-    "GBPCAD-OTC",    # solo 1 trade pero activo relacionado
+    "EURUSD-OTC",    # 66.7% WR (2/3) con patrón none, +$7.92
+    "EURGBP-OTC",    # 60% WR (3/5), pin_bar_bearish 75% WR
 }
 
 REAL_PATTERNS_ALLOWED = {
     "pin_bar_bearish",  # 58.3% WR global, 75% en EURGBP
     "breakout",         # 60% WR global, 100% en GBPUSD
     "zone_rejection",   # 100% WR (1/1)
+    "none",             # 66.7% WR en EURUSD-OTC, 36.8% global (depende del activo)
 }
 
-# Zona strength óptima para REAL (basado en datos: 0.70-0.90 da 72.7% WR)
-REAL_ZONE_STRENGTH_MIN = 0.70
-REAL_ZONE_STRENGTH_MAX = 0.90
+# Zona strength para REAL - SIN techo máximo (el motor da ZS~1.00)
+# Solo filtramos piso mínimo: zonas débiles < 0.70 evitan pérdidas
+REAL_ZONE_STRENGTH_MIN = 0.60
+REAL_ZONE_STRENGTH_MAX = 1.00
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FUNCIONES AUXILIARES
