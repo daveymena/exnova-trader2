@@ -364,7 +364,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
     memory = get_market_memory()
     evaluator = TradeEvaluator()
 
-    log("Conectando a Exnova PRACTICE...")
+    log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
     if not market_data.connect(email, password):
         log("ERROR: No se pudo conectar.")
