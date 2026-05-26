@@ -77,7 +77,8 @@ config = load_module('config', os.path.join(bot_dir, 'config.py'))
 # Ahora importar el resto normalmente
 from config_assets import (
     get_activos_activos, get_config_sensibilidad,
-    get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING
+    get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING,
+    ASSETS_BLACKLIST, BAD_PATTERNS
 )
 from config import Config
 from data.market_data import MarketDataHandler
@@ -92,13 +93,20 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 # ─── Constantes ─────────────────────────────────────────────────────────────
 INITIAL_BALANCE    = 10_000.0
-MIN_CONFIDENCE     = 0.15
-COOLDOWN_AFTER_LOSS = 60
-MIN_BETWEEN_TRADES  = 30
-MIN_BETWEEN_SAME_ASSET = 120
-MAX_CONSEC_LOSSES   = 8
+MIN_CONFIDENCE     = 0.60  # ANTES 0.15 - era peligrosamente bajo
+COOLDOWN_AFTER_LOSS = 300  # 5min después de pérdida (antes 60s)
+MIN_BETWEEN_TRADES  = 180  # 3min entre trades (antes 30s)
+MIN_BETWEEN_SAME_ASSET = 300  # 5min mismo activo (antes 120s)
+MAX_CONSEC_LOSSES   = 5  # Parar después de 5 pérdidas (antes 8)
 PAUSE_AFTER_WIN_STREAK = 10
-PAUSE_DURATION = 30
+PAUSE_DURATION = 120  # 2min pausa post-racha (antes 30s)
+
+# ─── Anti-detección / Humanización ──────────────────────────────────────────
+HUMAN_SKIP_PROBABILITY = 0.18
+HUMAN_JITTER_FACTOR = 0.25
+HUMAN_DELAY_AFTER_TRADE_MIN = 5
+HUMAN_DELAY_AFTER_TRADE_MAX = 20
+HUMAN_MICRO_PAUSE = 15
 
 # ─── Estado global ──────────────────────────────────────────────────────────
 from collections import deque
@@ -114,6 +122,7 @@ state = {
     "consecutive_losses": 0, "best_streak": 0, "current_streak": 0,
     "last_signal": {}, "last_diagnosis": [],
     "last_trade_by_asset": {}, "rejection_stats": {},
+    "last_wait_duration": 6,
 }
 
 def log(msg, level="INFO"):
@@ -310,6 +319,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
+            
+            # Anti-detección: delay post-trade variable
+            post_trade_delay = np.random.uniform(HUMAN_DELAY_AFTER_TRADE_MIN, HUMAN_DELAY_AFTER_TRADE_MAX)
+            log(f"[ANTI-DETECCIÓN] Analizando resultado... ({post_trade_delay:.0f}s)")
+            time.sleep(post_trade_delay)
+            
             return True
         else:
             log(f"Orden rechazada: {order_id}")
@@ -406,6 +421,13 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 log("Sin activos disponibles para este horario")
                 time.sleep(60)
                 continue
+            
+            # Filtrar activos blacklisteados (bajo rendimiento histórico)
+            activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
+            if not activos_disponibles:
+                log("Todos los activos están en blacklist - esperando...")
+                time.sleep(60)
+                continue
                 
             asset = activos_disponibles[asset_idx % len(activos_disponibles)]
             asset_idx += 1
@@ -463,27 +485,54 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 confidence = signal.get("confidence", 0)
                 score = signal.get("score", 0)
 
+                # Validación extra de patrón (doble filtro)
+                pattern = signal.get("pattern", "")
+                if pattern in BAD_PATTERNS:
+                    log(f"[FILTRO] Patrón peligroso saltado: {pattern}", "WARNING")
+                    continue
+
+                # Validación de alineación de tendencia
+                trend_aligned = signal.get("trend_aligned", False)
+                if not trend_aligned and signal.get("score", 0) < 60:
+                    log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
+                    continue
+
                 if action == "TRADE" and confidence >= MIN_CONFIDENCE:
                     time_since = now - state["last_trade_time"]
                     learning_mode = get_learning_mode()
                     cooldown_mult = learning_mode.get_cooldown_multiplier()
-                    cooldown_needed = int((COOLDOWN_AFTER_LOSS if state["consecutive_losses"] > 0 else MIN_BETWEEN_TRADES) * cooldown_mult)
+                    
+                    # Jitter humano en cooldowns
+                    base_cooldown = COOLDOWN_AFTER_LOSS if state["consecutive_losses"] > 0 else MIN_BETWEEN_TRADES
+                    jitter = np.random.uniform(-HUMAN_JITTER_FACTOR, HUMAN_JITTER_FACTOR) * base_cooldown
+                    cooldown_needed = int((base_cooldown + jitter) * cooldown_mult)
+                    cooldown_needed = max(30, cooldown_needed)
+                    
                     signal_dir = signal.get("signal", "CALL")
                     asset_dir_key = f"{asset}_{signal_dir}"
                     last_asset_dir = state["last_trade_by_asset"].get(asset_dir_key, 0)
                     last_asset_any = state["last_trade_by_asset"].get(f"{asset}_*", 0)
                     
+                    same_asset_jitter = int(MIN_BETWEEN_SAME_ASSET + np.random.uniform(-30, 90))
+                    same_asset_jitter = max(60, same_asset_jitter)
+                    
+                    # Anti-detección: skip aleatorio
+                    if np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
+                        log(f"[ANTI-DETECCIÓN] Saltando trade válido para perfil humano")
+                        continue
+                    
                     if state["active_order"] is not None:
                         log(f"⏳ Trade saltado - ya hay orden activa (ID: {state['active_order']})", "WARNING")
                     elif time_since < cooldown_needed:
                         log(f"⏳ Cooldown global: faltan {int(cooldown_needed - time_since)}s", "WAIT")
-                    elif (now - last_asset_dir) < MIN_BETWEEN_SAME_ASSET * 2:
-                        restante = int(MIN_BETWEEN_SAME_ASSET * 2 - (now - last_asset_dir))
+                    elif (now - last_asset_dir) < same_asset_jitter:
+                        restante = int(same_asset_jitter - (now - last_asset_dir))
                         log(f"⏳ Cooldown {asset} {signal_dir}: faltan {restante}s", "WAIT")
                     elif rm.is_stopped:
                         log(f"RM activo: {rm.stop_reason}")
                     else:
-                        amount = rm.calculate_position_size(confidence=confidence)
+                        base_amount = rm.calculate_position_size(confidence=confidence)
+                        amount = max(1.0, round(base_amount * np.random.uniform(0.80, 1.20), 2))
                         if amount > 0:
                             executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, df_m15, df_m5)
                             if executed:
@@ -524,7 +573,15 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         print(f"  -> WAIT: {sig.get('reason', '')[:60]} "
                               f"Patron={patron} IA={ai} RSI={rsi:.0f} ZS={zs:.2f}", flush=True)
 
-            time.sleep(6)
+            # Anti-detección: pausa variable
+            cycle_sleep = max(3, int(6 + np.random.normal(0, 2)))
+            state["last_wait_duration"] = cycle_sleep
+            time.sleep(cycle_sleep)
+            
+            if state["cycle"] % HUMAN_MICRO_PAUSE == 0:
+                extra = int(np.random.uniform(5, 30))
+                log(f"[ANTI-DETECCIÓN] Pausa corta de {extra}s (perfil humano)", "WAIT")
+                time.sleep(extra)
 
         except KeyboardInterrupt:
             state["running"] = False

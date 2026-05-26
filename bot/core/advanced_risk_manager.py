@@ -17,12 +17,14 @@ class RiskConfig:
     max_drawdown_monthly: float = 0.30
     kelly_ceiling: float = 0.15
     kelly_floor: float = 0.01
-    max_trades_per_hour: int = 999   # sin límite horario — la sesión lo regula
-    max_trades_per_day: int = 999    # sin límite diario — el riesgo lo regula
-    cooldown_after_loss_seconds: int = 120
+    max_trades_per_hour: int = 6   # Máximo 6 trades/hora (antes sin límite)
+    max_trades_per_day: int = 30    # Máximo 30 trades/día (antes sin límite)
+    cooldown_after_loss_seconds: int = 300  # 5min después de pérdida (antes 120s)
     stop_after_consecutive_losses: int = 4
-    min_confidence_threshold: float = 0.40  # Bajado de 0.65 para permitir patterns con conf 40-65%
+    min_confidence_threshold: float = 0.60  # Mínimo 60% confianza (antes 0.40)
     volatility_adjustment: bool = True
+    anti_detection_jitter: bool = True  # Activar variación humana
+    anti_detection_skip_rate: float = 0.10  # 10% skip aleatorio
 
 
 @dataclass
@@ -132,6 +134,10 @@ class AdvancedRiskManager:
             self.is_stopped = False
             self.stop_reason = None
 
+    def get_min_analysis_time(self) -> float:
+        """Tiempo mínimo recomendado entre trades para análisis."""
+        return max(30, self.config.cooldown_after_loss_seconds * 0.5)
+
     def calculate_kelly(self) -> float:
         if self.stats.total_trades < 8:
             return self.config.kelly_floor
@@ -161,7 +167,11 @@ class AdvancedRiskManager:
 
         if self.last_trade_was_loss and self.last_trade_time:
             elapsed = (datetime.now() - self.last_trade_time).total_seconds()
-            if elapsed < self.config.cooldown_after_loss_seconds:
+            # Jitter anti-detección en cooldown
+            cooldown = self.config.cooldown_after_loss_seconds
+            if self.config.anti_detection_jitter:
+                cooldown = int(cooldown * np.random.uniform(0.85, 1.15))
+            if elapsed < cooldown:
                 return 0.0
 
         if not self._can_trade_more():
@@ -182,6 +192,10 @@ class AdvancedRiskManager:
         base = self.current_balance * kelly_fraction
         final = base * confidence_adj * streak_adj * asset_volatility
 
+        # Anti-detección: jitter en posición
+        if self.config.anti_detection_jitter:
+            final *= np.random.uniform(0.85, 1.15)
+
         min_pos = max(1.0, self.current_balance * 0.01)
         max_pos = self.current_balance * self.config.kelly_ceiling
 
@@ -191,12 +205,18 @@ class AdvancedRiskManager:
         now = datetime.now()
         hour_ago = now - timedelta(hours=1)
         self.trades_this_hour = [t for t in self.trades_this_hour if t['time'] > hour_ago]
-        if len(self.trades_this_hour) >= self.config.max_trades_per_hour:
+        trades_this_hour = len(self.trades_this_hour)
+        if trades_this_hour >= self.config.max_trades_per_hour:
             return False
         today_key = now.strftime('%Y-%m-%d')
         trades_today = len([t for t in self.trades_today
                             if t['time'].strftime('%Y-%m-%d') == today_key])
-        return trades_today < self.config.max_trades_per_day
+        if trades_today >= self.config.max_trades_per_day:
+            return False
+        # Anti-detección: skip rate aleatorio
+        if self.config.anti_detection_jitter and np.random.random() < self.config.anti_detection_skip_rate:
+            return False
+        return True
 
     def get_status_report(self) -> Dict:
         drawdown = ((self.peak_balance - self.current_balance) / self.peak_balance

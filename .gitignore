@@ -1,37 +1,89 @@
-# Sensible
+# ─── Credenciales y configuración local ────────────────────────────────────
 .env
 *.key
 *.pem
 *credentials*
 **/token_*.json
+.env.local
 
-# Python
+# ─── Python ────────────────────────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *.egg-info/
 dist/
 build/
 
-# Data & logs
+# ─── Runtime data (se genera al ejecutar) ──────────────────────────────────
+# Estos archivos son datos dinámicos que el bot genera al correr
 bot/data/*.json
 bot/data/*.db
 bot/brain/trade_history.json
-bot/brain/learning_state.json
 bot/brain/*memory*.json
+bot/brain/*executions*.json
+bot/brain/*suggestions*.json
+bot/brain/learning_state.json
+bot/brain/zone_reactions.json
 logs/
 *.log
 run_live.lock
 
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
+# ─── Análisis / Documentación (no necesarios en producción) ────────────────
+ANALISIS_*.md
+AUDITORIA_*.md
+CONCLUSION_*.md
+ESTADO_*.md
+FIXES_*.md
+GUIA_*.md
+IMPORT_FIX_*.md
+INDICE_*.md
+INTEGRACION_*.md
+POSTMORTEM_*.md
+README_SISTEMA_*.md
+RESUMEN_*.md
+TRADE_ANALYSIS_*.md
+ANTI_TRAPS_*.md
+EASYPANEL_DEPLOYMENT*.md
 
-# IDE
+# ─── Scripts auxiliares (no necesarios en producción) ──────────────────────
+authenticate_*.py
+debug_*.py
+list_*.py
+test_*.py
+use_*.py
+bot_operating.py
+dashboard_bot.py
+analyze_losses.py
+run_ai_analysis.py
+run_bot_with_dashboard.py
+run_complete_system.py
+run_live_v2.py
+run_24_7.ps1
+run_simple_24_7*.ps1
+start_247.ps1
+
+# ─── NPM / TypeScript (no necesario en EasyPanel) ──────────────────────────
+node_modules/
+lib/
+artifacts/
+scripts/
+pnpm-lock.yaml
+pnpm-workspace.yaml
+package.json
+tsconfig*.json
+.npmrc
+
+# ─── IDE / OS ──────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# EasyPanel
-.env.local
+# ─── Otros ────────────────────────────────────────────────────────────────
+.agents/
+.local/
+.data/
+.data.local/
+nul

@@ -115,6 +115,31 @@ HORARIO_MADRUGADA = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# BLACKLIST - ACTIVOS CON PEOR RENDIMIENTO HISTÓRICO
+# Basado en análisis de 173 trades: estos activos tienen WR < 40% y PnL negativo
+# ─────────────────────────────────────────────────────────────────────────────
+
+ASSETS_BLACKLIST = {
+    # Peores activos (PnL más negativo, WR < 40%)
+    "SUGAR-OTC",        # -$52.23, 33% WR
+    "USDAED-OTC",       # -$38.27, 0% WR
+    "CHFNOK-OTC",       # -$26.22, 0% WR
+    "FB-OTC",           # -$24.48, 0% WR
+    "ETHUSD-OTC",       # -$23.19, 0% WR
+    "ALIBABA-OTC",      # -$21.75, 0% WR
+    "USDCHF-OTC",       # -$21.06, 0% WR
+    "NZDCHF-OTC",       # -$20.03, 0% WR
+    "USDPHP-OTC",       # -$19.87, 25% WR
+    "USDZAR-OTC",       # -$18.61, 0% WR
+}
+
+BAD_PATTERNS = {
+    "engulfing_bearish",  # 20% WR, -$83.85 PnL
+    "doji",               # 0% WR, -$10.05 PnL
+    "hammer",             # 42.9% WR, -$13.62 PnL
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # FUNCIONES AUXILIARES
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -135,9 +160,12 @@ def es_horario_otc():
     """Verifica si es horario para operar OTC (24/7)."""
     return True  # OTC opera siempre
 
-def get_activos_activos():
+def get_activos_activos(filter_blacklist=True):
     """
     Devuelve los activos que deben ser operados AHORA.
+    
+    Args:
+        filter_blacklist: Si True, excluye activos en ASSETS_BLACKLIST
     
     Returns:
         dict: {
@@ -155,6 +183,11 @@ def get_activos_activos():
     # Añadir PTC si es horario de mañana
     if es_horario_manana():
         activos["ptc_morning"] = ASSETS_PTC_MORNING
+    
+    # Filtrar blacklist si se solicita
+    if filter_blacklist:
+        for key in activos:
+            activos[key] = [a for a in activos[key] if a not in ASSETS_BLACKLIST]
     
     return activos
 

@@ -100,6 +100,16 @@ class TradeRejectionRules:
         if should_reject:
             return True, reason
         
+        # Regla 10: Patrón de vela peligroso (engulfing_bearish, doji, hammer)
+        should_reject, reason = self._rule_bad_pattern(trade_proposal, technical_data)
+        if should_reject:
+            return True, reason
+        
+        # Regla 11: Contra-tendencia sin score alto (trend_aligned check)
+        should_reject, reason = self._rule_weak_trend_alignment(trade_proposal, market_context, technical_data)
+        if should_reject:
+            return True, reason
+        
         # ✅ Pasó todas las reglas - Permitir
         return False, None
     
@@ -328,6 +338,73 @@ class TradeRejectionRules:
                       f"strength={strength:.2f}) - no hay soporte/resistencia real")
             self._log_rejection("fallback_zone", reason)
             return True, reason
+        
+        return False, None
+
+    def _rule_bad_pattern(self,
+                         trade_proposal: Dict,
+                         technical_data: Dict) -> Tuple[bool, Optional[str]]:
+        """REGLA 10: Patrón de vela estadísticamente peligroso."""
+        
+        pattern = trade_proposal.get("pattern", "").lower()
+        
+        # engulfing_bearish: 20% WR en 10 trades históricos
+        if pattern == "engulfing_bearish":
+            reason = "RECHAZO: Patrón engulfing_bearish (20% WR histórico) - evitar"
+            self._log_rejection("bad_pattern", reason)
+            return True, reason
+        
+        # doji: 0% WR en datos históricos
+        if pattern == "doji":
+            reason = "RECHAZO: Patrón doji (0% WR histórico) - muy riesgoso"
+            self._log_rejection("bad_pattern", reason)
+            return True, reason
+        
+        # hammer: 42.9% WR - solo permitir si RSI y zona son excepcionales
+        if pattern == "hammer":
+            rsi_m1 = technical_data.get("rsi_m1", 50)
+            rsi_m5 = technical_data.get("rsi_m5", 50)
+            zone_strength = trade_proposal.get("zone_strength", 0)
+            
+            # hammer solo es aceptable si RSI < 25 o RSI > 75 (extremo real)
+            # y la zona es fuerte
+            if not ((rsi_m1 < 25 or rsi_m1 > 75) and zone_strength >= 0.60):
+                reason = (f"RECHAZO: Patrón hammer en condiciones no óptimas "
+                          f"(RSI={rsi_m1:.0f}, zona={zone_strength:.2f})")
+                self._log_rejection("bad_pattern", reason)
+                return True, reason
+        
+        return False, None
+    
+    def _rule_weak_trend_alignment(self,
+                                  trade_proposal: Dict,
+                                  market_context: Dict,
+                                  technical_data: Dict) -> Tuple[bool, Optional[str]]:
+        """REGLA 11: Trade contra-tendencia sin suficiente respaldo."""
+        
+        direction = trade_proposal.get("direction", "").upper()
+        macro_trend = market_context.get("macro_trend", "neutral")
+        h1_trend = market_context.get("h1_trend", "neutral")
+        
+        # Detectar si va contra la tendencia macro
+        trend_aligned = (
+            (direction == "CALL" and macro_trend in ["CALL", "strong_up", "weak_up"]) or
+            (direction == "PUT" and macro_trend in ["PUT", "strong_down", "weak_down"])
+        )
+        
+        if not trend_aligned and macro_trend != "NEUTRAL":
+            # Contra-tendencia: estadísticamente 23.1% WR
+            # Solo permitir si H1 también confirma la contra-tendencia
+            h1_aligned = (
+                (direction == "CALL" and h1_trend in ["CALL", "strong_up", "weak_up"]) or
+                (direction == "PUT" and h1_trend in ["PUT", "strong_down", "weak_down"])
+            )
+            
+            if not h1_aligned:
+                reason = (f"RECHAZO: Contra-tendencia sin confirmación H1 "
+                          f"(dir={direction}, macro={macro_trend}, H1={h1_trend})")
+                self._log_rejection("weak_trend_alignment", reason)
+                return True, reason
         
         return False, None
 
