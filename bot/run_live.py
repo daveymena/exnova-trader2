@@ -73,15 +73,28 @@ from engine.intelligent_engine import IntelligentEngine
 from brain.agent_trading_engine import get_agent_trading_engine
 from core.smart_money_analyzer import SmartMoneyAnalyzer
 
-# ─── Constantes ─────────────────────────────────────────────────────────────
-INITIAL_BALANCE    = 10_000.0
-MIN_CONFIDENCE     = 0.65  # AUMENTADO: Confianza más alta (65%+) - basado en análisis de 265 trades
-COOLDOWN_AFTER_LOSS = 300  # 5min después de pérdida (antes 120s - no daba tiempo a análisis)
-MIN_BETWEEN_TRADES  = 180  # 3min entre trades (antes 45s - demasiado rápido, sin análisis)
-MIN_BETWEEN_SAME_ASSET = 300  # 5min para mismo activo (antes 120s)
-MAX_CONSEC_LOSSES   = 4  # Parar después de 4 pérdidas seguidas
-PAUSE_AFTER_WIN_STREAK = 8  # Pausa después de 8 wins
-PAUSE_DURATION = 120  # 2min pausa post-racha (antes 45s)
+# ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
+INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
+MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.65"))
+COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "300"))
+MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "180"))
+MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))
+MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "4"))
+PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "8"))
+PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
+
+# Cuenta: PRACTICE (default) o REAL (solo si se fuerza explícitamente)
+ACCOUNT_TYPE = os.getenv("ACCOUNT_TYPE", "PRACTICE").upper()
+if ACCOUNT_TYPE not in ("PRACTICE", "REAL"):
+    print(f"[WARNING] ACCOUNT_TYPE inválido '{ACCOUNT_TYPE}', usando PRACTICE")
+    ACCOUNT_TYPE = "PRACTICE"
+elif ACCOUNT_TYPE == "REAL":
+    confirm = os.getenv("REAL_ACCOUNT_CONFIRMED", "false").lower()
+    if confirm != "true":
+        print("[CRITICAL] ⚠️  CUENTA REAL DETECTADA pero REAL_ACCOUNT_CONFIRMED no es 'true'. Forzando PRACTICE por seguridad.")
+        ACCOUNT_TYPE = "PRACTICE"
+    else:
+        print("[CRITICAL] ⚠️  CUENTA REAL ACTIVADA - Operando con dinero real")
 
 # ─── Anti-detección / Humanización ──────────────────────────────────────────
 HUMAN_SKIP_PROBABILITY = 0.18  # 18% de trades válidos se saltan (parecer humano)
@@ -637,7 +650,7 @@ def main():
         stop_after_consecutive_losses=MAX_CONSEC_LOSSES,
     )
     rm = initialize_risk_manager(INITIAL_BALANCE, risk_config)
-    market_data = MarketDataHandler(broker_name="exnova", account_type="PRACTICE")
+    market_data = MarketDataHandler(broker_name="exnova", account_type=ACCOUNT_TYPE)
     engine = IntelligentEngine(session_name="bot_live")
     state["start_time"] = time.time()
 
