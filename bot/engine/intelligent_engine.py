@@ -35,10 +35,12 @@ class IntelligentEngine:
         self.rejection_rules = TradeRejectionRules()
         self.context_analyzer = ContextAnalyzer()
 
-        # Umbrales (muy suavizados para permitir trades)
-        self.MIN_ZONE_STRENGTH = 0.30  # Zonas débiles también (30%+)
-        self.MIN_AI_SCORE_PHASE_BYPASS = 50  # IA moderada para bypass
-        self.MIN_AI_SCORE_TRADE = 25  # Score mínimo 25 para trade (muy permisivo)
+        # Umbrales optimizados (basados en análisis de 265 trades históricos)
+        # Análisis: pin_bar_bullish WR 68.2%, engulfing_bearish WR 20%, trend_aligned WR 55.3% vs 23.1%
+        self.MIN_ZONE_STRENGTH = 0.55  # AUMENTADO: Solo zonas fuertes (0.96+)
+        self.MIN_AI_SCORE_PHASE_BYPASS = 65  # AUMENTADO: IA muy buena para bypass
+        self.MIN_AI_SCORE_TRADE = 45  # AUMENTADO: Score mínimo 45 (antes 35)
+        self.MIN_TREND_ALIGNED_CONFIDENCE = 0.50  # AUMENTADO: Mínimo confianza si trend_aligned=False
 
 
     # ---------------------------------------------------------------------
@@ -329,6 +331,52 @@ class IntelligentEngine:
             }
 
         # =====================================================================
+        # 4.5 VALIDACIÓN DE PATRONES PELIGROSOS (basado en análisis histórico)
+        # =====================================================================
+        # Análisis de 265 trades:
+        # - engulfing_bearish: 20% WR, -$83.85 PnL (PEOR)
+        # - hammer: 42.9% WR, -$13.62 PnL
+        # - doji: 0% WR, -$10.05 PnL
+        # - pin_bar_bullish: 68.2% WR, +$64.00 PnL (MEJOR - FAVORECER)
+        # - pin_bar_bearish: 56.1% WR, +$6.55 PnL (MANTENER)
+        bad_patterns = {"engulfing_bearish", "doji", "hammer"}
+        if pattern_name in bad_patterns:
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"Patrón peligroso: {pattern_name} tiene WR<50% históricamente",
+                "confidence": 0,
+                "score": 0,
+                "pattern": pattern_name,
+                "ai_label": "SKIP",
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
+
+        # =====================================================================
+        # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA (CRÍTICO)
+        # =====================================================================
+        # Análisis de 265 trades:
+        # - Trend Aligned: 55.3% WR (141W / 114L)
+        # - Trend NOT Aligned: 23.1% WR (3W / 10L)
+        # - Diferencia: 32.2 puntos porcentuales
+        trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)
+        if not trend_aligned:
+            # Contra-tendencia detectada - RECHAZAR si IA score no es excelente
+            if ai_score < 70:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"Contra-tendencia: zona={zone_dir}, tendencia={main_trend}, AI={ai_score:.0f}<70. WR histórico: 23.1%",
+                    "confidence": 0,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": "SKIP",
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                }
+
+        # =====================================================================
         # 5. REGLAS DE RECHAZO
         # =====================================================================
         trade_proposal = {
@@ -488,6 +536,20 @@ class IntelligentEngine:
         # =====================================================================
         final_score = max(ai_score, pat_score)
         confidence = min(0.90, final_score / 100)
+        
+        # FAVORECER patrones ganadores (basado en análisis de 265 trades)
+        # pin_bar_bullish: 68.2% WR → +10% confianza
+        # shooting_star: 60% WR → +8% confianza
+        # pin_bar_bearish: 56.1% WR → +5% confianza
+        if pattern_name == "pin_bar_bullish":
+            confidence = min(0.95, confidence + 0.10)
+            final_score = min(100, final_score + 10)
+        elif pattern_name == "shooting_star":
+            confidence = min(0.95, confidence + 0.08)
+            final_score = min(100, final_score + 8)
+        elif pattern_name == "pin_bar_bearish":
+            confidence = min(0.95, confidence + 0.05)
+            final_score = min(100, final_score + 5)
         
         # Aplicar penalidades
         if rsi_penalty > 0:

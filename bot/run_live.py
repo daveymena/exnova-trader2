@@ -75,7 +75,7 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 # ─── Constantes ─────────────────────────────────────────────────────────────
 INITIAL_BALANCE    = 10_000.0
-MIN_CONFIDENCE     = 0.60  # AJUSTADO: Confianza moderada (60%+) - menos restrictivo
+MIN_CONFIDENCE     = 0.65  # AUMENTADO: Confianza más alta (65%+) - basado en análisis de 265 trades
 COOLDOWN_AFTER_LOSS = 120  # Esperar 2min después de pérdida
 MIN_BETWEEN_TRADES  = 45   # Esperar 45s entre trades
 MIN_BETWEEN_SAME_ASSET = 120  # Esperar 2min para mismo activo
