@@ -134,10 +134,34 @@ ASSETS_BLACKLIST = {
 }
 
 BAD_PATTERNS = {
-    "engulfing_bearish",  # 20% WR, -$83.85 PnL
-    "doji",               # 0% WR, -$10.05 PnL
+    "pin_bar_bullish",    # 0% WR (0/3), -$40.45 PnL
+    "bullish_engulfing",  # 0% WR (0/1), -$13.61 PnL
+    "engulfing_bearish",  # 33% WR (1/3), -$1.64 PnL
+    "doji",               # 0% WR histórico
     "hammer",             # 42.9% WR, -$13.62 PnL
 }
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REAL_WHITELIST - ACTIVOS Y PATRONES QUE SÍ FUNCIONAN (para cuenta REAL)
+# Basado en análisis de trades reales. Solo lo que tiene WR > 60%
+# ─────────────────────────────────────────────────────────────────────────────
+
+REAL_ASSETS_WHITELIST = {
+    "GBPUSD-OTC",    # 75% WR (3/4), +$20.01 PnL
+    "AUDUSD-OTC",    # 75% WR (3/4), +$17.74 PnL
+    "USDJPY-OTC",    # 66.7% WR (2/3), +$9.24 PnL
+    "GBPCAD-OTC",    # solo 1 trade pero activo relacionado
+}
+
+REAL_PATTERNS_ALLOWED = {
+    "pin_bar_bearish",  # 58.3% WR global, 75% en EURGBP
+    "breakout",         # 60% WR global, 100% en GBPUSD
+    "zone_rejection",   # 100% WR (1/1)
+}
+
+# Zona strength óptima para REAL (basado en datos: 0.70-0.90 da 72.7% WR)
+REAL_ZONE_STRENGTH_MIN = 0.70
+REAL_ZONE_STRENGTH_MAX = 0.90
 
 # ─────────────────────────────────────────────────────────────────────────────
 # FUNCIONES AUXILIARES

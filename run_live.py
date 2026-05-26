@@ -78,7 +78,9 @@ config = load_module('config', os.path.join(bot_dir, 'config.py'))
 from config_assets import (
     get_activos_activos, get_config_sensibilidad,
     get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING,
-    ASSETS_BLACKLIST, BAD_PATTERNS
+    ASSETS_BLACKLIST, BAD_PATTERNS,
+    REAL_ASSETS_WHITELIST, REAL_PATTERNS_ALLOWED,
+    REAL_ZONE_STRENGTH_MIN, REAL_ZONE_STRENGTH_MAX,
 )
 from config import Config
 from data.market_data import MarketDataHandler
@@ -511,6 +513,28 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     continue
 
                 if action == "TRADE" and confidence >= MIN_CONFIDENCE:
+                    # ═══════════════════════════════════════════════════════════
+                    # FILTRO ULTRASEGURO para CUENTA REAL ($4)
+                    # ═══════════════════════════════════════════════════════════
+                    if ACCOUNT_TYPE == "REAL":
+                        pattern = signal.get("pattern", "")
+                        zone_str = signal.get("zone_strength", 0)
+                        signal_dir = signal.get("signal", "CALL")
+                        
+                        if asset not in REAL_ASSETS_WHITELIST:
+                            log(f"[REAL] {asset} NO está en whitelist - saltando", "WARNING")
+                            continue
+                        if pattern not in REAL_PATTERNS_ALLOWED:
+                            log(f"[REAL] Patrón '{pattern}' no permitido - saltando", "WARNING")
+                            continue
+                        if zone_str < REAL_ZONE_STRENGTH_MIN or zone_str > REAL_ZONE_STRENGTH_MAX:
+                            log(f"[REAL] Zona {zone_str:.2f} fuera de rango óptimo - saltando", "WARNING")
+                            continue
+                        if confidence < 0.75:
+                            log(f"[REAL] Confianza {confidence:.2f} < 0.75 - saltando", "WARNING")
+                            continue
+                        log(f"[REAL] ✅ Señal APROBADA: {asset} {signal_dir} | {pattern} zona={zone_str:.2f}")
+                    
                     time_since = now - state["last_trade_time"]
                     learning_mode = get_learning_mode()
                     cooldown_mult = learning_mode.get_cooldown_multiplier()
@@ -657,12 +681,25 @@ def generate_mock_candles(asset: str, interval: str, limit: int = 100) -> pd.Dat
 # ─── Entry point ────────────────────────────────────────────────────────────
 
 def main():
-    risk_config = RiskConfig(
-        max_drawdown_daily=0.25, max_trades_per_hour=12,
-        cooldown_after_loss_seconds=COOLDOWN_AFTER_LOSS,
-        min_confidence_threshold=MIN_CONFIDENCE,
-        stop_after_consecutive_losses=MAX_CONSEC_LOSSES,
-    )
+    if ACCOUNT_TYPE == "REAL":
+        log("⚠️  CONFIGURACIÓN ULTRASEGURA PARA CUENTA REAL", "CRITICAL")
+        risk_config = RiskConfig(
+            max_drawdown_daily=0.50, max_trades_per_hour=2,
+            max_trades_per_day=4,
+            cooldown_after_loss_seconds=600,
+            stop_after_consecutive_losses=2,
+            min_confidence_threshold=0.75,
+            kelly_ceiling=0.50, kelly_floor=0.25,
+            anti_detection_jitter=False,
+            anti_detection_skip_rate=0.0,
+        )
+    else:
+        risk_config = RiskConfig(
+            max_drawdown_daily=0.25, max_trades_per_hour=12,
+            cooldown_after_loss_seconds=COOLDOWN_AFTER_LOSS,
+            min_confidence_threshold=MIN_CONFIDENCE,
+            stop_after_consecutive_losses=MAX_CONSEC_LOSSES,
+        )
     rm = initialize_risk_manager(INITIAL_BALANCE, risk_config)
     market_data = MarketDataHandler(broker_name="exnova", account_type=ACCOUNT_TYPE)
     engine = IntelligentEngine(session_name="bot_live")
