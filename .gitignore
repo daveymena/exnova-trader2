@@ -1,89 +1,104 @@
-# ─── Credenciales y configuración local ────────────────────────────────────
+# Environment
 .env
-*.key
-*.pem
-*credentials*
-**/token_*.json
 .env.local
 
-# ─── Python ────────────────────────────────────────────────────────────────
+# Runtime
 __pycache__/
 *.py[cod]
-*.egg-info/
-dist/
-build/
+*.pyo
+*.pyd
 
-# ─── Runtime data (se genera al ejecutar) ──────────────────────────────────
-# Estos archivos son datos dinámicos que el bot genera al correr
-bot/data/*.json
-bot/data/*.db
-bot/brain/trade_history.json
-bot/brain/*memory*.json
-bot/brain/*executions*.json
-bot/brain/*suggestions*.json
-bot/brain/learning_state.json
-bot/brain/zone_reactions.json
+# Database
+data/*.db
+data/*.db-shm
+data/*.db-wal
+data/migrations/
+data/*.json
+
+# Logs
 logs/
 *.log
+
+# Reports
+reports/*.csv
+reports/*.json
+reports/*.html
+
+# Screenshots and page captures
+*.png
+*.jpg
+*.jpeg
+*.gif
+
+# Account / credential files
+*.pem
+*.key
+credentials/
+
+# NPM/JS artifacts (legacy)
+node_modules/
+package-lock.json
+pnpm-lock.yaml
+
+# OS files
+.DS_Store
+Thumbs.db
+*.bak
+nul
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Replit
+.replit
+.replitignore
+.local/
+.agents/
+
+# Temporary
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Legacy artifacts
+bot/brain/trade_history.json.bak
+bot/trader.py.backup
 run_live.lock
 
-# ─── Análisis / Documentación (no necesarios en producción) ────────────────
-ANALISIS_*.md
-AUDITORIA_*.md
-CONCLUSION_*.md
-ESTADO_*.md
-FIXES_*.md
-GUIA_*.md
-IMPORT_FIX_*.md
-INDICE_*.md
-INTEGRACION_*.md
-POSTMORTEM_*.md
-README_SISTEMA_*.md
-RESUMEN_*.md
-TRADE_ANALYSIS_*.md
-ANTI_TRAPS_*.md
-EASYPANEL_DEPLOYMENT*.md
-
-# ─── Scripts auxiliares (no necesarios en producción) ──────────────────────
-authenticate_*.py
-debug_*.py
-list_*.py
-test_*.py
-use_*.py
+# Contienen credenciales reales en texto plano (token GitHub / password Exnova / API key)
+# hardcodeadas por sesiones anteriores. Ninguno de estos .py forma parte del flujo real
+# del bot (run_live.py -> intelligent_engine.py -> agent_trading_engine.py no los importa).
+# NO quitar de aqui sin antes rotar las credenciales que contienen.
+bot/brain/ai_analyzer.py
+bot/brain/copilot_models_access.py
+bot/brain/copilot_token_manager.py
+_check_tokens.py
+_test_exnova.py
+test_assets.py
+test_sr.py
 bot_operating.py
 dashboard_bot.py
-analyze_losses.py
+list_github_models.py
 run_ai_analysis.py
 run_bot_with_dashboard.py
 run_complete_system.py
-run_live_v2.py
-run_24_7.ps1
-run_simple_24_7*.ps1
-start_247.ps1
-
-# ─── NPM / TypeScript (no necesario en EasyPanel) ──────────────────────────
-node_modules/
-lib/
-artifacts/
-scripts/
-pnpm-lock.yaml
-pnpm-workspace.yaml
-package.json
-tsconfig*.json
-.npmrc
-
-# ─── IDE / OS ──────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# ─── Otros ────────────────────────────────────────────────────────────────
-.agents/
-.local/
-.data/
-.data.local/
-nul
+use_copilot_models.py
+AUDIT_REPORT.md
+CONCLUSION_SISTEMA_COMPLETO.md
+DOCUMENTACION_SISTEMA_COMPLETO.md
+FIXES_APPLIED.md
+GUIA_AGENTE_INTELIGENTE.md
+GUIA_EJECUCION_RAPIDA.md
+GUIA_IA_MEJORADA.md
+INSTRUCCIONES_EJECUCION_PASO_A_PASO.md
+INTEGRACION_AGENTE_PASO_A_PASO.md
+REFERENCIA_RAPIDA.md
+RESUMEN_AGENTE_FINAL.md
+RESUMEN_SISTEMA_FINAL.md
+RESUMEN_SISTEMA_IA_FINAL.md
+SOLUCION_COMPLETA_ZONA_MAPPING.md
+INFORMACION_COMPLETA_SISTEMA.md

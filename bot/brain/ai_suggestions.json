@@ -1,0 +1,26 @@
+[
+  {
+    "priority": "HIGH",
+    "type": "PAUSE_ASSET",
+    "description": "Pausar EURGBP-OTC (WR 0.0%)",
+    "action": "Agregar EURGBP-OTC a lista de pausados",
+    "expected_impact": "Evitar p\u00e9rdidas en 4 trades",
+    "implementation": "paused_assets.append('EURGBP-OTC')"
+  },
+  {
+    "priority": "HIGH",
+    "type": "PAUSE_ASSET",
+    "description": "Pausar EURUSD-OTC (WR 0.0%)",
+    "action": "Agregar EURUSD-OTC a lista de pausados",
+    "expected_impact": "Evitar p\u00e9rdidas en 10 trades",
+    "implementation": "paused_assets.append('EURUSD-OTC')"
+  },
+  {
+    "priority": "HIGH",
+    "type": "PAUSE_ASSET",
+    "description": "Pausar EURJPY-OTC (WR 0.0%)",
+    "action": "Agregar EURJPY-OTC a lista de pausados",
+    "expected_impact": "Evitar p\u00e9rdidas en 2 trades",
+    "implementation": "paused_assets.append('EURJPY-OTC')"
+  }
+]

@@ -24,6 +24,14 @@ load_dotenv()
 from engine.intelligent_engine import IntelligentEngine
 from config_assets import ASSETS_OTC_24_7, get_current_time_colombia, es_horario_manana
 
+# AI Auditor (non-authoritative, multi-provider)
+root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, root_dir)
+from app.services.ai_provider import ai_registry
+from app.agents.ai_auditor_agent import AIAuditorAgent
+AI_AUDIT_ENABLED = os.getenv("AI_AUDIT_ENABLED", "true").lower() == "true"
+ai_auditor = AIAuditorAgent(enabled=AI_AUDIT_ENABLED)
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CONFIGURACIÓN OPERATIVA v4
 # ─────────────────────────────────────────────────────────────────────────────
@@ -105,11 +113,8 @@ def main():
     print(f"  Config: MIN_CONF={MIN_CONFIDENCE} | ZONE={MIN_ZONE_STRENGTH} | HOLD={MIN_HOLD_RATE}")
     print("="*90 + "\n")
     
-    # Inicializar motor
-    try:
-        engine = IntelligentEngine(session_name="main_24h")
-    except TypeError:
-        engine = IntelligentEngine(session_name="main_24h")
+    # Inicializar motor (modo práctica = filtros relajados)
+    engine = IntelligentEngine(session_name="main_24h", mode="practice")
     
     cycle = 0
     total_trades = 0
@@ -165,6 +170,12 @@ def main():
                     total_pnl += pnl
                     
                     print(f"  [TRADE] #{total_trades:3d} | {asset:15s} | CONF:{confidence:.2f} | {signal:4s} | PnL:${pnl:+6.2f} | TOTAL:${total_pnl:+7.2f}")
+                    
+                    # AI audit cada 5 trades (no bloquea)
+                    if AI_AUDIT_ENABLED and total_trades % 5 == 0:
+                        audit = ai_auditor.summarize_session([])
+                        if "disabled" not in audit:
+                            print(f"  [AI] {audit}")
                 else:
                     print(f"  [WAIT] {asset:15s} | {reason[:45]}")
                 

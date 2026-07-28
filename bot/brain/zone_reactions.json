@@ -1,0 +1,1681 @@
+{
+  "EURUSD-OTC_1.16014": {
+    "asset": "EURUSD-OTC",
+    "level": 1.1601400000000002,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1778997841.2754512,
+        "price_at_touch": 1.1601400000000002,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 14.350000000000751,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "ASIA",
+        "was_first_visit": true,
+        "rsi_at_touch": 55.91758643454684,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1778998621.9492686,
+        "price_at_touch": 1.1601400000000002,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 6.250000000000977,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "ASIA",
+        "was_first_visit": false,
+        "rsi_at_touch": 54.61411587577196,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 1,
+    "breaks": 1,
+    "avg_pips_on_hold": 14.350000000000751,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "ASIA": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.5,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1778998621.9492686,
+    "last_result": "BREAK"
+  },
+  "EURJPY-OTC_186.47061": {
+    "asset": "EURJPY-OTC",
+    "level": 186.470605,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1778998982.0443375,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 4309.399999999925,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "ASIA",
+        "was_first_visit": true,
+        "rsi_at_touch": 79.35653389199366,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1778999557.72011,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 1635.1000000000226,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "ASIA",
+        "was_first_visit": false,
+        "rsi_at_touch": 50.53623710196422,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779000204.8137515,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 2571.399999999926,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "ASIA",
+        "was_first_visit": false,
+        "rsi_at_touch": 55.65703799761171,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779002897.682926,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 2025.8000000001175,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 57.08427249129256,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779003501.0624802,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 1713.4000000001492,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 57.873935476393214,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779004237.7386627,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 966.50000000011,
+        "candles_to_move": 7,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 58.143988386098535,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779005555.2390182,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 882.7999999999747,
+        "candles_to_move": 4,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 45.19875702304421,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779006974.5240154,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 872.8999999999587,
+        "candles_to_move": 6,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 49.458872242454376,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779008856.8076916,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 3638.1000000000085,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 47.593509693216035,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779011281.6968994,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 1228.2000000001858,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 70.41666408617174,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779017117.2408311,
+        "price_at_touch": 186.470605,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 33.91179527169402,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 11,
+    "successful_holds": 5,
+    "breaks": 6,
+    "avg_pips_on_hold": 2639.760000000024,
+    "avg_candles_to_move": 2.2,
+    "session_stats": {
+      "ASIA": {
+        "holds": 2,
+        "breaks": 1,
+        "total": 3
+      },
+      "EUROPE": {
+        "holds": 3,
+        "breaks": 5,
+        "total": 8
+      }
+    },
+    "first_visit_hold_rate": 0.2857142857142857,
+    "revisit_hold_rate": 0.75,
+    "with_pattern_hold_rate": 0.45454545454545453,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779017117.2408311,
+    "last_result": "BREAK"
+  },
+  "GBPUSD-OTC_1.37302": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.373015,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1778999880.6779711,
+        "price_at_touch": 1.373015,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 30.700000000001282,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "ASIA",
+        "was_first_visit": true,
+        "rsi_at_touch": 59.41542864254194,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 30.700000000001282,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "ASIA": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1778999880.6779711,
+    "last_result": "HOLD"
+  },
+  "EURUSD-OTC_1.16366": {
+    "asset": "EURUSD-OTC",
+    "level": 1.163665,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779001637.676792,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 20.000000000000018,
+        "candles_to_move": 12,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 64.35088421594608,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779009421.3249521,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 8.399999999999519,
+        "candles_to_move": 18,
+        "had_pattern": true,
+        "pattern_name": "morning_star",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 54.20418992539468,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779010115.2805097,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 8.399999999999519,
+        "candles_to_move": 6,
+        "had_pattern": true,
+        "pattern_name": "bullish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 47.48749553030862,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779014235.8482676,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 5.1000000000001044,
+        "candles_to_move": 14,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 67.73400249747654,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779014956.394621,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 20.900000000001473,
+        "candles_to_move": 2,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 64.33526553661417,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779015685.3522162,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 20.900000000001473,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 46.78139962654423,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779018576.3477123,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 4.699999999999704,
+        "candles_to_move": 19,
+        "had_pattern": true,
+        "pattern_name": "bullish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 62.743341561215125,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779301835.0079708,
+        "price_at_touch": 1.163665,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 27.29999999999899,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 73.36947606569751,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 8,
+    "successful_holds": 6,
+    "breaks": 2,
+    "avg_pips_on_hold": 11.250000000000057,
+    "avg_candles_to_move": 11.666666666666666,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 6,
+        "breaks": 1,
+        "total": 7
+      },
+      "AMERICA": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.8,
+    "revisit_hold_rate": 0.6666666666666666,
+    "with_pattern_hold_rate": 0.75,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779301835.0079708,
+    "last_result": "BREAK"
+  },
+  "AUDUSD-OTC_0.71388": {
+    "asset": "AUDUSD-OTC",
+    "level": 0.713875,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779002433.4607146,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 6.700000000000594,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 42.781379492206526,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779003862.6023448,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 12.100000000000444,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 61.71707089673822,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779010921.6203532,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 9.900000000000464,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 31.960888509314074,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779011641.5094743,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 9.900000000000464,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 57.660115827296025,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779012682.5601654,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 2.00000000000089,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 55.378317586772496,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779013575.6255538,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 45.29199061620932,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779016021.473716,
+        "price_at_touch": 0.713875,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 4.3999999999999595,
+        "candles_to_move": 11,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 44.50055603893389,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 7,
+    "successful_holds": 0,
+    "breaks": 7,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 0,
+        "breaks": 7,
+        "total": 7
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779016021.473716,
+    "last_result": "BREAK"
+  },
+  "AUDUSD-OTC_0.71574": {
+    "asset": "AUDUSD-OTC",
+    "level": 0.715735,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779006242.4265504,
+        "price_at_touch": 0.715735,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bullish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 69.87262947056325,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 0,
+    "breaks": 1,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779006242.4265504,
+    "last_result": "BREAK"
+  },
+  "GBPUSD-OTC_1.37678": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.376775,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779007298.2943988,
+        "price_at_touch": 1.376775,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 19.600000000001838,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "doji_reversal_bear",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 47.255701552349294,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779012001.212137,
+        "price_at_touch": 1.376775,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 21.400000000000308,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 70.11906419783793,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 1,
+    "breaks": 1,
+    "avg_pips_on_hold": 19.600000000001838,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 0.5,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.5,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779012001.212137,
+    "last_result": "BREAK"
+  },
+  "EURJPY-OTC_186.17471": {
+    "asset": "EURJPY-OTC",
+    "level": 186.17470500000002,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779007621.9067142,
+        "price_at_touch": 186.17470500000002,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 3928.9999999996894,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 21.982914223440474,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 3928.9999999996894,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779007621.9067142,
+    "last_result": "HOLD"
+  },
+  "EURJPY-OTC_186.97090": {
+    "asset": "EURJPY-OTC",
+    "level": 186.970895,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779012249.0602531,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 3684.1000000001145,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 76.9521339507895,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779013141.6928756,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 2423.700000000224,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 56.86485410008894,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779013936.6227612,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 2898.800000000108,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 40.00435101409178,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779014761.4759786,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 2898.800000000108,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 58.774951385762904,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779015331.7920854,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 1846.400000000017,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 67.59319419090738,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779016381.9536307,
+        "price_at_touch": 186.970895,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 2031.8000000000325,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 45.681210111394044,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 6,
+    "successful_holds": 4,
+    "breaks": 2,
+    "avg_pips_on_hold": 2496.500000000097,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 4,
+        "breaks": 2,
+        "total": 6
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.5,
+    "with_pattern_hold_rate": 0.6666666666666666,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779016381.9536307,
+    "last_result": "HOLD"
+  },
+  "GBPUSD-OTC_1.38051": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.380515,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779014432.3162804,
+        "price_at_touch": 1.380515,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 24.800000000000377,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 50.830248661985735,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 24.800000000000377,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779014432.3162804,
+    "last_result": "HOLD"
+  },
+  "USDJPY-OTC_158.17245": {
+    "asset": "USDJPY-OTC",
+    "level": 158.17245,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779015481.5699885,
+        "price_at_touch": 158.17245,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 1271.0000000001287,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bullish_engulfing",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 34.871727786138095,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 1271.0000000001287,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779015481.5699885,
+    "last_result": "HOLD"
+  },
+  "AUDUSD-OTC_0.71223": {
+    "asset": "AUDUSD-OTC",
+    "level": 0.712235,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779016756.810806,
+        "price_at_touch": 0.712235,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 22.00000000000091,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": true,
+        "rsi_at_touch": 27.649358026928994,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779017463.3105648,
+        "price_at_touch": 0.712235,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 15.800000000000258,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "none",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 22.363967712575686,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779018001.582266,
+        "price_at_touch": 0.712235,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 2.500000000000835,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "EUROPE",
+        "was_first_visit": false,
+        "rsi_at_touch": 29.10697374435729,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 3,
+    "successful_holds": 2,
+    "breaks": 1,
+    "avg_pips_on_hold": 9.150000000000546,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "EUROPE": {
+        "holds": 2,
+        "breaks": 1,
+        "total": 3
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 1.0,
+    "with_pattern_hold_rate": 0.6666666666666666,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779018001.582266,
+    "last_result": "HOLD"
+  },
+  "EURUSD-OTC_1.17290": {
+    "asset": "EURUSD-OTC",
+    "level": 1.172895,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779028513.630223,
+        "price_at_touch": 1.172895,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 35.400000000000986,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "doji_reversal_bear",
+        "session": "OVERLAP_EU_US",
+        "was_first_visit": true,
+        "rsi_at_touch": 76.7817463553662,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 35.400000000000986,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "OVERLAP_EU_US": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779028513.630223,
+    "last_result": "HOLD"
+  },
+  "EURGBP-OTC_0.88506": {
+    "asset": "EURGBP-OTC",
+    "level": 0.885065,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779029294.9986892,
+        "price_at_touch": 0.885065,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 3.9999999999995595,
+        "candles_to_move": 7,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "OVERLAP_EU_US",
+        "was_first_visit": true,
+        "rsi_at_touch": 38.83003506703509,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779029956.420367,
+        "price_at_touch": 0.885065,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 3.9999999999995595,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "OVERLAP_EU_US",
+        "was_first_visit": false,
+        "rsi_at_touch": 55.93904353842147,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779051016.3466547,
+        "price_at_touch": 0.885065,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 16.300000000000203,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 58.42724491815003,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779056557.9807148,
+        "price_at_touch": 0.885065,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 13.299999999999423,
+        "candles_to_move": 2,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 48.261809449278175,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779057274.2427227,
+        "price_at_touch": 0.885065,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 13.299999999999423,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": false,
+        "rsi_at_touch": 44.08328204756656,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 5,
+    "successful_holds": 3,
+    "breaks": 2,
+    "avg_pips_on_hold": 11.199999999999728,
+    "avg_candles_to_move": 1.3333333333333333,
+    "session_stats": {
+      "OVERLAP_EU_US": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      },
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      },
+      "PACIFIC": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 0.6666666666666666,
+    "revisit_hold_rate": 0.5,
+    "with_pattern_hold_rate": 0.6,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779057274.2427227,
+    "last_result": "BREAK"
+  },
+  "EURUSD-OTC_1.18003": {
+    "asset": "EURUSD-OTC",
+    "level": 1.180025,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779050253.1443133,
+        "price_at_touch": 1.180025,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 45.100000000000136,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "micro_structure",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 70.0635125826157,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779050702.255586,
+        "price_at_touch": 1.180025,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 29.600000000000737,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "micro_structure",
+        "session": "AMERICA",
+        "was_first_visit": false,
+        "rsi_at_touch": 72.42367794518786,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 1,
+    "breaks": 1,
+    "avg_pips_on_hold": 45.100000000000136,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.5,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779050702.255586,
+    "last_result": "BREAK"
+  },
+  "EURUSD-OTC_1.18352": {
+    "asset": "EURUSD-OTC",
+    "level": 1.183525,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779051197.0752437,
+        "price_at_touch": 1.183525,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 43.999999999999595,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 87.5515539496697,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779054962.1489942,
+        "price_at_touch": 1.183525,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 38.9664342936086,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779058802.779685,
+        "price_at_touch": 1.183525,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 36.07558555092298,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 3,
+    "successful_holds": 2,
+    "breaks": 1,
+    "avg_pips_on_hold": 21.999999999999797,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      },
+      "PACIFIC": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 0.6666666666666666,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.6666666666666666,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779058802.779685,
+    "last_result": "HOLD"
+  },
+  "EURJPY-OTC_185.34454": {
+    "asset": "EURJPY-OTC",
+    "level": 185.344535,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779051436.7134502,
+        "price_at_touch": 185.344535,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 43.54363479161506,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779052979.6343606,
+        "price_at_touch": 185.344535,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bullish_engulfing",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 52.017146565528044,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 0,
+    "breaks": 2,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      },
+      "PACIFIC": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779052979.6343606,
+    "last_result": "BREAK"
+  },
+  "GBPUSD-OTC_1.38445": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.384455,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779051972.2286053,
+        "price_at_touch": 1.384455,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 20.800000000000818,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bullish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 72.18183481672362,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 0,
+    "breaks": 1,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "PACIFIC": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779051972.2286053,
+    "last_result": "BREAK"
+  },
+  "USDJPY-OTC_157.78205": {
+    "asset": "USDJPY-OTC",
+    "level": 157.78205,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779055284.7893791,
+        "price_at_touch": 157.78205,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 32.708816615911246,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779055635.8782423,
+        "price_at_touch": 157.78205,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": false,
+        "rsi_at_touch": 33.1374249707813,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 2,
+    "breaks": 0,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "PACIFIC": {
+        "holds": 2,
+        "breaks": 0,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 1.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779055635.8782423,
+    "last_result": "HOLD"
+  },
+  "GBPUSD-OTC_1.38840": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.388395,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779055532.2778451,
+        "price_at_touch": 1.388395,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 17.000000000000348,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 65.99757176307575,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 17.000000000000348,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "PACIFIC": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779055532.2778451,
+    "last_result": "HOLD"
+  },
+  "EURUSD-OTC_1.18714": {
+    "asset": "EURUSD-OTC",
+    "level": 1.187145,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779057727.6294227,
+        "price_at_touch": 1.187145,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 19.599999999999618,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 56.178101433186825,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779058309.533704,
+        "price_at_touch": 1.187145,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 18.399999999998418,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "bearish_engulfing",
+        "session": "PACIFIC",
+        "was_first_visit": false,
+        "rsi_at_touch": 43.25587619399254,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779059515.617523,
+        "price_at_touch": 1.187145,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 27.69999999999939,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 56.80518432718092,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 3,
+    "successful_holds": 0,
+    "breaks": 3,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "PACIFIC": {
+        "holds": 0,
+        "breaks": 3,
+        "total": 3
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779059515.617523,
+    "last_result": "BREAK"
+  },
+  "AUDUSD-OTC_0.72176": {
+    "asset": "AUDUSD-OTC",
+    "level": 0.721755,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779293581.224127,
+        "price_at_touch": 0.721755,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 18.90000000000058,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "breakout",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 73.76523989618883,
+        "trend_aligned": true
+      },
+      {
+        "timestamp": 1779294036.2834432,
+        "price_at_touch": 0.721755,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 17.000000000000348,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "breakout",
+        "session": "AMERICA",
+        "was_first_visit": false,
+        "rsi_at_touch": 70.22973994365552,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 1,
+    "breaks": 1,
+    "avg_pips_on_hold": 18.90000000000058,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 1,
+        "total": 2
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.5,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779294036.2834432,
+    "last_result": "BREAK"
+  },
+  "AUDUSD-OTC_0.71759": {
+    "asset": "AUDUSD-OTC",
+    "level": 0.717585,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779300556.3354537,
+        "price_at_touch": 0.717585,
+        "direction_expected": "CALL",
+        "result": "HOLD",
+        "pips_moved": 16.199999999999548,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "zone_rejection",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 28.324058545568903,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 1,
+    "breaks": 0,
+    "avg_pips_on_hold": 16.199999999999548,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779300556.3354537,
+    "last_result": "HOLD"
+  },
+  "USDJPY-OTC_160.19665": {
+    "asset": "USDJPY-OTC",
+    "level": 160.19664999999998,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779300874.0344272,
+        "price_at_touch": 160.19664999999998,
+        "direction_expected": "PUT",
+        "result": "BREAK",
+        "pips_moved": 0.0,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "pin_bar_bearish",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 27.50630815412829,
+        "trend_aligned": true
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 0,
+    "breaks": 1,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779300874.0344272,
+    "last_result": "BREAK"
+  },
+  "GBPUSD-OTC_1.32696": {
+    "asset": "GBPUSD-OTC",
+    "level": 1.326955,
+    "zone_type": "resistance",
+    "touch_events": [
+      {
+        "timestamp": 1779301583.021282,
+        "price_at_touch": 1.326955,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 48.2999999999989,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "breakout",
+        "session": "AMERICA",
+        "was_first_visit": true,
+        "rsi_at_touch": 24.736357726805124,
+        "trend_aligned": false
+      },
+      {
+        "timestamp": 1779315272.7363746,
+        "price_at_touch": 1.326955,
+        "direction_expected": "PUT",
+        "result": "HOLD",
+        "pips_moved": 39.69999999999807,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "breakout",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 29.313739252688578,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 2,
+    "successful_holds": 2,
+    "breaks": 0,
+    "avg_pips_on_hold": 43.99999999999849,
+    "avg_candles_to_move": 1.0,
+    "session_stats": {
+      "AMERICA": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      },
+      "PACIFIC": {
+        "holds": 1,
+        "breaks": 0,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 1.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 1.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779315272.7363746,
+    "last_result": "HOLD"
+  },
+  "EURUSD-OTC_1.15840": {
+    "asset": "EURUSD-OTC",
+    "level": 1.158395,
+    "zone_type": "support",
+    "touch_events": [
+      {
+        "timestamp": 1779315991.00408,
+        "price_at_touch": 1.158395,
+        "direction_expected": "CALL",
+        "result": "BREAK",
+        "pips_moved": 15.300000000000313,
+        "candles_to_move": 1,
+        "had_pattern": true,
+        "pattern_name": "breakout",
+        "session": "PACIFIC",
+        "was_first_visit": true,
+        "rsi_at_touch": 27.37313935700101,
+        "trend_aligned": false
+      }
+    ],
+    "total_touches": 1,
+    "successful_holds": 0,
+    "breaks": 1,
+    "avg_pips_on_hold": 0.0,
+    "avg_candles_to_move": 0.0,
+    "session_stats": {
+      "PACIFIC": {
+        "holds": 0,
+        "breaks": 1,
+        "total": 1
+      }
+    },
+    "first_visit_hold_rate": 0.0,
+    "revisit_hold_rate": 0.0,
+    "with_pattern_hold_rate": 0.0,
+    "without_pattern_hold_rate": 0.0,
+    "last_touch_ts": 1779315991.00408,
+    "last_result": "BREAK"
+  }
+}

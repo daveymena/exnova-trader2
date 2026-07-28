@@ -45,6 +45,7 @@ class MarketDataHandler:
                     self.api = Exnova(email, password, active_account_type=self.account_type)
                     check, reason = self.api.connect()
                     if check and self.api.check_connect():
+                        self.api.change_balance(self.account_type)
                         try:
                             import threading
                             def update_actives():
@@ -60,7 +61,8 @@ class MarketDataHandler:
                         except Exception as e:
                             print(f"  [WARN] Error actualizando activos: {e}")
                         self.connected = True
-                        print(f"  [OK] Conectado a EXNOVA ({self.account_type})")
+                        balance = self.api.get_balance()
+                        print(f"  [OK] Conectado a EXNOVA ({self.account_type}) — Balance: ${balance}")
                         return True
                     else:
                         print(f"  [FAIL] Razón: {reason}")

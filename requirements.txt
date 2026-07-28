@@ -1,4 +1,4 @@
-# ============= EXNOVA TRADING BOT v5.1 - DEPENDENCIAS CONSOLIDADAS =============
+# ============= EXNOVA TRADING BOT - DEPENDENCIAS (bot/) =============
 # Instalar con: pip install -r requirements.txt
 
 # ─── Core Python ──────────────────────────────────────────────────────────────

@@ -63,13 +63,14 @@ from config_assets import (
     get_activos_activos, get_config_sensibilidad,
     get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING,
     BAD_PATTERNS, ASSETS_BLACKLIST,
-    REAL_ASSETS_WHITELIST, REAL_PATTERNS_ALLOWED,
+    REAL_PATTERNS_ALLOWED,
     REAL_ZONE_STRENGTH_MIN, REAL_ZONE_STRENGTH_MAX,
 )
 from data.market_data import MarketDataHandler
 from core.advanced_risk_manager import initialize_risk_manager, RiskConfig
 from brain.adaptive_learner import get_adaptive_learner
 from brain.market_memory import get_market_memory
+from brain.supervised_zone_learner import get_supervised_zone_learner
 from brain.trade_evaluator import TradeEvaluator
 from brain.adaptive_learning_mode import get_learning_mode
 from engine.intelligent_engine import IntelligentEngine
@@ -78,11 +79,11 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
-MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.65"))
-COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "300"))
-MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "180"))
-MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))
-MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "4"))
+MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.50"))  # RELAJADO: 50%
+COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "180"))  # RELAJADO: 3min
+MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "90"))  # RELAJADO: 90s
+MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "180"))  # RELAJADO: 3min
+MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "6"))  # RELAJADO: 6 pérdidas
 PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "8"))
 PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
 
@@ -136,7 +137,7 @@ def log(msg, level="INFO"):
 
 sm_analyzer = SmartMoneyAnalyzer()
 
-def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, df_m15=None, df_m5=None):
+def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15=None, df_m5=None):
     global trade_in_progress
     
     asset = signal["asset"]
@@ -161,10 +162,23 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             log(f"⏳ Trade saltado - ya hay una operación en progreso", "WARNING")
             return False
         
-        if state["active_order"] is not None:
-            log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
+    if state["active_order"] is not None:
+        log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
+        return False
+
+    try:
+        zone_level = signal.get("zone", 0.0) or signal.get("entry_price", 0.0) or 0.0
+        allowed, supervised_reason, supervised_details = zone_learner.get_opportunity(asset, direction, float(zone_level))
+        if not allowed:
+            log(f"[SUPERVISADO] {supervised_reason} | toques={supervised_details.get('touches', 0)} holds={supervised_details.get('holds', 0)}", "WARNING")
+            state["status"] = "OBSERVANDO_ZONA"
             return False
-        
+        log(f"[SUPERVISADO] {supervised_reason} | strength={supervised_details.get('strength', 0):.2f} hold_rate={supervised_details.get('hold_rate', 0)*100:.0f}%")
+    except Exception as e:
+        log(f"[SUPERVISADO] Error validando zona: {e}", "WARNING")
+        return False
+
+    with trade_lock:
         # Marcar que hay una operación en progreso
         trade_in_progress = True
         state["active_order"] = f"pending_{time.time()}"
@@ -312,12 +326,28 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                 "asset": asset, "direction": direction, "amount": amount,
                 "confidence": confidence, "result": result, "pnl": pnl,
                 "pattern": pattern, "order_id": str(order_id),
-                "entry_price": signal.get("zone", 0.0) or amount,
+                "entry_price": current_price,
                 "expiration_minutes": signal.get("expiration_minutes", duration),
             }
             diagnosis = evaluator.evaluate(trade_record, context, conditions, df_m1_after=df_after)
             learner.learn_from_trade(conditions, result, diagnosis)
             state["last_diagnosis"] = evaluator.format_for_display(diagnosis)
+
+            try:
+                exit_price = 0.0
+                if df_after is not None and not df_after.empty:
+                    exit_price = float(df_after.iloc[-1].get("close", 0.0))
+                zone_learner.record_trade_result(
+                    asset=trade_record["asset"],
+                    direction=trade_record["direction"],
+                    entry_price=float(trade_record.get("entry_price", 0.0)),
+                    exit_price=float(exit_price),
+                    result=result,
+                    level=float(signal.get("zone", 0.0) or trade_record.get("entry_price", 0.0))
+                )
+                log("[SUPERVISADO] Resultado guardado en memoria de zonas")
+            except Exception as e:
+                log(f"[SUPERVISADO] Error guardando aprendizaje: {e}", "WARNING")
 
             if result == "LOSS":
                 cause = diagnosis.get("primary_cause", "unknown")
@@ -362,6 +392,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
     password = os.getenv("EXNOVA_PASSWORD", "")
     learner = get_adaptive_learner()
     memory = get_market_memory()
+    zone_learner = get_supervised_zone_learner()
     evaluator = TradeEvaluator()
 
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
@@ -483,6 +514,16 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 log(f"Error obteniendo candles de {asset}: {str(e)[:50]}")
                 continue
 
+            # Observar mercado para aprendizaje supervisado
+            try:
+                zonas_actualizadas = zone_learner.observe(asset, df_m1, df_m15)
+                if zonas_actualizadas > 0 and state["cycle"] % 20 == 0:
+                    sumario = zone_learner.summary(asset)
+                    if sumario.get("solidas", 0) > 0:
+                        log(f"[SUPERVISADO] {asset}: {sumario['solidas']} zonas solidas, {sumario['observando']} en observacion", "INFO")
+            except Exception as e:
+                log(f"[SUPERVISADO] Error observando {asset}: {e}", "WARNING")
+
             # Analizar
             try:
                 signal = engine.evaluate_market(asset, df_m1, df_m5, df_m15, df_m30, df_h1)
@@ -504,12 +545,20 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         pattern = signal.get("pattern", "")
                         zone_str = signal.get("zone_strength", 0)
                         signal_dir = signal.get("signal", "CALL")
-                        
-                        # 1. Solo activos comprobados
-                        if asset not in REAL_ASSETS_WHITELIST:
-                            log(f"[REAL] {asset} NO está en whitelist de activos ganadores - saltando", "WARNING")
+
+                        # NOTA: el gate por REAL_ASSETS_WHITELIST se retiró (2026-07).
+                        # Se verificó contra bot/brain/trade_history.json: ningún activo
+                        # tiene 30+ operaciones (mediana 4, 107 activos distintos), por lo
+                        # que "100% WR" en un activo del whitelist a menudo es 1 sola
+                        # operación. No es evidencia, es ruido. La seguridad real viene de
+                        # los gates universales y sí probados (alineación de tendencia,
+                        # calidad de patrón) que ya aplica IntelligentEngine antes de esto.
+                        # ASSETS_BLACKLIST se mantiene: es conservador (solo excluye,
+                        # no arriesga dinero) aunque su muestra también sea pequeña.
+                        if asset in ASSETS_BLACKLIST:
+                            log(f"[REAL] {asset} está en blacklist histórica - saltando", "WARNING")
                             continue
-                        
+
                         # 2. Solo patrones comprobados
                         if pattern not in REAL_PATTERNS_ALLOWED:
                             log(f"[REAL] Patrón '{pattern}' no está en whitelist - saltando", "WARNING")
@@ -569,7 +618,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         base_amount = rm.calculate_position_size(confidence=confidence)
                         amount = max(1.0, round(base_amount * np.random.uniform(0.80, 1.20), 2))
                         if amount > 0:
-                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, df_m15, df_m5)
+                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15, df_m5)
                             if executed:
                                 day_trades += 1
                                 state["last_trade_by_asset"][asset_dir_key] = time.time()

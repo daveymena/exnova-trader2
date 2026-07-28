@@ -23,11 +23,13 @@ from brain.market_trap_detector import MarketTrapDetector
 from brain.three_phase_confirmation import ThreePhaseConfirmation
 from brain.trade_context_analyzer import TradeContextAnalyzer
 from brain.trade_rejection_rules import TradeRejectionRules
+from config_assets import BAD_PATTERNS
 
 
 class IntelligentEngine:
-    def __init__(self, session_name: str):
+    def __init__(self, session_name: str, mode: str = "real"):
         self.session_name = session_name
+        self.mode = mode
         self.zone_detector = ZoneDetector()
         self.market_ai = MarketAI()
         self.trap_detector = MarketTrapDetector()
@@ -35,12 +37,18 @@ class IntelligentEngine:
         self.rejection_rules = TradeRejectionRules()
         self.context_analyzer = ContextAnalyzer()
 
-        # Umbrales optimizados (basados en análisis de 265 trades históricos)
-        # Análisis: pin_bar_bullish WR 68.2%, engulfing_bearish WR 20%, trend_aligned WR 55.3% vs 23.1%
-        self.MIN_ZONE_STRENGTH = 0.55  # AUMENTADO: Solo zonas fuertes (0.96+)
-        self.MIN_AI_SCORE_PHASE_BYPASS = 65  # AUMENTADO: IA muy buena para bypass
-        self.MIN_AI_SCORE_TRADE = 45  # AUMENTADO: Score mínimo 45 (antes 35)
-        self.MIN_TREND_ALIGNED_CONFIDENCE = 0.50  # AUMENTADO: Mínimo confianza si trend_aligned=False
+        if mode == "practice":
+            # Modo práctica: mínimos filtros para ver muchas operaciones
+            self.MIN_ZONE_STRENGTH = 0.10
+            self.MIN_AI_SCORE_PHASE_BYPASS = 10
+            self.MIN_AI_SCORE_TRADE = 5
+            self.MIN_TREND_ALIGNED_CONFIDENCE = 0.0
+        else:
+            # Umbrales optimizados (basados en análisis de 265 trades históricos)
+            self.MIN_ZONE_STRENGTH = 0.40
+            self.MIN_AI_SCORE_PHASE_BYPASS = 50
+            self.MIN_AI_SCORE_TRADE = 30
+            self.MIN_TREND_ALIGNED_CONFIDENCE = 0.30
 
 
     # ---------------------------------------------------------------------
@@ -333,18 +341,23 @@ class IntelligentEngine:
         # =====================================================================
         # 4.5 VALIDACIÓN DE PATRONES PELIGROSOS (basado en análisis histórico)
         # =====================================================================
-        # Análisis de 265 trades:
-        # - engulfing_bearish: 20% WR, -$83.85 PnL (PEOR)
-        # - hammer: 42.9% WR, -$13.62 PnL
-        # - doji: 0% WR, -$10.05 PnL
-        # - pin_bar_bullish: 68.2% WR, +$64.00 PnL (MEJOR - FAVORECER)
-        # - pin_bar_bearish: 56.1% WR, +$6.55 PnL (MANTENER)
-        bad_patterns = {"engulfing_bearish", "doji", "hammer"}
-        if pattern_name in bad_patterns:
+        # Recalibrado sobre 500 trades reales (bot/brain/trade_history.json, excl. "demo"):
+        # - engulfing_bearish: 16.7% WR (n=6) RECHAZAR
+        # - doji: 0% WR (n=1) RECHAZAR
+        # - hammer: 42.9% WR (n=7) RECHAZAR (por debajo de breakeven)
+        # - engulfing_bullish: 44.4% WR (n=9) RECHAZAR (por debajo de breakeven)
+        # - pin_bar_bullish: 69.2% WR (n=26) FAVORECER - único patrón con edge confirmado
+        #   (consistente con análisis previo de 265 trades: 68.2% WR)
+        # Todo lo demás (pin_bar_bearish, shooting_star, "none") queda neutral:
+        # muestra insuficiente o resultado inconsistente entre cortes de datos,
+        # no se rechaza ni se favorece.
+        # Se aplica SIEMPRE (no solo en modo real) para que los datos recolectados
+        # en práctica sean representativos de lo que pasaría en real.
+        if pattern_name in BAD_PATTERNS:
             return {
                 "asset": asset,
                 "action": "WAIT",
-                "reason": f"Patrón peligroso: {pattern_name} tiene WR<50% históricamente",
+                "reason": f"Patrón rechazado: {pattern_name} sin edge confirmado (WR<50% histórico)",
                 "confidence": 0,
                 "score": 0,
                 "pattern": pattern_name,
@@ -354,27 +367,29 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA (CRÍTICO)
+        # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA (CRÍTICO - BLOQUEO DURO)
         # =====================================================================
-        # Análisis de 265 trades:
-        # - Trend Aligned: 55.3% WR (141W / 114L)
-        # - Trend NOT Aligned: 23.1% WR (3W / 10L)
-        # - Diferencia: 32.2 puntos porcentuales
+        # Es la señal más robusta de todo el sistema, confirmada en dos análisis
+        # independientes (265 trades y 500 trades):
+        # - Trend Aligned: 54-55% WR
+        # - Trend NOT Aligned: 18-23% WR
+        # - Diferencia: 32-36 puntos porcentuales
+        # Sin excepciones: ni por modo practice, ni por score de IA. Un score de
+        # IA alto no compensa operar contra-tendencia; los datos muestran que
+        # contra-tendencia pierde incluso cuando el resto del setup parece bueno.
         trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)
         if not trend_aligned:
-            # Contra-tendencia detectada - RECHAZAR si IA score no es excelente
-            if ai_score < 70:
-                return {
-                    "asset": asset,
-                    "action": "WAIT",
-                    "reason": f"Contra-tendencia: zona={zone_dir}, tendencia={main_trend}, AI={ai_score:.0f}<70. WR histórico: 23.1%",
-                    "confidence": 0,
-                    "score": ai_score,
-                    "pattern": pattern_name,
-                    "ai_label": "SKIP",
-                    "zone_strength": zone_strength,
-                    "rsi": current_rsi,
-                }
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"Contra-tendencia: zona={zone_dir}, tendencia={main_trend}. Bloqueo duro (sin excepciones).",
+                "confidence": 0,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": "SKIP",
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+            }
 
         # =====================================================================
         # 5. REGLAS DE RECHAZO
@@ -474,8 +489,8 @@ class IntelligentEngine:
         distance_to_zone = abs(price - zone_level)
         zone_range = nearest_zone.get("range", 0.01)  # Rango de la zona
         
-        # Si estamos dentro del 30% del rango de la zona, es muy arriesgado
-        if distance_to_zone < zone_range * 0.3:
+        # Si estamos dentro del 10% del rango de la zona, esperar movimiento
+        if distance_to_zone < zone_range * 0.1:
             return {
                 "asset": asset,
                 "action": "WAIT",
@@ -487,17 +502,6 @@ class IntelligentEngine:
                 "zone_strength": zone_strength,
                 "rsi": current_rsi,
             }
-        
-        # 8.3 - VALIDAR DIRECCIÓN vs ZONA (SUAVIZADO - solo advertencia)
-        zone_type = nearest_zone.get("zone_type", "support")
-        
-        # Si hay conflicto, usar IA como fuente de verdad
-        if expected_dir == "CALL" and zone_type == "resistance":
-            # Conflicto: CALL en resistencia - cambiar a PUT
-            expected_dir = "PUT"
-        elif expected_dir == "PUT" and zone_type == "support":
-            # Conflicto: PUT en soporte - cambiar a CALL
-            expected_dir = "CALL"
         
         # 8.4 - VERIFICAR QUE ESTAMOS EN INICIO DE MOVIMIENTO (SUAVIZADO - solo informativo)
         # Ya no bloquea, solo informa
@@ -537,19 +541,13 @@ class IntelligentEngine:
         final_score = max(ai_score, pat_score)
         confidence = min(0.90, final_score / 100)
         
-        # FAVORECER patrones ganadores (basado en análisis de 265 trades)
-        # pin_bar_bullish: 68.2% WR → +10% confianza
-        # shooting_star: 60% WR → +8% confianza
-        # pin_bar_bearish: 56.1% WR → +5% confianza
+        # FAVORECER el único patrón con edge confirmado en dos análisis independientes
+        # (265 trades: 68.2% WR: 500 trades: 69.2% WR). shooting_star y pin_bar_bearish
+        # se removieron de aquí: su WR se invirtió/no se sostuvo entre cortes de datos,
+        # no hay evidencia consistente de edge.
         if pattern_name == "pin_bar_bullish":
             confidence = min(0.95, confidence + 0.10)
             final_score = min(100, final_score + 10)
-        elif pattern_name == "shooting_star":
-            confidence = min(0.95, confidence + 0.08)
-            final_score = min(100, final_score + 8)
-        elif pattern_name == "pin_bar_bearish":
-            confidence = min(0.95, confidence + 0.05)
-            final_score = min(100, final_score + 5)
         
         # Aplicar penalidades
         if rsi_penalty > 0:

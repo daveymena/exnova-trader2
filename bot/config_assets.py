@@ -120,25 +120,34 @@ HORARIO_MADRUGADA = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 ASSETS_BLACKLIST = {
-    # Peores activos (PnL más negativo, WR < 40%)
-    "SUGAR-OTC",        # -$52.23, 33% WR
-    "USDAED-OTC",       # -$38.27, 0% WR
-    "CHFNOK-OTC",       # -$26.22, 0% WR
-    "FB-OTC",           # -$24.48, 0% WR
-    "ETHUSD-OTC",       # -$23.19, 0% WR
-    "ALIBABA-OTC",      # -$21.75, 0% WR
-    "USDCHF-OTC",       # -$21.06, 0% WR
-    "NZDCHF-OTC",       # -$20.03, 0% WR
-    "USDPHP-OTC",       # -$19.87, 25% WR
-    "USDZAR-OTC",       # -$18.61, 0% WR
+    # Peores activos (PnL más negativo, WR < 50%)
+    "SUGAR-OTC",        # -$52.23, 33.3% WR (6t)
+    "AUDCAD-OTC",       # -$44.59, 14.3% WR (7t)
+    "APPLE-OTC",        # -$41.03, 50.0% WR (4t)
+    "USDAED-OTC",       # -$38.27, 0% WR (2t)
+    "AUDNZD-OTC",       # -$30.32, 44.4% WR (9t)
+    "COFFEE-OTC",       # -$25.30, 0% WR (3t)
+    "CHFNOK-OTC",       # -$26.22, 0% WR (3t)
+    "FB-OTC",           # -$24.48, 0% WR (2t)
+    "ETHUSD-OTC",       # -$23.19, 0% WR (2t)
+    "ALIBABA-OTC",      # -$21.75, 0% WR (2t)
+    "USDCHF-OTC",       # -$21.06, 0% WR (2t)
+    "NZDCHF-OTC",       # -$20.03, 0% WR (2t)
+    "USDPHP-OTC",       # -$19.87, 25.0% WR (4t)
+    "INTEL-OTC",        # -$18.56, 0% WR (2t)
+    "CITI-OTC",         # -$18.59, 0% WR (2t)
+    "USDZAR-OTC",       # -$18.61, 0% WR (2t)
+    "GER30-OTC",        # -$18.69, 25.0% WR (4t)
+    "JPM-OTC",          # -$18.79, 0% WR (2t)
+    "XAUUSD-OTC",       # -$18.91, 33.3% WR (6t)
+    "USDPLN-OTC",       # -$4.21, 50.0% WR (6t)
 }
 
 BAD_PATTERNS = {
-    "pin_bar_bullish",    # 0% WR (0/3), -$40.45 PnL
-    "bullish_engulfing",  # 0% WR (0/1), -$13.61 PnL
-    "engulfing_bearish",  # 33% WR (1/3), -$1.64 PnL
-    "doji",               # 0% WR histórico
-    "hammer",             # 42.9% WR, -$13.62 PnL
+    "engulfing_bearish",  # 20.0% WR (2/10), -$83.85 PnL — PEOR PATRÓN
+    "doji",               # 0% WR (0/1), -$10.05 PnL
+    "hammer",             # 42.9% WR (3/7), -$13.62 PnL
+    "engulfing_bullish",  # 54.5% WR (6/11), -$6.41 PnL (borde)
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -147,18 +156,31 @@ BAD_PATTERNS = {
 # ─────────────────────────────────────────────────────────────────────────────
 
 REAL_ASSETS_WHITELIST = {
-    "GBPUSD-OTC",    # 75% WR (3/4), +$20.01 PnL
-    "AUDUSD-OTC",    # 75% WR (3/4), +$17.74 PnL
-    "USDJPY-OTC",    # 66.7% WR (2/3), +$9.24 PnL
-    "EURUSD-OTC",    # 66.7% WR (2/3) con patrón none, +$7.92
-    "EURGBP-OTC",    # 60% WR (3/5), pin_bar_bearish 75% WR
+    # ── Fuertes (PnL > $10, WR ≥ 60%) ──
+    "EURUSD-OTC",    # 60.0% WR (6/10), +$12.85 PnL
+    "USDJPY-OTC",    # 62.5% WR (5/8), +$11.32 PnL
+    "GBPAUD-OTC",    # 80.0% WR (4/5), +$20.19 PnL
+    "USOUSD-OTC",    # 80.0% WR (4/5), +$19.34 PnL
+    "AMAZON-OTC",    # 62.5% WR (5/8), +$22.30 PnL
+    "GOOGLE-OTC",    # 80.0% WR (4/5), +$21.05 PnL
+    "TESLA-OTC",     # 75.0% WR (3/4), +$20.95 PnL
+    "XAGUSD-OTC",    # 75.0% WR (3/4), +$13.74 PnL
+    "EURNZD-OTC",    # 75.0% WR (3/4), +$12.37 PnL
+    "EURCAD-OTC",    # 60.0% WR (3/5), +$9.34 PnL
+    "AUDJPY-OTC",    # 60.0% WR (3/5), +$7.96 PnL
+    "NZDJPY-OTC",    # 62.5% WR (5/8), +$1.73 PnL
+    # ── Sólidos (WR > 50%, PnL positivo) ──
+    "AUDUSD-OTC",    # 66.7% WR (2/3), +$6.72 PnL
+    "GBPCAD-OTC",    # 66.7% WR (2/3), +$5.54 PnL
+    "GBPNZD-OTC",    # 50.0% WR (3/6), +$4.07 PnL
+    "GBPUSD-OTC",    # 100% WR (1/1), +$7.33 PnL
 }
 
 REAL_PATTERNS_ALLOWED = {
-    "pin_bar_bearish",  # 58.3% WR global, 75% en EURGBP
-    "breakout",         # 60% WR global, 100% en GBPUSD
-    "zone_rejection",   # 100% WR (1/1)
-    "none",             # 66.7% WR en EURUSD-OTC, 36.8% global (depende del activo)
+    "pin_bar_bullish",   # 68.2% WR (15/22), +$64.00 PnL — MEJOR PATRÓN
+    "shooting_star",     # 60.0% WR (3/5), +$6.35 PnL
+    "pin_bar_bearish",   # 54.5% WR (24/44), -$21.04 PnL
+    "none",              # 54.1% WR (98/181), -$48.00 PnL
 }
 
 # Zona strength para REAL - SIN techo máximo (el motor da ZS~1.00)
