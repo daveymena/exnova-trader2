@@ -12,13 +12,17 @@ python3 -c "from app.data.repository import repository; repository.migrate(); pr
 }
 
 # 2. Bot de trading (foreground del PID 1 no; lo arrancamos en background).
-echo "[entrypoint] Arrancando bot de trading (run_live.py)..."
-python3 -u run_live.py &
+# bot/run_live.py es el UNICO runner canonico (fusion del que vivia en la raiz
+# con el de bot/, ver comentario al inicio de ese archivo).
+echo "[entrypoint] Arrancando bot de trading (bot/run_live.py)..."
+python3 -u bot/run_live.py &
 BOT_PID=$!
 echo "[entrypoint] Bot PID: $BOT_PID"
 
 # 3. Supervisor IA periodico (cada SUPERVISOR_INTERVAL_SECONDS=1800s por defecto).
-if [ "${SUPERVISOR_ENABLED:-true}" = "true" ]; then
+# El default del fallback (":-false") es deliberado: si SUPERVISOR_ENABLED no
+# esta definido, el supervisor de auto-aplicacion de codigo NO debe arrancar.
+if [ "${SUPERVISOR_ENABLED:-false}" = "true" ]; then
     echo "[entrypoint] Arrancando supervisor IA (cada ${SUPERVISOR_INTERVAL_SECONDS:-1800}s)..."
     python3 -u -m app.services.supervisor_loop &
     SUP_PID=$!

@@ -24,9 +24,12 @@ COPY requirements.txt ./requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # 2. Copiar código del bot + app + supervisor + opencode config
+# run_live.py vive en bot/ (COPY bot/ lo incluye). Ya no existe una copia en
+# la raiz: habia dos run_live.py divergentes (distintos parametros de riesgo
+# para cuenta REAL) y el Dockerfile ejecutaba uno mientras se desarrollaba el
+# otro. Se fusionaron en bot/run_live.py, que es ahora el unico canonico.
 COPY bot/ ./bot/
 COPY app/ ./app/
-COPY run_live.py ./run_live.py
 COPY opencode.json ./opencode.json
 COPY AGENTS.md ./AGENTS.md
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
@@ -55,9 +58,15 @@ ENV BROKER_NAME="exnova" \
     COOLDOWN_AFTER_LOSS="300" \
     MIN_BETWEEN_TRADES="180" \
     LOG_LEVEL="INFO" \
-    SUPERVISOR_ENABLED="true" \
+    SUPERVISOR_ENABLED="false" \
     SUPERVISOR_INTERVAL_SECONDS="1800" \
     OPENCODE_TIMEOUT="300"
+# SUPERVISOR_ENABLED por defecto en "false": este supervisor puede APLICAR
+# cambios de codigo de forma autonoma (ver app/services/mcp_server_trading.py).
+# Hasta que su ruta de apply_change tenga el mismo freno estadistico que
+# bot/core/self_evaluator.py (Wilson + minimo de observaciones), no debe
+# arrancar solo porque se despliegue el contenedor. Activar explicitamente
+# con SUPERVISOR_ENABLED=true en EasyPanel solo tras revisar ese freno.
 
 EXPOSE 8000
 

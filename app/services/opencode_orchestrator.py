@@ -201,7 +201,7 @@ def run_cycle() -> dict[str, Any]:
         "model": MODEL_DEFAULT,
         "returncode": rc,
         "response_len": len(response),
-        "n_proposals": len(propososals),
+        "n_proposals": len(proposals),
         "proposal_ids": rec_ids,
         "duration_sec": duration,
     }
