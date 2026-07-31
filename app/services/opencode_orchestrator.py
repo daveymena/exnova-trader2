@@ -1,8 +1,9 @@
 """Orquestador OpenCode CLI para supervisión de trading.
 
-Construye un prompt de supervisión con datos reales (SQLite), lanza OpenCode CLI
-(modelo free por defecto: deepseek-v4-flash-free), captura la respuesta, parsea
-propuestas de cambio en JSON y las registra como recomendaciones pendientes.
+Construye un prompt de supervisión con datos reales (SQLite), lanza OpenCode
+CLI probando una ROTACION de modelos/proveedores (ver MODEL_CANDIDATES) hasta
+que uno responda, captura la respuesta, parsea propuestas de cambio en JSON y
+las registra como recomendaciones pendientes.
 
 El agente NO ejecuta trades ni modifica lógica de ejecución: solo propone
 cambres de filtros/umbrales que quedan en data/ai_overrides.json tras revisión.
@@ -25,7 +26,6 @@ if str(_APP_DIR) not in sys.path:
 
 from app.data.repository import repository  # noqa: E402
 
-MODEL_DEFAULT = os.getenv("OPENCODE_MODEL", "deepseek-v4-flash-free")
 TIMEOUT_DEFAULT = int(os.getenv("OPENCODE_TIMEOUT", "300"))
 AGENTS_MD_PATH = _APP_DIR / "AGENTS.md"
 
@@ -169,12 +169,17 @@ MODEL_CANDIDATES = [
 PER_MODEL_TIMEOUT = int(os.getenv("OPENCODE_PER_MODEL_TIMEOUT", "50"))
 
 
-def _launch_opencode(prompt: str) -> tuple[str, int]:
+def _launch_opencode(prompt: str) -> tuple[str, int, str]:
     """
     Lanza `opencode run` probando MODEL_CANDIDATES en orden hasta que uno
     responda. Un modelo sin cupo se detecta por TIMEOUT (no por codigo de
     error: los proveedores agotados de Zen no devuelven ningun error, se
     quedan colgados) y se pasa al siguiente sin abortar el ciclo completo.
+
+    Devuelve (output, returncode, modelo_usado). El tercer valor es el que
+    realmente respondio -- registrarlo es lo que evita que un reporte diga
+    "deepseek-v4-flash-free" cuando en realidad la rotacion cayo en mistral,
+    lo que engañaria a cualquiera revisando el audit log despues.
     """
     env = os.environ.copy()
     binario_nombre = os.getenv("OPENCODE_BIN", "opencode")
@@ -200,10 +205,10 @@ def _launch_opencode(prompt: str) -> tuple[str, int]:
                 intentos.append(f"{modelo}: OK en {elapsed:.1f}s")
                 print(f"[orchestrator] modelo usado: {modelo} ({elapsed:.1f}s) "
                      f"| intentos previos: {intentos[:-1]}")
-                return output, proc.returncode
+                return output, proc.returncode, modelo
             intentos.append(f"{modelo}: rc={proc.returncode} en {elapsed:.1f}s")
         except FileNotFoundError:
-            return ("[orchestrator] opencode CLI no encontrado en PATH", 127)
+            return ("[orchestrator] opencode CLI no encontrado en PATH", 127, "")
         except subprocess.TimeoutExpired:
             intentos.append(f"{modelo}: TIMEOUT tras {PER_MODEL_TIMEOUT}s "
                             f"(probable cuota agotada)")
@@ -211,7 +216,7 @@ def _launch_opencode(prompt: str) -> tuple[str, int]:
             intentos.append(f"{modelo}: error {e}")
 
     detalle = " | ".join(intentos)
-    return (f"[orchestrator] todos los candidatos fallaron: {detalle}", 1)
+    return (f"[orchestrator] todos los candidatos fallaron: {detalle}", 1, "")
 
 
 def run_cycle() -> dict[str, Any]:
@@ -239,11 +244,11 @@ def run_cycle() -> dict[str, Any]:
 
     prompt = _build_prompt(stats, breakdown, trades, recs)
     repository.audit_log(cycle_id, "orchestrator", "prompt_built",
-                         f"len={len(prompt)} model={MODEL_DEFAULT}")
+                         f"len={len(prompt)} candidatos={MODEL_CANDIDATES}")
 
-    response, rc = _launch_opencode(prompt)
+    response, rc, modelo_usado = _launch_opencode(prompt)
     repository.audit_log(cycle_id, "orchestrator", "agent_response",
-                         f"rc={rc} len={len(response)}")
+                         f"rc={rc} len={len(response)} modelo={modelo_usado or 'ninguno'}")
     repository.audit_log(cycle_id, "orchestrator", "agent_response_text",
                          response[:2000])
 
@@ -253,7 +258,7 @@ def run_cycle() -> dict[str, Any]:
     duration = round(time.time() - t0, 1)
     report = {
         "cycle_id": cycle_id,
-        "model": MODEL_DEFAULT,
+        "model": modelo_usado or "ninguno (todos los candidatos fallaron)",
         "returncode": rc,
         "response_len": len(response),
         "n_proposals": len(proposals),
