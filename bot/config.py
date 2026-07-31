@@ -73,12 +73,18 @@ class Config:
     GROQ_API_KEYS = [key for key in GROQ_API_KEYS if key.strip()]
     GROQ_API_KEY = GROQ_API_KEYS[0] if GROQ_API_KEYS else ""
     
-    # Configuración Ollama actualizada
-    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "kimi-k2.5:cloud")
-    OLLAMA_MODEL_FAST = "phi3:mini"  # Modelo ultra-liviano como alternativa
-    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "https://n8n-ollama.ginee6.easypanel.host")
+    # Configuración Ollama.
+    # kimi-k2.5:cloud (el default anterior) se retiro el 2026-07-31. El tunel
+    # n8n-ollama.ginee6.easypanel.host tambien esta caido (SSL handshake
+    # failure: el servicio ya no corre ahi). Default nuevo: gemma4:cloud,
+    # verificado el 2026-07-31 respondiendo en ~2-4s con JSON valido contra
+    # un Ollama local (localhost:11434, API OpenAI-compatible). En EasyPanel,
+    # sobreescribir OLLAMA_BASE_URL con la URL del Ollama propio desplegado.
+    OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "gemma4:cloud")
+    OLLAMA_MODEL_FAST = os.getenv("OLLAMA_MODEL_FAST", "gemma4:cloud")
+    OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
     OLLAMA_URL = f"{OLLAMA_BASE_URL}/api/generate"
-    OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "120000")) / 1000  # Convertir a segundos
+    OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "45000")) / 1000  # Convertir a segundos
     
     # ============= BACKEND (para GUI remota) =============
     BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
