@@ -206,9 +206,15 @@ def setup_key(signal: dict, asset: str) -> str:
     la misma idea con parametros distintos hasta que una pase por azar).
     """
     pattern = (signal.get("pattern") or "none").strip() or "none"
-    zone_obj = signal.get("zone_object")
-    zone_type = getattr(zone_obj, "zone_type", None) or "sin_zona"
     direction = signal.get("signal", "?")
+    # intelligent_engine.py nunca incluye "zone_object" en su dict (solo
+    # campos planos) -- signal.get("zone_object") era SIEMPRE None, asi que
+    # zone_type quedaba fijo en "sin_zona" para TODOS los setups, colapsando
+    # una dimension que si es real: la direccion de una senal TRADE es
+    # exactamente el zone_dir que calculo el motor (ver
+    # intelligent_engine.py: "signal": expected_dir == zone_dir), asi que es
+    # invertible sin adivinar: CALL viene de soporte, PUT de resistencia.
+    zone_type = "support" if direction == "CALL" else "resistance"
     market = "otc" if "-OTC" in asset.upper() else "real"
     familia = f"{pattern}_{zone_type}"
     return f"{familia}#{direction}_{market}"
@@ -228,19 +234,49 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     asset = signal["asset"]
     direction = signal["signal"]
     confidence = signal["confidence"]
-    expiration = signal.get("expiration", 60)
+    # IMPORTANTE: intelligent_engine.py devuelve "exp_sec" (180s por defecto),
+    # NO "expiration". Con la clave equivocada, .get("expiration", 60) caia
+    # SIEMPRE al default de 60s -- toda operacion se ejecutaba a 1 minuto de
+    # expiracion en vez de los 3 minutos que el motor de senales realmente
+    # decidio. Verificado el 2026-07-31 leyendo el dict real que devuelve
+    # evaluate_market(). Bug critico: sin esto, ni el analisis de perdidas
+    # tiene sentido, porque se estaria juzgando un horizonte que el motor
+    # nunca eligio.
+    expiration = signal.get("exp_sec", 180)
     pattern = signal.get("pattern", "")
     zone_str = signal.get("zone_strength", 0.0)
-    zone_obj = signal.get("zone_object")
+    # intelligent_engine.py NUNCA incluye "zone_object" en el dict que
+    # devuelve (solo campos planos: zone_strength, rsi, phase, etc.) --
+    # zone_obj = signal.get("zone_object") era SIEMPRE None. Se reconstruye
+    # honestamente lo que SI se puede derivar con certeza (zone_dir es
+    # invertible desde la direccion: el motor calcula
+    # "signal": expected_dir == zone_dir antes de retornar) y se deja
+    # explicitamente ausente lo que no se puede saber (el nivel exacto de la
+    # zona nunca llega hasta aqui).
+    zone_type_derivado = "support" if direction == "CALL" else "resistance"
     rsi_val = signal.get("rsi", 50)
     pattern_name = pattern
     trend_align = signal.get("trend_aligned", False)
+    # "phase" es la clave real (no "market_phase"); trend_htf es el segundo
+    # timeframe de tendencia que si devuelve el motor.
+    phase_real = signal.get("phase", "unknown")
 
-    # `context` legado ({} siempre: evaluate_market no emite esa clave) se
-    # sustituye por un diccionario de condiciones construido directamente con
-    # los campos reales de `signal`, para que TradeEvaluator/AdaptiveLearner
-    # reciban datos de verdad y no un dict vacio en cada operacion.
-    context = {}
+    # `context` legado (antes SIEMPRE {}: evaluate_market no emite una clave
+    # "context") se construye ahora con la forma anidada que
+    # TradeEvaluator._evaluate_loss/_evaluate_win espera de verdad
+    # (zone_context.zone_strength, momentum.rsi_m1, dominant_trend,
+    # market_phase) usando los campos REALES del signal, no {} vacios que
+    # hacian que CADA perdida se diagnosticara igual sin importar que paso.
+    context = {
+        "zone_context": {
+            "zone_strength": zone_str,
+            "trend_aligned": trend_align,
+        },
+        "momentum": {"rsi_m1": rsi_val},
+        "dominant_trend": signal.get("trend_m15", "NEUTRAL"),
+        "market_phase": phase_real,
+    }
+
     conditions = {
         "zone_strength_high": zone_str > 0.7,
         "zone_strength_medium": 0.5 <= zone_str <= 0.7,
@@ -258,9 +294,32 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         "pattern_doji_reversal": "doji" in pattern_name,
         "pattern_strong": bool(pattern_name) and "none" not in pattern_name,
         "setup_quality_high": signal.get("score", 0) >= 70,
-        "market_phase_ranging": signal.get("market_phase", "") == "ranging",
-        "market_phase_trending": signal.get("market_phase", "") == "trending",
+        "market_phase_ranging": phase_real == "ranging",
+        "market_phase_trending": phase_real == "trending",
+        # Las 3 claves siguientes las lee TradeEvaluator directamente
+        # (rejection_visible, mtf_aligned, candle_confirming); antes nunca
+        # se proveian, asi que .get() devolvia None y "no_rejection_wick" +
+        # "mtf_not_aligned" se marcaban como causa en TODAS las perdidas sin
+        # excepcion, fuera cierto o no. mtf_aligned reutiliza el mismo bool
+        # que ya calculo el motor (trend_aligned), no se reinventa.
+        "mtf_aligned": trend_align,
+        # rejection_visible y candle_confirming se calculan mas abajo una
+        # vez que hay velas M1 disponibles (df_m1 llega como parametro).
     }
+    if df_m1 is not None and len(df_m1) >= 1:
+        last = df_m1.iloc[-1]
+        rng = float(last["high"] - last["low"])
+        if rng > 0:
+            if direction == "CALL":
+                wick = float(last["close"] - last["low"]) if last["close"] >= last["open"] \
+                    else float(last["open"] - last["low"])
+            else:
+                wick = float(last["high"] - last["close"]) if last["close"] <= last["open"] \
+                    else float(last["high"] - last["open"])
+            conditions["rejection_visible"] = (wick / rng) >= 0.30
+        bullish_candle = last["close"] > last["open"]
+        conditions["candle_confirming"] = (bullish_candle if direction == "CALL"
+                                           else not bullish_candle)
 
     action_str = "call" if direction == "CALL" else "put"
     duration = max(1, min(5, expiration // 60))
@@ -290,7 +349,15 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         return False
 
     try:
-        zone_level = signal.get("zone", 0.0) or signal.get("entry_price", 0.0) or 0.0
+        # "zone"/"entry_price" no existen en el dict de intelligent_engine.py
+        # -- zone_level caia SIEMPRE en 0.0. Se usa el cierre de la ultima
+        # vela M1 (ya disponible como parametro, sin llamada extra a la API):
+        # es la mejor aproximacion honesta al nivel, dado que la señal solo
+        # dispara cuando el precio esta tocando la zona.
+        if df_m1 is not None and not df_m1.empty:
+            zone_level = float(df_m1["close"].iloc[-1])
+        else:
+            zone_level = 0.0
         allowed, supervised_reason, supervised_details = zone_learner.get_opportunity(asset, direction, float(zone_level))
         if not allowed:
             log(f"[SUPERVISADO] {supervised_reason} | toques={supervised_details.get('touches', 0)} holds={supervised_details.get('holds', 0)}", "WARNING")
@@ -326,12 +393,20 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         log(f"[OB M15] ⚠️ Sin datos M15, operando con validación técnica solamente", "WARNING")
 
     # ── VALIDACIÓN CON AGENTE IA ──────────────────────────────────────────────
+    current_price = 0.0
     try:
-        current_price = 0.0
-        if not market_data.get_candles(asset, "1m", 1).empty:
-            current_price = float(market_data.get_candles(asset, "1m", 1).iloc[-1]["close"])
+        candles_1m = market_data.get_candles(asset, "1m", 1)
+        if not candles_1m.empty:
+            current_price = float(candles_1m.iloc[-1]["close"])
     except Exception:
-        current_price = signal.get("zone", 0.0) or amount
+        pass
+    if current_price <= 0:
+        # Fallback honesto: la ultima vela M1 ya disponible. Antes caia en
+        # signal.get("zone", 0.0) or amount -- "zone" es fantasma (nunca
+        # existe en el dict del motor) asi que terminaba usando el MONTO EN
+        # DOLARES de la apuesta como si fuera el precio del activo.
+        if df_m1 is not None and not df_m1.empty:
+            current_price = float(df_m1["close"].iloc[-1])
 
     trade_params = {
         'asset': asset,
@@ -345,8 +420,11 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         'rsi': rsi_val,
         'trend': signal.get("trend_m15", "NEUTRAL"),
         'pattern': pattern or "none",
-        'zone_type': zone_obj.zone_type if zone_obj else "support",
-        'zone': zone_obj.level if zone_obj else current_price,
+        'zone_type': zone_type_derivado,
+        # El nivel exacto de la zona no llega hasta aqui (el motor no lo
+        # expone); current_price es la mejor aproximacion honesta ya que la
+        # señal solo dispara cuando el precio esta tocando esa zona.
+        'zone': current_price,
     }
 
     log(f"[AI] Evaluando propuesta de trade con Agente IA...")
@@ -383,7 +461,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             try:
                 feats = features_from_candles(df_m1, df_m5, df_m15) if df_m1 is not None else {}
                 feats.setdefault("pattern", pattern or None)
-                feats.setdefault("zone_type", zone_obj.zone_type if zone_obj else None)
+                feats.setdefault("zone_type", zone_type_derivado)
                 feats.setdefault("zone_strength", zone_str if zone_str else None)
                 journal_rec = journal.open_trade(
                     asset=asset, direction=direction,
@@ -522,7 +600,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     entry=float(trade_record.get("entry_price", 0.0)),
                     exit=float(exit_price),
                     result=result,
-                    level=float(signal.get("zone", 0.0) or trade_record.get("entry_price", 0.0))
+                    level=float(trade_record.get("entry_price", 0.0))
                 )
                 log("[SUPERVISADO] Resultado guardado en memoria de zonas")
             except Exception as e:
@@ -535,11 +613,15 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                 good = diagnosis.get("what_worked", ["-"])[0]
                 log(f"[ANALISIS] Ganancia por: {good}")
 
-            if zone_obj:
-                reacted = (result == "WIN" and direction == "CALL" and zone_obj.zone_type == "support") or \
-                          (result == "WIN" and direction == "PUT" and zone_obj.zone_type == "resistance")
-                memory.add_or_update_zone(asset, zone_obj.level, zone_obj.zone_type, reacted)
-                memory.save()
+            # Antes esto NUNCA se ejecutaba: zone_obj era siempre None
+            # (zone_object no existe en el dict de intelligent_engine.py), asi
+            # que memory.add_or_update_zone() jamas recibia un resultado real
+            # -- la memoria de zonas (bot/brain/market_memory.py) estaba
+            # desconectada del resultado de cada operacion.
+            reacted = (result == "WIN" and direction == "CALL" and zone_type_derivado == "support") or \
+                      (result == "WIN" and direction == "PUT" and zone_type_derivado == "resistance")
+            memory.add_or_update_zone(asset, current_price, zone_type_derivado, reacted)
+            memory.save()
 
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
