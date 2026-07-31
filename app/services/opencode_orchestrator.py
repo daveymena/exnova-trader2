@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -141,22 +142,76 @@ def _register_proposals(cycle_id: int, proposals: list[dict[str, Any]]) -> list[
     return ids
 
 
+# Rotacion de modelos: probada el 2026-07-31 tras encontrar que la cuota
+# gratuita de OpenCode Zen esta agotada -- sus modelos *-free (deepseek-v4-
+# flash-free, mimo-v2.5-free) NO devuelven error, se quedan colgados sin
+# limite, verificado con >45s de espera y 0 bytes de respuesta. Un timeout
+# corto por intento + pasar al siguiente candidato es la unica forma segura
+# de no bloquear un ciclo entero de supervision en un proveedor sin cupo.
+# Orden: primero lo verificado funcionando hoy (mistral, 11-36s), despues
+# proveedores con cuota tipicamente generosa (nvidia, groq), despues Zen
+# gratis (para cuando su cuota se renueve, es costo cero) y opciones pagas
+# ya autenticadas como ultimo recurso.
+MODEL_CANDIDATES = [
+    m.strip() for m in os.getenv(
+        "OPENCODE_MODEL_CANDIDATES",
+        "mistral/mistral-small-latest,"
+        "nvidia/meta/llama-3.1-8b-instruct,"
+        "groq/llama-3.1-8b-instant,"
+        "opencode/deepseek-v4-flash-free,"
+        "minimax-coding-plan/MiniMax-M2.5"
+    ).split(",") if m.strip()
+]
+# Timeout por intento: generoso para modelos que SI responden (mistral tardo
+# hasta 36s con MCP+instructions cargados), pero corto frente al bloqueo
+# indefinido de un modelo sin cupo -- así una rotacion completa de 5
+# candidatos cabe holgada dentro de OPENCODE_TIMEOUT (300s por defecto).
+PER_MODEL_TIMEOUT = int(os.getenv("OPENCODE_PER_MODEL_TIMEOUT", "50"))
+
+
 def _launch_opencode(prompt: str) -> tuple[str, int]:
-    """Lanza `opencode run` (no interactivo) y captura stdout."""
+    """
+    Lanza `opencode run` probando MODEL_CANDIDATES en orden hasta que uno
+    responda. Un modelo sin cupo se detecta por TIMEOUT (no por codigo de
+    error: los proveedores agotados de Zen no devuelven ningun error, se
+    quedan colgados) y se pasa al siguiente sin abortar el ciclo completo.
+    """
     env = os.environ.copy()
-    cmd = [os.getenv("OPENCODE_BIN", "opencode"), "run", prompt]
-    try:
-        proc = subprocess.run(
-            cmd, cwd=str(_APP_DIR), capture_output=True, text=True,
-            timeout=TIMEOUT_DEFAULT, env=env,
-        )
-        return proc.stdout + (proc.stderr or ""), proc.returncode
-    except FileNotFoundError:
-        return ("[orchestrator] opencode CLI no encontrado en PATH", 127)
-    except subprocess.TimeoutExpired:
-        return ("[orchestrator] timeout", 124)
-    except Exception as e:
-        return (f"[orchestrator] error lanzando opencode: {e}", 1)
+    binario_nombre = os.getenv("OPENCODE_BIN", "opencode")
+    # shutil.which() resuelve el shim .cmd que crea npm en Windows -- sin
+    # esto, subprocess.run(['opencode',...]) falla con WinError 2 en
+    # cualquier plataforma Windows (verificado el 2026-07-31: nunca lograba
+    # ni siquiera lanzar el proceso). En Linux (el contenedor real de
+    # despliegue) which() tambien resuelve el binario normalmente.
+    binario = shutil.which(binario_nombre) or binario_nombre
+    intentos: list[str] = []
+
+    for modelo in MODEL_CANDIDATES:
+        cmd = [binario, "run", "--model", modelo, prompt]
+        t0 = time.time()
+        try:
+            proc = subprocess.run(
+                cmd, cwd=str(_APP_DIR), capture_output=True, text=True,
+                timeout=PER_MODEL_TIMEOUT, env=env,
+            )
+            elapsed = time.time() - t0
+            output = proc.stdout + (proc.stderr or "")
+            if proc.returncode == 0 and output.strip():
+                intentos.append(f"{modelo}: OK en {elapsed:.1f}s")
+                print(f"[orchestrator] modelo usado: {modelo} ({elapsed:.1f}s) "
+                     f"| intentos previos: {intentos[:-1]}")
+                return output, proc.returncode
+            intentos.append(f"{modelo}: rc={proc.returncode} en {elapsed:.1f}s")
+        except FileNotFoundError:
+            return ("[orchestrator] opencode CLI no encontrado en PATH", 127)
+        except subprocess.TimeoutExpired:
+            intentos.append(f"{modelo}: TIMEOUT tras {PER_MODEL_TIMEOUT}s "
+                            f"(probable cuota agotada)")
+        except Exception as e:
+            intentos.append(f"{modelo}: error {e}")
+
+    detalle = " | ".join(intentos)
+    return (f"[orchestrator] todos los candidatos fallaron: {detalle}", 1)
 
 
 def run_cycle() -> dict[str, Any]:

@@ -1,1 +1,13 @@
-﻿{"$schema":"https://opencode.ai/config.json","model":"opencode/deepseek-v4-flash-free","mcp":{"trading":{"type":"local","command":["python3","-u","app/services/mcp_server_trading.py"],"enabled":true,"env":{"PYTHONUNBUFFERED":"1","PYTHONPATH":"."}}},"instruction":"Eres el SUPERVISOR GENERAL de una plataforma de trading de opciones binarias (Exnova, modo PRACTICE). Lee AGENTS.md. Tienes tools MCP de trading (trading_get_stats, trading_get_trades, trading_propose_change, etc). Analiza datos reales de SQLite y propon mejoras CONCRETAS y MEDIBLES. No ejecutes trades. No toques cuenta REAL. Prioriza evidencia estadistica sobre intuicion. Calidad > Cantidad."}
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "mistral/mistral-small-latest",
+  "instructions": ["AGENTS.md"],
+  "mcp": {
+    "trading": {
+      "type": "local",
+      "command": ["python3", "-u", "app/services/mcp_server_trading.py"],
+      "enabled": true,
+      "env": { "PYTHONUNBUFFERED": "1", "PYTHONPATH": "." }
+    }
+  }
+}
