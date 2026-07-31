@@ -54,23 +54,39 @@ ASSETS_OTC_24_7 = [
 # ACTIVOS PTC (NORMAL) - SOLO HORARIO MAÑANA
 # ─────────────────────────────────────────────────────────────────────────────
 
-ASSETS_PTC_MORNING = [
-    # Pares Forex normales (solo mañana 08:00-12:00 Colombia)
-    "EURUSD",
-    "GBPUSD",
-    "AUDUSD",
-    "EURJPY",
-    "USDJPY",
-    "EURGBP",
-    "NZDUSD",
-    "USDCAD",
-    "USDCHF",
-    # Índices normales
-    "SPX",
-    "DAX",
-    "FTSE",
-    "NIKKEI",
+# Nombres VERIFICADOS contra la API el 2026-07-31 con scripts/check_assets.py.
+# La lista anterior ("EURUSD", "GBPUSD", "SPX", "DAX", "FTSE", "NIKKEI", ...)
+# no existia: ninguno de esos 13 tickers es reconocido por el broker, por eso
+# toda operacion sobre mercado real fallaba y el bot caia siempre en OTC.
+#
+# HALLAZGO IMPORTANTE: el broker NO ofrece ningun par de forex real como opcion
+# binaria. Solo existen en su version -OTC sintetica. Lo unico real disponible
+# son indices bursatiles, indices de divisas y ETHUSD.
+#
+# Verificar de nuevo con:  python scripts/check_assets.py --real-only
+
+# Indices bursatiles reales: disponibles en turbo (1-5 min) Y en binary.
+ASSETS_REAL_TURBO = [
+    "USSPX500:N",     # S&P 500
+    "USNDAQ100:N",    # Nasdaq 100
+    "US30:N",         # Dow Jones
+    "US2000:N",       # Russell 2000
+    "JAPAN225:N",     # Nikkei 225
 ]
+
+# Solo disponibles como binary (expiraciones largas), no en turbo.
+ASSETS_REAL_BINARY_ONLY = [
+    "DXY",            # indice del dolar
+    "EXY",            # indice del euro
+    "AXY",            # indice del dolar australiano
+    "BXY",            # indice de la libra
+    "ETHUSD-op",      # Ethereum, mercado real
+]
+
+# Mantiene el nombre historico por compatibilidad con run_live.py, pero ya no
+# depende de un horario inventado: estos indices cotizan casi 24/5 y quien
+# decide si estan abiertos es el broker, no una constante del codigo.
+ASSETS_PTC_MORNING = list(ASSETS_REAL_TURBO)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # BINARY OPTIONS OTC - OPORTUNIDADES ESPECIALES
@@ -229,9 +245,12 @@ def get_activos_activos(filter_blacklist=True):
         "bo_otc": ASSETS_BO_OTC,
     }
     
-    # Añadir PTC si es horario de mañana
-    if es_horario_manana():
-        activos["ptc_morning"] = ASSETS_PTC_MORNING
+    # Los indices reales cotizan casi 24/5, no solo de 08:00 a 12:00. La ventana
+    # de 4 horas que habia aqui era una constante inventada que, combinada con
+    # los tickers erroneos, hacia imposible operar mercado real.
+    # Quien decide si un activo esta abierto es el broker: ver
+    # bot/core/asset_discovery.py y scripts/check_assets.py.
+    activos["ptc_morning"] = ASSETS_PTC_MORNING
     
     # Filtrar blacklist si se solicita
     if filter_blacklist:

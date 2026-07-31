@@ -76,6 +76,11 @@ from brain.adaptive_learning_mode import get_learning_mode
 from engine.intelligent_engine import IntelligentEngine
 from brain.agent_trading_engine import get_agent_trading_engine
 from core.smart_money_analyzer import SmartMoneyAnalyzer
+# Diario con features REALES y control de concurrencia por activo.
+# El diario anterior guardaba rsi_at_touch=50 en 495 de 500 operaciones porque
+# se rellenaba con defaults; sin features reales no hay nada que analizar despues.
+from core.trade_journal import get_journal, features_from_candles
+from core.position_guard import get_guard, GuardConfig
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
@@ -137,9 +142,9 @@ def log(msg, level="INFO"):
 
 sm_analyzer = SmartMoneyAnalyzer()
 
-def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15=None, df_m5=None):
+def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15=None, df_m5=None, df_m1=None):
     global trade_in_progress
-    
+
     asset = signal["asset"]
     direction = signal["signal"]
     confidence = signal["confidence"]
@@ -164,6 +169,17 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         
     if state["active_order"] is not None:
         log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
+        return False
+
+    # ── UNA SOLA OPERACIÓN POR ACTIVO ───────────────────────────────────────
+    # Hasta conocer el resultado no se vuelve a entrar en la misma divisa.
+    # Apilar entradas sobre la misma señal añade filas al dataset pero menos de
+    # una observación independiente por fila, y eso corrompe la medición del
+    # winrate que luego se usa para refinar.
+    guard = get_guard()
+    permitido, motivo = guard.can_trade(asset)
+    if not permitido:
+        log(f"[GUARD] {asset} bloqueado: {motivo}", "WAIT")
         return False
 
     try:
@@ -245,6 +261,30 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         if check:
             log(f"Orden abierta: {direction} ${amount:.2f} exp={duration}min")
             state["active_order"] = order_id
+
+            # ── DIARIO: registrar el estado REAL del mercado en la entrada ───
+            # features_from_candles calcula sobre velas cerradas y devuelve None
+            # en lo que no pueda calcular. Nunca un default: un hueco es honesto,
+            # un 50 inventado contamina el dataset para siempre.
+            journal = get_journal()
+            journal_rec = None
+            try:
+                feats = features_from_candles(df_m1, df_m5, df_m15) if df_m1 is not None else {}
+                feats.setdefault("pattern", pattern or None)
+                feats.setdefault("zone_type", zone_obj.zone_type if zone_obj else None)
+                feats.setdefault("zone_strength", zone_str if zone_str else None)
+                journal_rec = journal.open_trade(
+                    asset=asset, direction=direction,
+                    strategy=signal.get("strategy", "intelligent_engine"),
+                    setup=signal.get("setup", pattern or "sin_patron"),
+                    amount=amount, expiration_seconds=expiration,
+                    confidence=confidence, features=feats,
+                    account_type=ACCOUNT_TYPE,
+                )
+                guard.register_open(asset)
+            except Exception as e:
+                log(f"[DIARIO] No se pudo registrar la entrada: {e}", "WARNING")
+
             time.sleep(expiration + 8)
 
             result, pnl = "DRAW", 0.0
@@ -273,6 +313,14 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             except Exception as e:
                 log(f"Error verificando resultado: {e}")
                 pnl, result = 0.0, "DRAW"
+
+            # ── DIARIO: cerrar la operación con su resultado ─────────────────
+            try:
+                if journal_rec is not None:
+                    journal.close_trade(journal_rec.trade_id, result, pnl)
+                guard.register_close(asset, result, pnl)
+            except Exception as e:
+                log(f"[DIARIO] No se pudo registrar el cierre: {e}", "WARNING")
 
             # Record trade
             state["trades"].append({
@@ -618,7 +666,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         base_amount = rm.calculate_position_size(confidence=confidence)
                         amount = max(1.0, round(base_amount * np.random.uniform(0.80, 1.20), 2))
                         if amount > 0:
-                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15, df_m5)
+                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15, df_m5, df_m1)
                             if executed:
                                 day_trades += 1
                                 state["last_trade_by_asset"][asset_dir_key] = time.time()
