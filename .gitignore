@@ -13,6 +13,15 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 data/migrations/
+
+# Historico de velas descargado (regenerable con scripts/fetch_history.py)
+bot/data/history/
+
+# Diario de operaciones y estado de auto-evaluacion (datos locales, no codigo)
+bot/data/trade_journal.jsonl
+bot/data/self_evaluator.json
+bot/data/self_evaluator.json.bak
+bot/data/self_evaluator.json.tmp
 data/*.json
 
 # Logs

@@ -1,6 +1,43 @@
 # -*- coding: utf-8 -*-
 """
 Ejecuta el bot Exnova en modo texto (stdout) para monitoreo desde consola.
+
+Este archivo es la fusion de los dos run_live.py que coexistian en el repo
+(bot/run_live.py y el run_live.py de la raiz, este ultimo eliminado) mas el
+diario/guard construidos en 2026-07-31. Motivo de la fusion, documentado para
+que no se repita: el Dockerfile ejecutaba el run_live.py de la raiz, que NO
+conocia trade_journal.py ni position_guard.py -- todo el trabajo de logging
+real de esa fecha era efectivamente codigo muerto en produccion. Ahora solo
+existe UN archivo, y es este.
+
+Decisiones de reconciliacion tomadas al fusionar (documentadas, no ocultas):
+  - RSI: se usa signal["rsi"] directamente (viene real de intelligent_engine.py
+    en TODAS sus ramas de retorno). La version anterior de este archivo leia
+    context.get("momentum",{}).get("rsi_m1",50) con context SIEMPRE {} (el
+    diccionario que devuelve evaluate_market no tiene clave "context"), lo que
+    contaminaba rsi_at_touch con 50 constante en el pipeline legado hacia
+    agent_engine. Corregido tomando el campo real de signal.
+  - zone_learner.record_trade_result: se usa la firma real del metodo
+    (asset, direction, entry, exit, result, level) -- la version anterior de
+    bot/run_live.py llamaba con entry_price=/exit_price=, kwargs que no
+    existen, lanzando TypeError silencioso en cada trade real.
+  - Parametros de riesgo para cuenta REAL: se toma el mas conservador de cada
+    dimension entre las dos versiones que divergian (root vs bot/), porque a
+    fecha de hoy NINGUN setup tiene edge demostrado con significancia
+    estadistica (ver bot/core/self_evaluator.py) -- no hay base para asumir
+    mas riesgo por operacion o mas frecuencia de la necesaria.
+  - Monto fijo en REAL en vez de Kelly: Kelly asume una probabilidad de
+    ganar conocida y precisa; sin edge demostrado esa entrada es una
+    suposicion, no un dato, así que el sizing por Kelly en REAL amplificaria
+    una apuesta sobre ruido. Monto fijo minimo mientras tanto.
+  - Skip anti-deteccion tambien activo en REAL: cada operacion evitada es un
+    dolar real no arriesgado sobre un sistema sin edge probado. La version
+    anterior lo desactivaba en REAL bajo la logica de "cada trade cuenta",
+    pero eso solo tiene sentido si el sistema tuviera edge positivo conocido.
+  - Whitelist estatica de activos en REAL: se mantiene RETIRADA (decision ya
+    tomada en 2026-07, ver comentario mas abajo) -- verificado que ningun
+    activo del historial tenia muestra suficiente para que "buen WR" fuera
+    señal y no ruido.
 """
 import sys, os, time, threading
 import numpy as np
@@ -71,20 +108,34 @@ from core.advanced_risk_manager import initialize_risk_manager, RiskConfig
 from brain.adaptive_learner import get_adaptive_learner
 from brain.market_memory import get_market_memory
 from brain.supervised_zone_learner import get_supervised_zone_learner
+from brain.practice_trader import PracticeTrader
 from brain.trade_evaluator import TradeEvaluator
 from brain.adaptive_learning_mode import get_learning_mode
+from brain.trade_persistence import get_trade_persistence
 from engine.intelligent_engine import IntelligentEngine
 from brain.agent_trading_engine import get_agent_trading_engine
 from core.smart_money_analyzer import SmartMoneyAnalyzer
+# Diario con features REALES y control de concurrencia por activo.
+# El diario anterior guardaba rsi_at_touch=50 en 495 de 500 operaciones porque
+# se rellenaba con defaults; sin features reales no hay nada que analizar despues.
+from core.trade_journal import get_journal, features_from_candles
+from core.position_guard import get_guard, GuardConfig
+# Motor de auto-evaluacion: decide, por setup y con evidencia real (Wilson +
+# minimo 200 observaciones, corregido por comparaciones multiples), si se
+# opera a tamano de exploracion, a tamano normal, o no se opera mas. Es el
+# mecanismo que hace que el sistema "elija solo lo que funciona": nunca
+# promueve una regla ajustada a ruido, nunca bloquea un setup nuevo antes de
+# darle su presupuesto de exploracion.
+from core.self_evaluator import get_evaluator
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
-MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.50"))  # RELAJADO: 50%
-COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "180"))  # RELAJADO: 3min
-MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "90"))  # RELAJADO: 90s
-MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "180"))  # RELAJADO: 3min
-MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "6"))  # RELAJADO: 6 pérdidas
-PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "8"))
+MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.60"))
+COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "300"))
+MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "180"))
+MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))
+MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "5"))
+PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "10"))
 PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
 
 # Cuenta: PRACTICE (default) o REAL (solo si se fuerza explícitamente)
@@ -100,6 +151,13 @@ elif ACCOUNT_TYPE == "REAL":
     else:
         print("[CRITICAL] ⚠️  CUENTA REAL ACTIVADA - Operando con dinero real")
 
+# Demo trading: envia ordenes demo reales al broker (PRACTICE), basadas en el
+# escaner de zonas de PracticeTrader. Desactivado por defecto.
+DEMO_TRADING = os.getenv("DEMO_TRADING", "false").lower() == "true"
+DEMO_AMOUNT = float(os.getenv("DEMO_AMOUNT", "2.0"))
+if DEMO_TRADING:
+    print(f"[DEMO] Modo demo activado - enviando ordenes reales a Exnova PRACTICE (${DEMO_AMOUNT}/trade)")
+
 # ─── Anti-detección / Humanización ──────────────────────────────────────────
 HUMAN_SKIP_PROBABILITY = 0.18  # 18% de trades válidos se saltan (parecer humano)
 HUMAN_JITTER_FACTOR = 0.25  # ±25% de variación aleatoria en tiempos
@@ -109,7 +167,6 @@ HUMAN_MICRO_PAUSE = 15  # Pausa aleatoria cada ~N ciclos
 
 # ─── Estado global ──────────────────────────────────────────────────────────
 from collections import deque
-import threading
 
 state = {
     "running": True,
@@ -123,6 +180,10 @@ state = {
     "last_signal": {}, "last_diagnosis": [],
     "last_trade_by_asset": {}, "rejection_stats": {},
     "last_wait_duration": 6,
+    # Demo trading state
+    "demo_order": None,
+    "demo_wins": 0, "demo_losses": 0, "demo_pnl": 0.0, "demo_balance": 0.0,
+    "demo_trades": [],
 }
 
 # Lock para evitar operaciones simultáneas
@@ -133,22 +194,73 @@ def log(msg, level="INFO"):
     now = time.strftime("%H:%M:%S")
     print(f"[{now}] [{level}] {msg}", flush=True)
 
+def setup_key(signal: dict, asset: str) -> str:
+    """
+    Clave de setup para el auto-evaluador: agrupa por lo que la investigacion
+    de hoy establecio como dimensiones que SI importan (patron, tipo de zona,
+    mercado sintetico vs real) y dentro de eso separa direccion.
+
+    Formato "familia#variante": el separador '#' hace que self_evaluator
+    agrupe automaticamente CALL/PUT y otc/real del mismo patron+zona bajo la
+    misma familia para el limite de "variantes rechazadas" (evita reintentar
+    la misma idea con parametros distintos hasta que una pase por azar).
+    """
+    pattern = (signal.get("pattern") or "none").strip() or "none"
+    zone_obj = signal.get("zone_object")
+    zone_type = getattr(zone_obj, "zone_type", None) or "sin_zona"
+    direction = signal.get("signal", "?")
+    market = "otc" if "-OTC" in asset.upper() else "real"
+    familia = f"{pattern}_{zone_type}"
+    return f"{familia}#{direction}_{market}"
+
 # ─── Trade execution ────────────────────────────────────────────────────────
 
 sm_analyzer = SmartMoneyAnalyzer()
 
-def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15=None, df_m5=None):
+def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15=None, df_m5=None, df_m1=None):
+    """
+    `evaluator` es TradeEvaluator (diagnostico post-trade); `self_eval` es
+    SelfEvaluator (decide si el setup tiene edge). Nombres distintos a
+    proposito para no confundirlos.
+    """
     global trade_in_progress
-    
+
     asset = signal["asset"]
     direction = signal["signal"]
     confidence = signal["confidence"]
     expiration = signal.get("expiration", 60)
     pattern = signal.get("pattern", "")
     zone_str = signal.get("zone_strength", 0.0)
-    context = signal.get("context", {})
-    conditions = signal.get("conditions", {})
     zone_obj = signal.get("zone_object")
+    rsi_val = signal.get("rsi", 50)
+    pattern_name = pattern
+    trend_align = signal.get("trend_aligned", False)
+
+    # `context` legado ({} siempre: evaluate_market no emite esa clave) se
+    # sustituye por un diccionario de condiciones construido directamente con
+    # los campos reales de `signal`, para que TradeEvaluator/AdaptiveLearner
+    # reciban datos de verdad y no un dict vacio en cada operacion.
+    context = {}
+    conditions = {
+        "zone_strength_high": zone_str > 0.7,
+        "zone_strength_medium": 0.5 <= zone_str <= 0.7,
+        "zone_multi_tf": signal.get("multi_tf", False),
+        "trend_aligned": trend_align,
+        "trend_strong": signal.get("trend_strong", False),
+        "counter_trend": signal.get("counter_trend", False),
+        "rsi_extreme": rsi_val < 25 or rsi_val > 75,
+        "rsi_oversold": rsi_val < 35,
+        "rsi_overbought": rsi_val > 65,
+        "rsi_divergence": signal.get("rsi_divergence", False),
+        "pattern_pin_bar": "pin_bar" in pattern_name,
+        "pattern_engulfing": "engulfing" in pattern_name,
+        "pattern_hammer": "hammer" in pattern_name,
+        "pattern_doji_reversal": "doji" in pattern_name,
+        "pattern_strong": bool(pattern_name) and "none" not in pattern_name,
+        "setup_quality_high": signal.get("score", 0) >= 70,
+        "market_phase_ranging": signal.get("market_phase", "") == "ranging",
+        "market_phase_trending": signal.get("market_phase", "") == "trending",
+    }
 
     action_str = "call" if direction == "CALL" else "put"
     duration = max(1, min(5, expiration // 60))
@@ -161,9 +273,20 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         if trade_in_progress:
             log(f"⏳ Trade saltado - ya hay una operación en progreso", "WARNING")
             return False
-        
+
     if state["active_order"] is not None:
         log(f"⏳ Operación activa detectada (ID: {state['active_order']}). Esperando resultado.", "WAIT")
+        return False
+
+    # ── UNA SOLA OPERACIÓN POR ACTIVO ───────────────────────────────────────
+    # Hasta conocer el resultado no se vuelve a entrar en la misma divisa.
+    # Apilar entradas sobre la misma señal añade filas al dataset pero menos de
+    # una observación independiente por fila, y eso corrompe la medición del
+    # winrate que luego se usa para refinar.
+    guard = get_guard()
+    permitido, motivo = guard.can_trade(asset)
+    if not permitido:
+        log(f"[GUARD] {asset} bloqueado: {motivo}", "WAIT")
         return False
 
     try:
@@ -187,12 +310,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     ob_validation = {'valid': False, 'reason': 'No M15 data', 'trend_aligned': False, 'trend': 'neutral'}
     if df_m15 is not None and len(df_m15) >= 20:
         ob_validation = sm_analyzer.validate_trade_with_ob(df_m15, direction)
-        
+
         if ob_validation.get('ob') is not None:
             ob = ob_validation['ob']
             ob_type = "alcista" if ob['type'] == 'bullish' else "bajista"
             log(f"[OB M15] Order Block {ob_type} detectado: {ob['low']:.5f}-{ob['high']:.5f} (fuerza: {ob['strength']:.0f}%)")
-        
+
         if not ob_validation['valid']:
             log(f"[OB M15] ⚠️ Sin OB M15, operando solo con señales técnicas", "WARNING")
         elif not ob_validation['trend_aligned']:
@@ -215,8 +338,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         'direction': direction,
         'amount': amount,
         'price': current_price,
-        'rsi': context.get("momentum", {}).get("rsi_m1", 50) if context else 50,
-        'trend': context.get("dominant_trend", "NEUTRAL") if context else "NEUTRAL",
+        # RSI real: viene directo de signal["rsi"], que intelligent_engine.py
+        # rellena con el RSI de Wilder calculado sobre velas M1 en TODAS sus
+        # ramas de retorno. Antes se leia via context.get(...) con context
+        # siempre {}, lo que fijaba este valor en 50 constante.
+        'rsi': rsi_val,
+        'trend': signal.get("trend_m15", "NEUTRAL"),
         'pattern': pattern or "none",
         'zone_type': zone_obj.zone_type if zone_obj else "support",
         'zone': zone_obj.level if zone_obj else current_price,
@@ -228,8 +355,8 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     if not agent_result.get('executed', False):
         log(f"[AI] Trade RECHAZADO por Agente IA. Razón: {agent_result.get('reason')}", "WARNING")
         state["status"] = "ANALIZANDO"
-        state["active_order"] = None  # LIMPIAR LA ORDEN
-        trade_in_progress = False  # LIBERAR EL LOCK
+        state["active_order"] = None
+        trade_in_progress = False
         return False
 
     direction = agent_result.get('direction', direction)
@@ -245,6 +372,31 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         if check:
             log(f"Orden abierta: {direction} ${amount:.2f} exp={duration}min")
             state["active_order"] = order_id
+
+            # ── DIARIO: registrar el estado REAL del mercado en la entrada ───
+            # features_from_candles calcula sobre velas cerradas y devuelve None
+            # en lo que no pueda calcular. Nunca un default: un hueco es honesto,
+            # un 50 inventado contamina el dataset para siempre.
+            journal = get_journal()
+            journal_rec = None
+            feats = {}
+            try:
+                feats = features_from_candles(df_m1, df_m5, df_m15) if df_m1 is not None else {}
+                feats.setdefault("pattern", pattern or None)
+                feats.setdefault("zone_type", zone_obj.zone_type if zone_obj else None)
+                feats.setdefault("zone_strength", zone_str if zone_str else None)
+                journal_rec = journal.open_trade(
+                    asset=asset, direction=direction,
+                    strategy=signal.get("strategy", "intelligent_engine"),
+                    setup=setup,
+                    amount=amount, expiration_seconds=expiration,
+                    confidence=confidence, features=feats,
+                    account_type=ACCOUNT_TYPE,
+                )
+                guard.register_open(asset)
+            except Exception as e:
+                log(f"[DIARIO] No se pudo registrar la entrada: {e}", "WARNING")
+
             time.sleep(expiration + 8)
 
             result, pnl = "DRAW", 0.0
@@ -273,6 +425,28 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             except Exception as e:
                 log(f"Error verificando resultado: {e}")
                 pnl, result = 0.0, "DRAW"
+
+            # ── DIARIO: cerrar la operación con su resultado ─────────────────
+            try:
+                if journal_rec is not None:
+                    journal.close_trade(journal_rec.trade_id, result, pnl)
+                guard.register_close(asset, result, pnl)
+            except Exception as e:
+                log(f"[DIARIO] No se pudo registrar el cierre: {e}", "WARNING")
+
+            # ── AUTO-EVALUADOR: alimentar el resultado real del setup ────────
+            # DRAW no es WIN ni LOSS: no aporta informacion direccional sobre
+            # si el setup acierta, así que se registra como TIE (no cuenta
+            # como observacion, tal como exige self_evaluator.register()).
+            if result in ("WIN", "LOSS", "DRAW"):
+                try:
+                    self_res = "TIE" if result == "DRAW" else result
+                    decision_post = self_eval.register(setup, feats, self_res, pnl=pnl)
+                    for evento in decision_post.get("eventos", []):
+                        log(f"[EVALUADOR] {setup} | {evento}", "INFO")
+                    self_eval.guardar()
+                except Exception as e:
+                    log(f"[EVALUADOR] No se pudo registrar el resultado: {e}", "WARNING")
 
             # Record trade
             state["trades"].append({
@@ -309,6 +483,8 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     'zone_strength': zone_str,
                     'rsi_at_touch': trade_params['rsi'],
                     'trend_aligned': signal.get("trend_aligned", False),
+                    'confidence': confidence,
+                    'score': signal.get("score", 0),
                 }
                 log(f"[AI] Registrando resultado en Agente IA para autocrítica y aprendizaje...")
                 agent_engine.record_trade_result(trade_to_learn)
@@ -337,11 +513,14 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                 exit_price = 0.0
                 if df_after is not None and not df_after.empty:
                     exit_price = float(df_after.iloc[-1].get("close", 0.0))
+                # Firma real: record_trade_result(asset, direction, entry, exit,
+                # result, level=0.0). Antes se llamaba con entry_price=/exit_price=,
+                # kwargs inexistentes -> TypeError tragado en silencio en cada trade.
                 zone_learner.record_trade_result(
                     asset=trade_record["asset"],
                     direction=trade_record["direction"],
-                    entry_price=float(trade_record.get("entry_price", 0.0)),
-                    exit_price=float(exit_price),
+                    entry=float(trade_record.get("entry_price", 0.0)),
+                    exit=float(exit_price),
                     result=result,
                     level=float(signal.get("zone", 0.0) or trade_record.get("entry_price", 0.0))
                 )
@@ -365,12 +544,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
             trade_in_progress = False
-            
+
             # Anti-detección: delay post-trade variable (parecer humano analizando)
             post_trade_delay = np.random.uniform(HUMAN_DELAY_AFTER_TRADE_MIN, HUMAN_DELAY_AFTER_TRADE_MAX)
             log(f"[ANTI-DETECCIÓN] Analizando resultado... ({post_trade_delay:.0f}s)")
             time.sleep(post_trade_delay)
-            
+
             return True
         else:
             log(f"Orden rechazada: {order_id}")
@@ -390,10 +569,13 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 def bot_loop(market_data, rm, engine, agent_engine):
     email = os.getenv("EXNOVA_EMAIL", "")
     password = os.getenv("EXNOVA_PASSWORD", "")
+    persistence = get_trade_persistence()
     learner = get_adaptive_learner()
     memory = get_market_memory()
     zone_learner = get_supervised_zone_learner()
+    practice = PracticeTrader(zone_learner)
     evaluator = TradeEvaluator()
+    self_eval = get_evaluator()
 
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
@@ -422,7 +604,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
     # Obtener activos activos basados en horario
     activos_config = get_activos_activos()
     activos_disponibles = activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
-    
+
     print(f"\n{'='*60}")
     print(f"BOT OPERATIVO - Colombia (UTC-5)")
     print(f"Hora actual: {get_current_time_colombia().strftime('%H:%M:%S')}")
@@ -465,16 +647,98 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 state["current_streak"] = 0
                 continue
 
+            # ── Demo trading: verificar orden pendiente ──────────────────────
+            if DEMO_TRADING and state.get("demo_order"):
+                demo = state["demo_order"]
+                if time.time() - demo["entry_time"] >= demo["expiration_sec"] + 10:
+                    try:
+                        result_data = market_data.api.check_win_v4(demo["id"])
+                        if result_data is not None:
+                            if isinstance(result_data, tuple):
+                                _, profit = result_data
+                                profit = float(profit) if profit is not None else 0.0
+                            elif isinstance(result_data, (int, float)):
+                                profit = float(result_data)
+                            else:
+                                profit = 0.0
+
+                            if profit > 0:
+                                pnl, result = profit, "WIN"
+                            elif profit < 0:
+                                pnl, result = -demo["amount"], "LOSS"
+                            else:
+                                pnl, result = 0.0, "DRAW"
+
+                            state["demo_wins"] += 1 if result == "WIN" else 0
+                            state["demo_losses"] += 1 if result == "LOSS" else 0
+                            state["demo_pnl"] += pnl
+                            state["demo_balance"] += pnl
+                            state["demo_trades"].append({
+                                "time": time.strftime("%H:%M:%S"),
+                                "asset": demo["asset"], "direction": demo["direction"],
+                                "amount": demo["amount"], "result": result, "pnl": pnl,
+                                "zone_level": demo.get("zone_level", 0),
+                            })
+
+                            # Feedback al zone_learner (firma real: entry=/exit=)
+                            zone_learner.record_trade_result(
+                                asset=demo["asset"], direction=demo["direction"],
+                                entry=demo["entry_price"], exit=0.0,
+                                result=result, level=demo.get("zone_level", 0),
+                            )
+
+                            agent_engine.record_trade_result({
+                                'asset': demo['asset'],
+                                'direction': demo['direction'],
+                                'amount': demo['amount'],
+                                'result': result,
+                                'pnl': pnl,
+                                'pattern': demo.get('zone_type', 'demo'),
+                                'zone_strength': demo.get('zone_win_rate', 0),
+                                'confidence': demo.get('zone_win_rate', 0.5),
+                                'score': int(demo.get('zone_win_rate', 0.5) * 100),
+                                'rsi_at_touch': 50,
+                                'trend_aligned': False,
+                            })
+
+                            icon = "🟢" if result == "WIN" else "🔴"
+                            log(f"[DEMO] {icon} {result} {demo['direction']} {demo['asset']} "
+                                f"${pnl:+.2f} | balance demo: ${state['demo_balance']:.2f}", "INFO")
+                        else:
+                            log(f"[DEMO] Sin confirmacion de orden {demo['id']}, asumiendo LOSS", "WARNING")
+                            state["demo_losses"] += 1
+                            state["demo_pnl"] -= demo["amount"]
+                            state["demo_balance"] -= demo["amount"]
+                    except Exception as e:
+                        log(f"[DEMO] Error verificando orden: {e}", "WARNING")
+                    state["demo_order"] = None
+
             # Rotar activos dinámicamente
             if not activos_disponibles:
                 log("Sin activos disponibles para este horario")
                 time.sleep(60)
                 continue
-                
+
+            # Filtrar activos blacklisteados (bajo rendimiento histórico)
+            activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
+            if persistence is not None and persistence.total_trades >= 50:
+                bad = set()
+                for a in activos_disponibles:
+                    ta = persistence.get_trades_by_asset(a)
+                    if len(ta) >= 3:
+                        w = sum(1 for t in ta if t.get('result') == 'WIN')
+                        if w / len(ta) < 0.30:
+                            bad.add(a)
+                activos_disponibles = [a for a in activos_disponibles if a not in bad]
+            if not activos_disponibles:
+                log("Todos los activos están en blacklist - esperando...")
+                time.sleep(60)
+                continue
+
             asset = activos_disponibles[asset_idx % len(activos_disponibles)]
             asset_idx += 1
             state["current_asset"] = asset
-            
+
             # Determinar tipo de activo para configuración
             if "-OTC" in asset:
                 if "-BO" in asset:
@@ -483,7 +747,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     tipo_activo = "otc_24_7"
             else:
                 tipo_activo = "ptc_morning"
-            
+
             # Obtener configuración de sensibilidad para este activo
             config_sens = get_config_sensibilidad(tipo_activo)
 
@@ -517,12 +781,56 @@ def bot_loop(market_data, rm, engine, agent_engine):
             # Observar mercado para aprendizaje supervisado
             try:
                 zonas_actualizadas = zone_learner.observe(asset, df_m1, df_m15)
-                if zonas_actualizadas > 0 and state["cycle"] % 20 == 0:
+                if zonas_actualizadas > 0 and state["cycle"] % 10 == 0:
                     sumario = zone_learner.summary(asset)
-                    if sumario.get("solidas", 0) > 0:
-                        log(f"[SUPERVISADO] {asset}: {sumario['solidas']} zonas solidas, {sumario['observando']} en observacion", "INFO")
+                    if sumario.get("total_zonas", 0) > 0:
+                        log(f"[SUPERVISADO] {asset}: {sumario['total_zonas']} zonas, "
+                            f"{sumario.get('analisis_pendientes', 0)} pendientes, "
+                            f"{sumario.get('analisis_completados', 0)} completados, "
+                            f"WR={sumario.get('win_rate_real', 0):.0f}%", "INFO")
             except Exception as e:
                 log(f"[SUPERVISADO] Error observando {asset}: {e}", "WARNING")
+
+            # PracticeTrader: escanear zonas listas y resolver trades virtuales
+            try:
+                current_price = float(df_m1["close"].iloc[-1]) if df_m1 is not None and not df_m1.empty else None
+                if current_price:
+                    pt_trade = practice.scan_and_trade(asset, current_price, df_m1)
+                    if pt_trade:
+                        zs = pt_trade.zone_win_rate
+                        log(f"[PRACTICE] 🎯 Trade virtual {pt_trade.direction} {asset} @ {pt_trade.entry_price:.5f} | "
+                            f"zona WR={zs*100:.0f}% exp={pt_trade.expiration_sec}s", "SUCCESS")
+
+                        # Demo trading real: enviar orden al broker en modo PRACTICE
+                        if DEMO_TRADING and state["demo_order"] is None:
+                            try:
+                                action = "call" if pt_trade.direction == "CALL" else "put"
+                                exp_min = max(1, pt_trade.expiration_sec // 60)
+                                check, order_id = market_data.buy(asset, DEMO_AMOUNT, action, exp_min)
+                                if check:
+                                    state["demo_order"] = {
+                                        "id": order_id,
+                                        "asset": asset,
+                                        "direction": pt_trade.direction,
+                                        "amount": DEMO_AMOUNT,
+                                        "entry_price": pt_trade.entry_price,
+                                        "entry_time": time.time(),
+                                        "expiration_sec": pt_trade.expiration_sec,
+                                        "zone_level": pt_trade.zone_level,
+                                        "zone_win_rate": pt_trade.zone_win_rate,
+                                        "zone_strength": pt_trade.zone_strength,
+                                    }
+                                    log(f"[DEMO] 📈 Orden {pt_trade.direction} {asset} ${DEMO_AMOUNT:.2f} exp={exp_min}min | "
+                                        f"zona WR={zs*100:.0f}%", "SUCCESS")
+                            except Exception as e:
+                                log(f"[DEMO] Error enviando orden: {e}", "WARNING")
+
+                    res = practice.resolve_pending(asset, current_price)
+                    if res > 0:
+                        ps = practice.get_stats()
+                        log(f"[PRACTICE] {res} trade(s) resueltos. Balance: ${ps['balance']:.2f} (PnL: ${ps['pnl']:.2f})", "INFO")
+            except Exception as e:
+                log(f"[PRACTICE] Error: {e}", "WARNING")
 
             # Analizar
             try:
@@ -537,9 +845,26 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 confidence = signal.get("confidence", 0)
                 score = signal.get("score", 0)
 
+                # Validación extra de patrón (doble filtro)
+                pattern = signal.get("pattern", "")
+                if pattern in BAD_PATTERNS:
+                    log(f"[FILTRO] Patrón peligroso saltado: {pattern}", "WARNING")
+                    continue
+
+                # Validación de alineación de tendencia
+                trend_aligned = signal.get("trend_aligned", False)
+                if not trend_aligned and signal.get("score", 0) < 45:
+                    log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
+                    continue
+
+                direccion = signal.get("signal", "")
+                if direccion == "PUT" and confidence < MIN_CONFIDENCE + 0.15:
+                    log(f"[FILTRO] PUT confianza baja ({confidence:.2f} < {MIN_CONFIDENCE+0.15:.2f})", "WARNING")
+                    continue
+
                 if action == "TRADE" and confidence >= MIN_CONFIDENCE:
                     # ═══════════════════════════════════════════════════════════
-                    # FILTRO ULTRASEGURO para CUENTA REAL ($4)
+                    # FILTRO ULTRASEGURO para CUENTA REAL
                     # ═══════════════════════════════════════════════════════════
                     if ACCOUNT_TYPE == "REAL":
                         pattern = signal.get("pattern", "")
@@ -552,58 +877,53 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # que "100% WR" en un activo del whitelist a menudo es 1 sola
                         # operación. No es evidencia, es ruido. La seguridad real viene de
                         # los gates universales y sí probados (alineación de tendencia,
-                        # calidad de patrón) que ya aplica IntelligentEngine antes de esto.
-                        # ASSETS_BLACKLIST se mantiene: es conservador (solo excluye,
-                        # no arriesga dinero) aunque su muestra también sea pequeña.
+                        # calidad de patrón) que ya aplica IntelligentEngine antes de esto,
+                        # mas el candado de asset_discovery.py (activos reales vs OTC
+                        # verificados contra el broker) y self_evaluator.py (edge por
+                        # setup con intervalo de Wilson) segun se vayan cableando.
                         if asset in ASSETS_BLACKLIST:
                             log(f"[REAL] {asset} está en blacklist histórica - saltando", "WARNING")
                             continue
 
-                        # 2. Solo patrones comprobados
                         if pattern not in REAL_PATTERNS_ALLOWED:
                             log(f"[REAL] Patrón '{pattern}' no está en whitelist - saltando", "WARNING")
                             continue
-                        
-                        # 3. Zona strength en rango óptimo (0.70-0.90)
+
                         if zone_str < REAL_ZONE_STRENGTH_MIN or zone_str > REAL_ZONE_STRENGTH_MAX:
                             log(f"[REAL] Zona strength {zone_str:.2f} fuera del rango óptimo ({REAL_ZONE_STRENGTH_MIN}-{REAL_ZONE_STRENGTH_MAX}) - saltando", "WARNING")
                             continue
-                        
-                        # 4. Forzar confianza mínima más alta para REAL
+
                         if confidence < 0.75:
                             log(f"[REAL] Confianza {confidence:.2f} < 0.75 para cuenta REAL - saltando", "WARNING")
                             continue
-                        
-                        # 5. No skip aleatorio en REAL (cada trade cuenta)
-                        # (omitimos el HUMAN_SKIP_PROBABILITY cuando es REAL)
-                        
+
                         log(f"[REAL] ✅ Señal SUPER APROBADA: {asset} {signal_dir} | patrón={pattern} zona={zone_str:.2f}")
-                    
+
                     time_since = now - state["last_trade_time"]
                     learning_mode = get_learning_mode()
                     cooldown_mult = learning_mode.get_cooldown_multiplier()
-                    
-                    # Aplicar jitter humano a los cooldowns (evitar patrones fijos)
+
+                    # Jitter humano en cooldowns
                     base_cooldown = COOLDOWN_AFTER_LOSS if state["consecutive_losses"] > 0 else MIN_BETWEEN_TRADES
                     jitter = np.random.uniform(-HUMAN_JITTER_FACTOR, HUMAN_JITTER_FACTOR) * base_cooldown
                     cooldown_needed = int((base_cooldown + jitter) * cooldown_mult)
-                    cooldown_needed = max(30, cooldown_needed)  # Mínimo 30s siempre
-                    
+                    cooldown_needed = max(30, cooldown_needed)
+
                     signal_dir = signal.get("signal", "CALL")
                     asset_dir_key = f"{asset}_{signal_dir}"
                     last_asset_dir = state["last_trade_by_asset"].get(asset_dir_key, 0)
                     last_asset_any = state["last_trade_by_asset"].get(f"{asset}_*", 0)
-                    
-                    # Jitter mismo activo
+
                     same_asset_jitter = int(MIN_BETWEEN_SAME_ASSET + np.random.uniform(-30, 90))
                     same_asset_jitter = max(60, same_asset_jitter)
-                    
-                    # Anti-detección: skip aleatorio de trades válidos (parecer humano)
-                    # NO aplica en cuenta REAL (cada dólar cuenta)
-                    if ACCOUNT_TYPE != "REAL" and np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
+
+                    # Anti-detección: skip aleatorio, TAMBIEN en REAL. Sin edge
+                    # demostrado, cada operacion evitada es un dolar real no
+                    # arriesgado sobre un sistema sin ventaja probada.
+                    if np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
                         log(f"[ANTI-DETECCIÓN] Saltando trade válido para perfil humano")
                         continue
-                    
+
                     if state["active_order"] is not None:
                         log(f"⏳ Trade saltado - ya hay orden activa (ID: {state['active_order']})", "WARNING")
                     elif time_since < cooldown_needed:
@@ -614,11 +934,35 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     elif rm.is_stopped:
                         log(f"RM activo: {rm.stop_reason}")
                     else:
-                        # Jitter en el monto (variación humana ±20%)
-                        base_amount = rm.calculate_position_size(confidence=confidence)
-                        amount = max(1.0, round(base_amount * np.random.uniform(0.80, 1.20), 2))
+                        # ── AUTO-EVALUADOR: decide si este setup opera y a que
+                        # tamano. Nunca bloquea un setup nuevo (EXPLORACION a
+                        # tamano reducido, para seguir recogiendo datos reales
+                        # sin apostar fuerte sobre algo aun no probado); nunca
+                        # sigue operando uno ya demostrado perdedor (RETIRADO).
+                        setup = setup_key(signal, asset)
+                        ev_decision = self_eval.decision(setup)
+                        if not ev_decision["permitido"]:
+                            log(f"[EVALUADOR] {setup} RETIRADO: {ev_decision['motivo']}", "WAIT")
+                            amount = 0.0
+                        else:
+                            tamano_rel = ev_decision["tamano_relativo"]
+                            if ev_decision["estado"] == "EXPLORACION":
+                                log(f"[EVALUADOR] {setup} en EXPLORACION (x{tamano_rel:.2f}): {ev_decision['motivo']}")
+                            elif ev_decision["estado"] == "PRODUCCION":
+                                log(f"[EVALUADOR] {setup} en PRODUCCION: {ev_decision['motivo']}", "SUCCESS")
+
+                            if ACCOUNT_TYPE == "REAL":
+                                # Monto fijo, no Kelly: Kelly asume una
+                                # probabilidad de ganar conocida, y hoy no hay
+                                # edge demostrado. tamano_rel escala el monto
+                                # base, con piso de $1 (minimo practico del
+                                # broker) mientras el setup siga en exploracion.
+                                amount = max(1.0, round(1.0 * tamano_rel, 2))
+                            else:
+                                base_amount = rm.calculate_position_size(confidence=confidence)
+                                amount = max(1.0, round(base_amount * tamano_rel * np.random.uniform(0.80, 1.20), 2))
                         if amount > 0:
-                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15, df_m5)
+                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15, df_m5, df_m1)
                             if executed:
                                 day_trades += 1
                                 state["last_trade_by_asset"][asset_dir_key] = time.time()
@@ -637,10 +981,39 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 wr = (state["wins"] / total * 100) if total > 0 else 0
                 elapsed = int(time.time() - state["start_time"])
                 sig = state.get("last_signal", {})
+                sz = zone_learner.summary()
                 print(f"[{elapsed}s] #{state['cycle']} {asset} | "
                       f"Trades:{total} W/L:{state['wins']}/{state['losses']} WR:{wr:.1f}% "
                       f"PnL:${state['total_pnl']:.2f} Bal:${state['balance']:.2f} | "
                       f"{state['status']}", flush=True)
+                # Cada 50 ciclos: estado completo del auto-evaluador (que
+                # setups estan en produccion, cuales explorando, cuales ya
+                # se descartaron). Menos frecuente que el resto porque puede
+                # ser largo con muchos setups distintos.
+                if state["cycle"] % 50 == 0:
+                    try:
+                        print(self_eval.report(), flush=True)
+                    except Exception as e:
+                        log(f"[EVALUADOR] Error generando reporte: {e}", "WARNING")
+                if sz.get("total_zonas", 0) > 0:
+                    print(f"  [SUPER] {sz['total_zonas']} zonas | "
+                          f"Pend:{sz.get('analisis_pendientes', 0)} Completos:{sz.get('analisis_completados', 0)} "
+                          f"WR_real:{sz.get('win_rate_real', 0):.0f}% "
+                          f"Listas:{sz.get('listas_para_practice', 0)}", flush=True)
+                ps = practice.get_stats()
+                if ps["trades"] > 0:
+                    print(f"  [PRACTICE] Balance:${ps['balance']:.2f} "
+                          f"Trades:{ps['trades']} W/L:{ps['wins']}/{ps['losses']} "
+                          f"WR:{ps['win_rate']:.1f}% PnL:${ps['pnl']:.2f} "
+                          f"Pend:{ps['pending']}", flush=True)
+                if DEMO_TRADING and state["demo_trades"]:
+                    d = state
+                    dt = len(d["demo_trades"])
+                    dwr = d["demo_wins"] / max(d["demo_wins"] + d["demo_losses"], 1) * 100
+                    print(f"  [DEMO] Balance:${d['demo_balance']:.2f} "
+                          f"Trades:{dt} W/L:{d['demo_wins']}/{d['demo_losses']} "
+                          f"WR:{dwr:.1f}% PnL:${d['demo_pnl']:.2f} "
+                          f"{'⏳' if d.get('demo_order') else ''}", flush=True)
                 if sig:
                     patron = sig.get('pattern', '?')
                     ai = sig.get('ai_label', '?')
@@ -661,7 +1034,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
             cycle_sleep = max(3, int(6 + np.random.normal(0, 2)))
             state["last_wait_duration"] = cycle_sleep
             time.sleep(cycle_sleep)
-            
+
             # Micro-pausas aleatorias para parecer humano
             if state["cycle"] % HUMAN_MICRO_PAUSE == 0:
                 extra = int(np.random.uniform(5, 30))
@@ -729,20 +1102,23 @@ def generate_mock_candles(asset: str, interval: str, limit: int = 100) -> pd.Dat
 # ─── Entry point ────────────────────────────────────────────────────────────
 
 def main():
-    # Configuración de riesgo según tipo de cuenta
+    # Configuración de riesgo según tipo de cuenta.
+    # Para REAL: se toma el mas conservador de cada dimension entre las dos
+    # versiones que divergian (2/4/2/0.75 vs 5/15/3/0.70) porque no hay edge
+    # demostrado con significancia estadistica todavia.
     if ACCOUNT_TYPE == "REAL":
         log("⚠️  CONFIGURACIÓN ULTRASEGURA PARA CUENTA REAL", "CRITICAL")
         risk_config = RiskConfig(
-            max_drawdown_daily=0.50,          # Puede perder hasta 50% del día (son $2)
-            max_trades_per_hour=2,            # Máximo 2 trades/hora
-            max_trades_per_day=4,             # Máximo 4 trades/día (solo $4)
-            cooldown_after_loss_seconds=600,  # 10min después de pérdida
-            stop_after_consecutive_losses=2,   # Parar después de 2 pérdidas
-            min_confidence_threshold=0.75,     # Mínimo 75% confianza
-            kelly_ceiling=0.50,               # Usar hasta 50% del bankroll por trade
-            kelly_floor=0.25,                 # Mínimo 25%
-            anti_detection_jitter=False,       # Sin jitter anti-detección en REAL
-            anti_detection_skip_rate=0.0,     # Sin skip aleatorio
+            max_drawdown_daily=0.50,
+            max_trades_per_hour=2,
+            max_trades_per_day=4,
+            cooldown_after_loss_seconds=600,
+            stop_after_consecutive_losses=2,
+            min_confidence_threshold=0.75,
+            kelly_ceiling=0.50,
+            kelly_floor=0.25,
+            anti_detection_jitter=False,
+            anti_detection_skip_rate=0.0,
         )
     else:
         risk_config = RiskConfig(
