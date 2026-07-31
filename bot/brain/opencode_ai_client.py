@@ -1,7 +1,15 @@
 """
 OPENCODE AI CLIENT — Motor de Razonamiento Principal
-Conecta al servidor EasyPanel compatible con OpenAI API
-Endpoint: https://tecnovariedades-provedor-ia.er7iaf.easypanel.host/v1
+Cliente HTTP generico contra cualquier servidor compatible con la API de
+chat completions de OpenAI. Pensado para apuntar a un Ollama propio (local
+en desarrollo, o desplegado en EasyPanel en produccion) en vez de servicios
+de terceros -- asi el "cerebro" de validacion por operacion no depende de
+infraestructura ajena.
+
+El endpoint anterior (tecnovariedades-provedor-ia.er7iaf.easypanel.host) y el
+modelo por defecto (opencode/deepseek-v4-flash-free) ya no existen; el
+default local (localhost:11434, la API OpenAI-compatible que expone Ollama)
+se verifico funcionando el 2026-07-31.
 """
 import json
 import os
@@ -11,23 +19,19 @@ import re
 from typing import Dict, List, Optional
 
 
-# ─── Configuración del Servidor (lee del entorno, con fallback local) ──────────
-OPENCODE_BASE_URL   = os.environ.get(
-    "OPENCODE_BASE_URL",
-    "https://tecnovariedades-provedor-ia.er7iaf.easypanel.host/v1"
-)
-OPENCODE_API_KEY    = os.environ.get(
-    "OPENCODE_API_KEY",
-    "sk_EjCSW_s4lvmcjRFXediJjWprQ8M9eDGs7i28X7g0ELU"
-)
-OPENCODE_MODEL_FAST = os.environ.get(
-    "OPENCODE_MODEL_FAST",
-    "opencode/deepseek-v4-flash-free"
-)
-OPENCODE_MODEL_DEEP = os.environ.get(
-    "OPENCODE_MODEL_DEEP",
-    "opencode/qwen3.6-plus-free"
-)
+# ─── Configuracion del servidor (lee del entorno; default = Ollama local) ──────
+OPENCODE_BASE_URL   = os.environ.get("OPENCODE_BASE_URL", "http://localhost:11434/v1")
+# Ollama no exige API key para su servidor local/propio; el header
+# Authorization se envia igual (algunos proxies lo requieren) pero con un
+# valor neutro. NUNCA hardcodear aqui una key real: la anterior quedo
+# expuesta en texto plano en el historial de git.
+OPENCODE_API_KEY    = os.environ.get("OPENCODE_API_KEY", "ollama-local")
+# gemma4:cloud verificado el 2026-07-31: responde en ~1.8s con JSON valido,
+# necesario para el timeout de 40s de este cliente. Modelos locales puros
+# (no ":cloud") tardan >90s en este hardware -- inviables para validacion
+# de operacion en tiempo real, solo sirven para tareas sin limite de tiempo.
+OPENCODE_MODEL_FAST = os.environ.get("OPENCODE_MODEL_FAST", "gemma4:cloud")
+OPENCODE_MODEL_DEEP = os.environ.get("OPENCODE_MODEL_DEEP", "gemma4:cloud")
 TIMEOUT_SECONDS     = 40   # El servidor puede tardar hasta 35s en responder
 
 SYSTEM_PROMPT_TRADER = """Eres un trader profesional con 10 años de experiencia en opciones binarias OTC.
