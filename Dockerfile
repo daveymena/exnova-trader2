@@ -51,4 +51,4 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD python -c "import os,time; f='/app/bot/data/learning_progress.json'; \
         exit(0) if os.path.exists(f) and time.time()-os.path.getmtime(f)<300 else exit(1)"
 
-CMD ["python", "-u", "bot/run_live.py"]
+CMD ["python", "-u", "run_live.py"]
