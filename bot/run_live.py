@@ -120,6 +120,13 @@ from core.smart_money_analyzer import SmartMoneyAnalyzer
 # se rellenaba con defaults; sin features reales no hay nada que analizar despues.
 from core.trade_journal import get_journal, features_from_candles
 from core.position_guard import get_guard, GuardConfig
+# Motor de auto-evaluacion: decide, por setup y con evidencia real (Wilson +
+# minimo 200 observaciones, corregido por comparaciones multiples), si se
+# opera a tamano de exploracion, a tamano normal, o no se opera mas. Es el
+# mecanismo que hace que el sistema "elija solo lo que funciona": nunca
+# promueve una regla ajustada a ruido, nunca bloquea un setup nuevo antes de
+# darle su presupuesto de exploracion.
+from core.self_evaluator import get_evaluator
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
@@ -187,11 +194,35 @@ def log(msg, level="INFO"):
     now = time.strftime("%H:%M:%S")
     print(f"[{now}] [{level}] {msg}", flush=True)
 
+def setup_key(signal: dict, asset: str) -> str:
+    """
+    Clave de setup para el auto-evaluador: agrupa por lo que la investigacion
+    de hoy establecio como dimensiones que SI importan (patron, tipo de zona,
+    mercado sintetico vs real) y dentro de eso separa direccion.
+
+    Formato "familia#variante": el separador '#' hace que self_evaluator
+    agrupe automaticamente CALL/PUT y otc/real del mismo patron+zona bajo la
+    misma familia para el limite de "variantes rechazadas" (evita reintentar
+    la misma idea con parametros distintos hasta que una pase por azar).
+    """
+    pattern = (signal.get("pattern") or "none").strip() or "none"
+    zone_obj = signal.get("zone_object")
+    zone_type = getattr(zone_obj, "zone_type", None) or "sin_zona"
+    direction = signal.get("signal", "?")
+    market = "otc" if "-OTC" in asset.upper() else "real"
+    familia = f"{pattern}_{zone_type}"
+    return f"{familia}#{direction}_{market}"
+
 # ─── Trade execution ────────────────────────────────────────────────────────
 
 sm_analyzer = SmartMoneyAnalyzer()
 
-def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15=None, df_m5=None, df_m1=None):
+def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15=None, df_m5=None, df_m1=None):
+    """
+    `evaluator` es TradeEvaluator (diagnostico post-trade); `self_eval` es
+    SelfEvaluator (decide si el setup tiene edge). Nombres distintos a
+    proposito para no confundirlos.
+    """
     global trade_in_progress
 
     asset = signal["asset"]
@@ -348,6 +379,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             # un 50 inventado contamina el dataset para siempre.
             journal = get_journal()
             journal_rec = None
+            feats = {}
             try:
                 feats = features_from_candles(df_m1, df_m5, df_m15) if df_m1 is not None else {}
                 feats.setdefault("pattern", pattern or None)
@@ -356,7 +388,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                 journal_rec = journal.open_trade(
                     asset=asset, direction=direction,
                     strategy=signal.get("strategy", "intelligent_engine"),
-                    setup=signal.get("setup", pattern or "sin_patron"),
+                    setup=setup,
                     amount=amount, expiration_seconds=expiration,
                     confidence=confidence, features=feats,
                     account_type=ACCOUNT_TYPE,
@@ -401,6 +433,20 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                 guard.register_close(asset, result, pnl)
             except Exception as e:
                 log(f"[DIARIO] No se pudo registrar el cierre: {e}", "WARNING")
+
+            # ── AUTO-EVALUADOR: alimentar el resultado real del setup ────────
+            # DRAW no es WIN ni LOSS: no aporta informacion direccional sobre
+            # si el setup acierta, así que se registra como TIE (no cuenta
+            # como observacion, tal como exige self_evaluator.register()).
+            if result in ("WIN", "LOSS", "DRAW"):
+                try:
+                    self_res = "TIE" if result == "DRAW" else result
+                    decision_post = self_eval.register(setup, feats, self_res, pnl=pnl)
+                    for evento in decision_post.get("eventos", []):
+                        log(f"[EVALUADOR] {setup} | {evento}", "INFO")
+                    self_eval.guardar()
+                except Exception as e:
+                    log(f"[EVALUADOR] No se pudo registrar el resultado: {e}", "WARNING")
 
             # Record trade
             state["trades"].append({
@@ -529,6 +575,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
     zone_learner = get_supervised_zone_learner()
     practice = PracticeTrader(zone_learner)
     evaluator = TradeEvaluator()
+    self_eval = get_evaluator()
 
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
@@ -887,18 +934,35 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     elif rm.is_stopped:
                         log(f"RM activo: {rm.stop_reason}")
                     else:
-                        if ACCOUNT_TYPE == "REAL":
-                            # Monto fijo, no Kelly: Kelly asume una probabilidad
-                            # de ganar conocida, y hoy no hay edge demostrado
-                            # (ver bot/core/self_evaluator.py). Sizear por Kelly
-                            # sobre una suposicion amplificaria una apuesta
-                            # sobre ruido.
-                            amount = 1.0
+                        # ── AUTO-EVALUADOR: decide si este setup opera y a que
+                        # tamano. Nunca bloquea un setup nuevo (EXPLORACION a
+                        # tamano reducido, para seguir recogiendo datos reales
+                        # sin apostar fuerte sobre algo aun no probado); nunca
+                        # sigue operando uno ya demostrado perdedor (RETIRADO).
+                        setup = setup_key(signal, asset)
+                        ev_decision = self_eval.decision(setup)
+                        if not ev_decision["permitido"]:
+                            log(f"[EVALUADOR] {setup} RETIRADO: {ev_decision['motivo']}", "WAIT")
+                            amount = 0.0
                         else:
-                            base_amount = rm.calculate_position_size(confidence=confidence)
-                            amount = max(1.0, round(base_amount * np.random.uniform(0.80, 1.20), 2))
+                            tamano_rel = ev_decision["tamano_relativo"]
+                            if ev_decision["estado"] == "EXPLORACION":
+                                log(f"[EVALUADOR] {setup} en EXPLORACION (x{tamano_rel:.2f}): {ev_decision['motivo']}")
+                            elif ev_decision["estado"] == "PRODUCCION":
+                                log(f"[EVALUADOR] {setup} en PRODUCCION: {ev_decision['motivo']}", "SUCCESS")
+
+                            if ACCOUNT_TYPE == "REAL":
+                                # Monto fijo, no Kelly: Kelly asume una
+                                # probabilidad de ganar conocida, y hoy no hay
+                                # edge demostrado. tamano_rel escala el monto
+                                # base, con piso de $1 (minimo practico del
+                                # broker) mientras el setup siga en exploracion.
+                                amount = max(1.0, round(1.0 * tamano_rel, 2))
+                            else:
+                                base_amount = rm.calculate_position_size(confidence=confidence)
+                                amount = max(1.0, round(base_amount * tamano_rel * np.random.uniform(0.80, 1.20), 2))
                         if amount > 0:
-                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, df_m15, df_m5, df_m1)
+                            executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15, df_m5, df_m1)
                             if executed:
                                 day_trades += 1
                                 state["last_trade_by_asset"][asset_dir_key] = time.time()
@@ -922,6 +986,15 @@ def bot_loop(market_data, rm, engine, agent_engine):
                       f"Trades:{total} W/L:{state['wins']}/{state['losses']} WR:{wr:.1f}% "
                       f"PnL:${state['total_pnl']:.2f} Bal:${state['balance']:.2f} | "
                       f"{state['status']}", flush=True)
+                # Cada 50 ciclos: estado completo del auto-evaluador (que
+                # setups estan en produccion, cuales explorando, cuales ya
+                # se descartaron). Menos frecuente que el resto porque puede
+                # ser largo con muchos setups distintos.
+                if state["cycle"] % 50 == 0:
+                    try:
+                        print(self_eval.report(), flush=True)
+                    except Exception as e:
+                        log(f"[EVALUADOR] Error generando reporte: {e}", "WARNING")
                 if sz.get("total_zonas", 0) > 0:
                     print(f"  [SUPER] {sz['total_zonas']} zonas | "
                           f"Pend:{sz.get('analisis_pendientes', 0)} Completos:{sz.get('analisis_completados', 0)} "
