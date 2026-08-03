@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]  # /app
 BOT = Path(__file__).resolve().parents[1]   # /app/bot
 TRADES_JSON = BOT / "brain" / "trade_history.json"
 LEARNING_JSON = BOT / "data" / "learning_progress.json"
-PID_FILE = BOT / "bot.pid"
+# run_live.py escribe su PID en run_live.lock (lock de instancia unica)
+PID_FILE = BOT / "run_live.lock"
 
 PORT = int(os.getenv("MONITOR_PORT", os.getenv("PORT", "8000")))
 
