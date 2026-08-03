@@ -6,21 +6,22 @@ echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
 echo "============================================================"
 
 # 0. Persistencia de estado del bot. /app/data es el VOLUMEN persistente de
-# EasyPanel, pero el bot guarda estado en bot/brain/ y bot/data/. Para que
-# sobrevivan reinicios (sin tocar mounts), redirigimos esos dirs al volumen
-# via symlink. Al primer arranque se inicializan vacias y el bot las rellena
-# observando el mercado.
-mkdir -p /app/data/bot_brain /app/data/bot_data 2>/dev/null || true
+# EasyPanel, pero el bot guarda estado en bot/brain/ y bot/data/. Redirigimos
+# esos dirs al volumen via symlink para que sobrevivan reinicios.
+mkdir -p /app/data/bot_brain /app/data/bot_data
+# Mover contenido existente (primer arranque) y crear symlinks
 if [ -d /app/bot/brain ] && [ ! -L /app/bot/brain ]; then
     cp -rn /app/bot/brain/. /app/data/bot_brain/ 2>/dev/null || true
     rm -rf /app/bot/brain
 fi
+[ -e /app/bot/brain ] || ln -s /app/data/bot_brain /app/bot/brain
 if [ -d /app/bot/data ] && [ ! -L /app/bot/data ]; then
     cp -rn /app/bot/data/. /app/data/bot_data/ 2>/dev/null || true
     rm -rf /app/bot/data
 fi
-[ -L /app/bot/brain ] || ln -s /app/data/bot_brain /app/bot/brain 2>/dev/null || true
-[ -L /app/bot/data ]  || ln -s /app/data/bot_data  /app/bot/data  2>/dev/null || true
+[ -e /app/bot/data ] || ln -s /app/data/bot_data /app/bot/data
+echo "[entrypoint] Persistencia: bot/brain -> /app/data/bot_brain, bot/data -> /app/data/bot_data"
+ls -la /app/bot/ | grep -E "brain|data" || true
 
 # 1. Inicializar SQLite (migrate) antes de arrancar nada.
 echo "[entrypoint] Ejecutando migrate de la base SQLite..."
