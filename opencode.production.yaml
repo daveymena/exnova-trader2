@@ -60,59 +60,122 @@ deployment:
 
 ai_rotation:
   enabled: true
+  strategy: "opencode_native"  # Use OpenCode's native providers
 
   providers:
-    # Primary: DeepSeek (Fast, Free)
-    - name: "deepseek"
-      model: "deepseek-chat"
-      priority: 1  # Use first
-      api_key_env: "DEEPSEEK_API_KEY"
-      cost_per_1k_tokens: 0.14  # Cheapest
+    # 1. OpenCode Zen (Primary - Priority 10)
+    - name: "opencode_zen"
+      base_url: "https://opencode.ai/zen/v1"
+      api_key_env: "OPENCODE_ZEN_API_KEY"
+      models:
+        - "deepseek-v4-flash-free"
+        - "deepseek-v3-ultra-free"
+        - "big-pickle"
+        - "opencode/qwen3.6-plus-free"
+        - "gpt-5.4-mini"
+        - "gpt-5.5"
+      default_model: "deepseek-v4-flash-free"
       speed: "fast"
       quality: "high"
+      priority: 10
 
-      capabilities:
-        - trade_analysis
-        - pattern_detection
-        - parameter_optimization
-        - strategy_recommendation
-
-    # Secondary: Groq (Very Fast, Good for quick analysis)
-    - name: "groq"
-      model: "mixtral-8x7b-32768"
-      priority: 2
-      api_key_env: "GROQ_API_KEY"
-      cost_per_1k_tokens: 0.27  # Slightly more expensive
+    # 2. FastOpenAI / FreeModel (Priority 5)
+    - name: "fast_openai"
+      base_url: "https://api.freemodel.dev/v1"
+      api_key_env: "FAST_OPENAI_API_KEY"
+      models:
+        - "deepseek-v4-flash-free"
+        - "gpt-5.5"
+        - "claude-fable-5"
+        - "big-pickle"
+      default_model: "gpt-5.5"
       speed: "very_fast"
-      quality: "good"
+      quality: "high"
+      priority: 5
 
-      capabilities:
-        - quick_analysis
-        - pattern_detection
-        - fast_recommendations
-
-    # Tertiary: OpenRouter (Best quality fallback)
-    - name: "openrouter"
-      model: "mistral-7b"
-      priority: 3
-      api_key_env: "OPENROUTER_API_KEY"
-      cost_per_1k_tokens: 0.14
-      speed: "medium"
+    # 3. NVIDIA NIM (Priority 20)
+    - name: "nvidia_nim"
+      base_url: "https://integrate.api.nvidia.com/v1"
+      api_key_env: "NVIDIA_API_KEY"
+      models:
+        - "meta/llama-3.3-70b-instruct"
+        - "meta/llama-3.1-405b-instruct"
+        - "mistralai/mistral-7b-instruct-v0.3"
+      default_model: "meta/llama-3.3-70b-instruct"
+      speed: "fast"
       quality: "very_high"
+      priority: 20
 
-      capabilities:
-        - deep_analysis
-        - root_cause_analysis
-        - strategic_planning
+    # 4. GitHub Models / Azure (Priority 30)
+    - name: "github_models"
+      base_url: "https://models.inference.ai.azure.com"
+      api_key_env: "GITHUB_TOKEN"
+      models:
+        - "gpt-4o-mini"
+        - "claude-sonnet-4-20250514"
+        - "meta-llama-3.3-70b-instruct"
+      default_model: "gpt-4o-mini"
+      speed: "fast"
+      quality: "high"
+      priority: 30
 
-  rotation_strategy: "round_robin"  # Alternate between providers
+    # 5. OpenRouter (Priority 40)
+    - name: "openrouter"
+      base_url: "https://openrouter.ai/api/v1"
+      api_key_env: "OPENROUTER_API_KEY"
+      models:
+        - "meta-llama/llama-3.1-8b-instruct"
+        - "mistralai/mistral-7b-instruct"
+      default_model: "openrouter/auto"
+      speed: "medium"
+      quality: "high"
+      priority: 40
+
+    # 6. Ollama Local + Cloud (Priority 50)
+    - name: "ollama"
+      base_url: "http://localhost:11434/v1"
+      api_key_env: "OLLAMA_API_KEY"
+      models:
+        - "llama-free:latest"
+        - "llama3.2:1b"
+        - "gemma4:cloud"
+        - "kimi-k2.5:cloud"
+      default_model: "llama-free:latest"
+      speed: "medium"
+      quality: "good"
+      priority: 50
+
+    # 7. Bridge Local (Priority 60)
+    - name: "bridge_local"
+      base_url: "http://localhost:8000/api/v1"
+      api_key_env: "BRIDGE_LOCAL_API_KEY"
+      models:
+        - "deepseek-v4-flash"
+      default_model: "deepseek-v4-flash"
+      speed: "very_fast"
+      quality: "high"
+      priority: 60
+
+  rotation_strategy: "priority_based"  # Use by priority (lower number = higher priority)
   fallback_on_error: true
   timeout_per_request: 30
 
   analysis_frequency:
-    per_trade: "every_10_trades"     # Analyze every 10 trades
-    deep_analysis: "every_50_trades" # Deep analysis every 50
-    optimization: "every_100_trades" # Optimize every 100
+    per_trade: "every_10_trades"     # Analyze every 10 trades (use FastOpenAI)
+    deep_analysis: "every_50_trades" # Deep analysis every 50 (use OpenCode Zen)
+    optimization: "every_100_trades" # Optimize every 100 (use NVIDIA NIM)
+
+  provider_assignment:
+    quick_analysis: "fast_openai"      # Fast for real-time signals
+    deep_analysis: "opencode_zen"      # Smart reasoning for patterns
+    optimization: "nvidia_nim"         # Best quality for parameter tuning
+    fallback_chain:
+      - "opencode_zen"
+      - "fast_openai"
+      - "github_models"
+      - "openrouter"
+      - "ollama"
+      - "bridge_local"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # MONITORING & SUPERVISION (Intelligent)
