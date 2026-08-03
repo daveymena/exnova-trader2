@@ -340,7 +340,11 @@ class IntelligentTradingAgent:
             should_use_ai = True
             ai_reason = f"Patrón desconocido: {pattern}"
         
-        if should_use_ai and self.authenticated:
+        _opencode_ready = (
+            self.opencode is not None
+            and self.opencode.api_key not in (None, "", "ollama-local")
+        )
+        if should_use_ai and (self.authenticated or _opencode_ready):
             analysis['ai_used'] = True
             analysis['ai_reason'] = ai_reason
             
