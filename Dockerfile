@@ -33,7 +33,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY bot/ ./bot/
 COPY app/ ./app/
 COPY opencode.json ./opencode.json
-COPY AGENTS.md ./AGENTS.md
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY .env.example ./.env.example
 
