@@ -797,6 +797,29 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                 "zone_level": demo.get("zone_level", 0),
                             })
 
+                            # Persistir en trade_history.json para que el bucle de
+                            # mejora IA (improvement_loop) lo analice y calibre la
+                            # estrategia. Marca demo_used=True para que la IA sepa
+                            # que proviene del scanner de zonas (no del motor PCR).
+                            try:
+                                persistence.add_trade({
+                                    "timestamp": time.time(),
+                                    "asset": demo["asset"],
+                                    "direction": demo["direction"],
+                                    "amount": demo["amount"],
+                                    "result": result,
+                                    "pnl": pnl,
+                                    "pattern": "zone_scan",
+                                    "zone": "support" if demo["direction"] == "CALL" else "resistance",
+                                    "zone_strength": demo.get("zone_strength", 0.5),
+                                    "confidence": demo.get("zone_win_rate", 0.5),
+                                    "expiry_minutes": max(1, demo["expiration_sec"] // 60),
+                                    "trend_aligned": False,
+                                    "demo_used": True,
+                                })
+                            except Exception as _e:
+                                log(f"[DEMO] persistence.add_trade falló: {_e}", "WARNING")
+
                             # Feedback al zone_learner (firma real: entry=/exit=)
                             zone_learner.record_trade_result(
                                 asset=demo["asset"], direction=demo["direction"],
