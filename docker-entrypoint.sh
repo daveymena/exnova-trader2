@@ -5,6 +5,23 @@ echo "============================================================"
 echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
 echo "============================================================"
 
+# 0. Persistencia de estado del bot. /app/data es el VOLUMEN persistente de
+# EasyPanel, pero el bot guarda estado en bot/brain/ y bot/data/. Para que
+# sobrevivan reinicios (sin tocar mounts), redirigimos esos dirs al volumen
+# via symlink. Al primer arranque se inicializan vacias y el bot las rellena
+# observando el mercado.
+mkdir -p /app/data/bot_brain /app/data/bot_data 2>/dev/null || true
+if [ -d /app/bot/brain ] && [ ! -L /app/bot/brain ]; then
+    cp -rn /app/bot/brain/. /app/data/bot_brain/ 2>/dev/null || true
+    rm -rf /app/bot/brain
+fi
+if [ -d /app/bot/data ] && [ ! -L /app/bot/data ]; then
+    cp -rn /app/bot/data/. /app/data/bot_data/ 2>/dev/null || true
+    rm -rf /app/bot/data
+fi
+[ -L /app/bot/brain ] || ln -s /app/data/bot_brain /app/bot/brain 2>/dev/null || true
+[ -L /app/bot/data ]  || ln -s /app/data/bot_data  /app/bot/data  2>/dev/null || true
+
 # 1. Inicializar SQLite (migrate) antes de arrancar nada.
 echo "[entrypoint] Ejecutando migrate de la base SQLite..."
 python3 -c "from app.data.repository import repository; repository.migrate(); print('[entrypoint] migrate OK')" || {
