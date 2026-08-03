@@ -26,6 +26,9 @@ TRADES_JSON = BOT / "brain" / "trade_history.json"
 LEARNING_JSON = BOT / "data" / "learning_progress.json"
 # run_live.py escribe su PID en run_live.lock (lock de instancia unica)
 PID_FILE = BOT / "run_live.lock"
+# improvement_loop escribe un heartbeat aqui cada minuto
+IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
+ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
 
 PORT = int(os.getenv("MONITOR_PORT", os.getenv("PORT", "8000")))
 
@@ -104,6 +107,26 @@ def trades(limit: int = 50):
     data = _read_json(TRADES_JSON)
     rows = data.get("trades", [])
     return {"trades": rows[-min(max(limit, 1), 500):], "count": len(rows)}
+
+
+@app.get("/api/improvement")
+def improvement():
+    """Estado del bucle de mejora IA: heartbeat + refinamientos aplicados."""
+    hb = _read_json(IMPROVE_HEARTBEAT)
+    adj = _read_json(ADJUSTMENTS_JSON)
+    now = time.time()
+    hb_ts = hb.get("ts") if isinstance(hb, dict) else None
+    alive = isinstance(hb_ts, (int, float)) and (now - hb_ts) < 180
+    return {
+        "loop_alive": alive,
+        "last_heartbeat": hb if hb else None,
+        "cycle": adj.get("cycle", 0) if isinstance(adj, dict) else 0,
+        "min_confidence": adj.get("min_confidence") if isinstance(adj, dict) else None,
+        "expiry_by_asset": adj.get("expiry_by_asset") if isinstance(adj, dict) else {},
+        "assets_pause": adj.get("assets_pause") if isinstance(adj, dict) else [],
+        "lessons": (adj.get("lessons") or [])[-8:] if isinstance(adj, dict) else [],
+        "recent_history": (adj.get("history") or [])[-3:] if isinstance(adj, dict) else [],
+    }
 
 
 @app.get("/api/config")

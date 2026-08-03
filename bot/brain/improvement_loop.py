@@ -317,8 +317,12 @@ def loop() -> None:
     if trades:
         last_ts = float(trades[-1].get("timestamp", 0) or 0)
         _log(f"arranque: last_ts={last_ts} ({len(trades)} trades historicos no analizados)")
+    hb_path = BOT / "brain" / "improvement_heartbeat.json"
     while True:
         try:
+            # heartbeat: confirma que el loop vive
+            with open(hb_path, "w", encoding="utf-8") as f:
+                json.dump({"ts": time.time(), "last_cycle": last_ts}, f)
             last_ts = _run_cycle(last_ts)
         except Exception as e:
             _log(f"ERR ciclo: {e}")
