@@ -26,6 +26,18 @@ python3 -u bot/monitor/server.py &
 MON_PID=$!
 echo "[entrypoint] Monitor PID: $MON_PID"
 
+# 3b. Bucle de mejora continua por lotes (IA via REST opencode-go, sin CLI).
+# Cada N trades nuevos analiza el lote, refina entradas/expiracion/activos y
+# escribe strategy_adjustments.json que run_live.py lee antes de operar.
+if [ "${IMPROVEMENT_ENABLED:-true}" = "true" ]; then
+    echo "[entrypoint] Arrancando bucle de mejora IA (bot/brain/improvement_loop.py)..."
+    python3 -u bot/brain/improvement_loop.py &
+    IMP_PID=$!
+    echo "[entrypoint] Improvement PID: $IMP_PID"
+else
+    IMP_PID=""
+fi
+
 # 4. Supervisor IA periodico (cada SUPERVISOR_INTERVAL_SECONDS=1800s por defecto).
 # El default del fallback (":-false") es deliberado: si SUPERVISOR_ENABLED no
 # esta definido, el supervisor de auto-aplicacion de codigo NO debe arrancar.
@@ -40,12 +52,13 @@ else
 fi
 
 # 5. Trap de señales: al recibir SIGTERM/SIGINT matar a los hijos graceful.
-trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; kill $MON_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
+trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; kill $MON_PID 2>/dev/null; [ -n "$IMP_PID" ] && kill $IMP_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
 
 # 6. Esperar a que el bot termine; si muere, salir.
 wait $BOT_PID
 BOT_RC=$?
 echo "[entrypoint] Bot termino con rc=$BOT_RC"
 kill $MON_PID 2>/dev/null
+[ -n "$IMP_PID" ] && kill $IMP_PID 2>/dev/null
 [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null
 exit $BOT_RC

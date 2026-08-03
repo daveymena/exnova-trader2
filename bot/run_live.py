@@ -114,7 +114,35 @@ from brain.adaptive_learning_mode import get_learning_mode
 from brain.trade_persistence import get_trade_persistence
 from engine.intelligent_engine import IntelligentEngine
 from brain.agent_trading_engine import get_agent_trading_engine
+from brain.strategy_adjustments import get_active_adjustments
 from core.smart_money_analyzer import SmartMoneyAnalyzer
+
+# ─── Memoria de mejoras IA (bucle improvement_loop) ──────────────────────────
+# Los refinamientos que la IA produce cada N trades se leen de
+# strategy_adjustments.json. Se cachea 60s para no leer disco por trade.
+_adj_cache = {"ts": 0.0, "data": None}
+
+def _adjustments():
+    import time as _t
+    now = _t.time()
+    if _adj_cache["data"] is None or (now - _adj_cache["ts"]) > 60:
+        try:
+            _adj_cache["data"] = get_active_adjustments()
+            _adj_cache["ts"] = now
+        except Exception:
+            _adj_cache["data"] = {"min_confidence": None, "expiry_by_asset": {},
+                                   "assets_pause": [], "lessons": []}
+            _adj_cache["ts"] = now
+    return _adj_cache["data"]
+
+def _current_min_confidence():
+    a = _adjustments()
+    mc = a.get("min_confidence")
+    return mc if isinstance(mc, (int, float)) else MIN_CONFIDENCE
+
+def _assets_paused():
+    a = _adjustments()
+    return set(a.get("assets_pause") or [])
 # Diario con features REALES y control de concurrencia por activo.
 # El diario anterior guardaba rsi_at_touch=50 en 495 de 500 operaciones porque
 # se rellenaba con defaults; sin features reales no hay nada que analizar despues.
@@ -243,6 +271,13 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     # tiene sentido, porque se estaria juzgando un horizonte que el motor
     # nunca eligio.
     expiration = signal.get("exp_sec", 180)
+    # Override de expiracion por activo (refinamiento IA en strategy_adjustments)
+    try:
+        _ea = _adjustments().get("expiry_by_asset") or {}
+        if asset in _ea:
+            expiration = int(_ea[asset]) * 60
+    except Exception:
+        pass
     pattern = signal.get("pattern", "")
     zone_str = signal.get("zone_strength", 0.0)
     # intelligent_engine.py NUNCA incluye "zone_object" en el dict que
@@ -803,6 +838,11 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
             # Filtrar activos blacklisteados (bajo rendimiento histórico)
             activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
+            _paused = _assets_paused()
+            if _paused:
+                activos_disponibles = [a for a in activos_disponibles if a not in _paused]
+                if len(activos_disponibles) < len([a for a in activos_disponibles]):
+                    log(f"[IA] activos pausados por improvement_loop: {sorted(_paused)}", "INFO")
             if persistence is not None and persistence.total_trades >= 50:
                 bad = set()
                 for a in activos_disponibles:
@@ -944,7 +984,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     log(f"[FILTRO] PUT confianza baja ({confidence:.2f} < {MIN_CONFIDENCE+0.15:.2f})", "WARNING")
                     continue
 
-                if action == "TRADE" and confidence >= MIN_CONFIDENCE:
+                if action == "TRADE" and confidence >= _current_min_confidence():
                     # ═══════════════════════════════════════════════════════════
                     # FILTRO ULTRASEGURO para CUENTA REAL
                     # ═══════════════════════════════════════════════════════════
@@ -963,8 +1003,11 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # mas el candado de asset_discovery.py (activos reales vs OTC
                         # verificados contra el broker) y self_evaluator.py (edge por
                         # setup con intervalo de Wilson) segun se vayan cableando.
-                        if asset in ASSETS_BLACKLIST:
-                            log(f"[REAL] {asset} está en blacklist histórica - saltando", "WARNING")
+                        if asset in ASSETS_BLACKLIST or asset in _assets_paused():
+                            if asset in ASSETS_BLACKLIST:
+                                log(f"[REAL] {asset} está en blacklist histórica - saltando", "WARNING")
+                            else:
+                                log(f"[IA] {asset} pausado por improvement_loop - saltando", "INFO")
                             continue
 
                         if pattern not in REAL_PATTERNS_ALLOWED:
