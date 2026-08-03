@@ -12,6 +12,7 @@ NO requiere el CLI de opencode (lo quitamos del Dockerfile). Usa REST.
 import json
 import os
 import re
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -19,6 +20,9 @@ from typing import Dict, List, Optional
 import requests
 
 BOT = Path(__file__).resolve().parents[1]
+if str(BOT) not in sys.path:
+    sys.path.insert(0, str(BOT))
+
 TRADES_JSON = BOT / "brain" / "trade_history.json"
 
 from brain import strategy_adjustments as ADJ
