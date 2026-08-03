@@ -1,0 +1,205 @@
+═══════════════════════════════════════════════════════════════════════════════
+  VARIABLES DE ENTORNO COMPLETAS - PCR TRADING BOT
+  Fecha: 2026-08-03
+  Instrucciones: Copia estas variables a tu archivo .env o Windows Environment
+═══════════════════════════════════════════════════════════════════════════════
+
+═══════════════════════════════════════════════════════════════════════════════
+  1. CREDENCIALES EXNOVA (YA CONFIGURADAS)
+═══════════════════════════════════════════════════════════════════════════════
+
+EXNOVA_EMAIL=dmenamosquera15@gmail.com
+EXNOVA_PASSWORD=6715320Dvd.
+ACCOUNT_TYPE=PRACTICE
+
+═══════════════════════════════════════════════════════════════════════════════
+  2. CONFIGURACIÓN DE TRADING (YA CONFIGURADA)
+═══════════════════════════════════════════════════════════════════════════════
+
+DEFAULT_ASSET=EURUSD-OTC
+ASSETS=EURUSD,GBPUSD,USDJPY,AUDUSD,USDCAD,USDCHF,NZDUSD,EURUSD-OTC,GBPUSD-OTC,AUDUSD-OTC,USDJPY-OTC
+CAPITAL_PER_TRADE=1
+EXPIRATION_TIME=5
+TIMEFRAME=60
+TRADING_START_HOUR=0
+TRADING_END_HOUR=23
+COOLDOWN_SEGUNDOS=300
+MAX_STALE_SECONDS=240
+AUTO_START=true
+PORT=8000
+ENABLE_DATABASE=false
+
+═══════════════════════════════════════════════════════════════════════════════
+  3. OPENCODE ZEN (PROVEEDOR DE IA PRIMARIO)
+═══════════════════════════════════════════════════════════════════════════════
+
+OPENCODE_ZEN_API_KEY=
+OPENCODE_ZEN_BASE_URL=https://opencode.ai/zen/v1
+
+═══════════════════════════════════════════════════════════════════════════════
+  4. OPENCODE GO (PROVEEDOR DE IA SECUNDARIO)
+═══════════════════════════════════════════════════════════════════════════════
+
+OPENCODE_GO_API_KEY=
+OPENCODE_GO_BASE_URL=
+
+═══════════════════════════════════════════════════════════════════════════════
+  5. IAs ALTERNATIVAS (OPCIONAL - FALLBACK)
+═══════════════════════════════════════════════════════════════════════════════
+
+# FastOpenAI (Gratis - Hermes Engine)
+FAST_OPENAI_API_KEY=
+FAST_OPENAI_API_URL=https://api.freemodel.dev/v1
+FAST_OPENAI_MODEL=gpt-5.5
+
+# NVIDIA NIM (Gratis - 40 RPM)
+NVIDIA_API_KEY=
+NVIDIA_MODEL=meta/llama-3.3-70b-instruct
+
+# GitHub Models (Gratis - con GitHub Token)
+GITHUB_TOKEN=
+GITHUB_MODEL=gpt-4o-mini
+
+# OpenRouter (Gratis + Pago)
+OPENROUTER_API_KEY=
+OPENROUTER_MODELS_FREE=meta-llama/llama-3.1-8b-instruct,mistralai/mistral-7b-instruct
+
+# Ollama Local (Gratis - Local)
+OLLAMA_LOCAL_URL=http://localhost:11434
+OLLAMA_LOCAL_MODEL=llama-free:latest
+
+# Bridge Local (Gratis - Local)
+BRIDGE_LOCAL_URL=http://localhost:8000/api/v1
+BRIDGE_LOCAL_API_KEY=
+BRIDGE_LOCAL_MODEL=deepseek-v4-flash
+
+═══════════════════════════════════════════════════════════════════════════════
+  6. CONFIGURACIÓN DE OPENCODE
+═══════════════════════════════════════════════════════════════════════════════
+
+OPENCODE_API_KEY=
+OPENCODE_BASE_URL=http://localhost:11434/v1
+OPENCODE_MODEL_FAST=gemma4:cloud
+OPENCODE_MODEL_DEEP=gemma4:cloud
+OPENCODE_PER_MODEL_TIMEOUT=50
+AI_MODEL=deepseek-v4-flash-free
+
+═══════════════════════════════════════════════════════════════════════════════
+  7. CONFIGURACIÓN DEL BOT
+═══════════════════════════════════════════════════════════════════════════════
+
+STRATEGY=pcr_hybrid
+VALIDATION_MODE=strict
+AUTO_SWITCH=true
+AI_ROTATION_ENABLED=true
+
+═══════════════════════════════════════════════════════════════════════════════
+  INSTRUCCIONES DE INSTALACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 1: Windows Environment Variables (Permanente)
+───────────────────────────────────────────────────
+
+1. Click derecho en "This PC" → Properties
+2. Click "Advanced system settings"
+3. Click "Environment Variables"
+4. Click "New" en "User variables"
+5. Para cada variable arriba:
+   - Variable name: OPENCODE_ZEN_API_KEY (ej)
+   - Variable value: (tu valor)
+   - Click OK
+
+6. Reinicia PowerShell/CMD
+7. Verifica con: $env:OPENCODE_ZEN_API_KEY
+
+
+OPCIÓN 2: Archivo .env (Temporal - para desarrollo)
+─────────────────────────────────────────────────
+
+1. Crea archivo: .env en raíz del proyecto
+2. Copia todas las variables arriba
+3. Llena los valores que faltan
+4. Guarda
+5. Ejecuta: python -m dotenv
+
+
+OPCIÓN 3: PowerShell (Por sesión)
+───────────────────────────────
+
+$env:OPENCODE_ZEN_API_KEY = "tu_valor"
+$env:OPENCODE_GO_API_KEY = "tu_valor"
+# ... etc para cada variable
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  VARIABLES QUE YA ESTÁN CONFIGURADAS (NO CAMBIAR)
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ EXNOVA_EMAIL=dmenamosquera15@gmail.com
+✅ EXNOVA_PASSWORD=6715320Dvd.
+✅ ACCOUNT_TYPE=PRACTICE
+✅ DEFAULT_ASSET=EURUSD-OTC
+✅ CAPITAL_PER_TRADE=1
+✅ EXPIRATION_TIME=5
+✅ TIMEFRAME=60
+✅ AUTO_START=true
+✅ PORT=8000
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  VARIABLES QUE NECESITAS LLENAR (PRIORITARIAS)
+═══════════════════════════════════════════════════════════════════════════════
+
+🔴 OPENCODE_ZEN_API_KEY = ???
+   → Obten de: https://opencode.ai/workspace/[tu-workspace]/zen
+
+🔴 OPENCODE_GO_API_KEY = ???
+   → Obten de: https://opencode.ai/workspace/[tu-workspace]/go
+
+🟠 OPENCODE_GO_BASE_URL = ???
+   → Pregunta: ¿Cuál es la URL base de Go?
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  VARIABLES OPCIONALES (SI QUIERES FALLBACK)
+═══════════════════════════════════════════════════════════════════════════════
+
+🟢 FAST_OPENAI_API_KEY (opcional - ya viene con default gratis)
+🟢 NVIDIA_API_KEY (opcional - gratis en https://console.nvidia.com)
+🟢 GITHUB_TOKEN (opcional - si tienes GitHub)
+🟢 OPENROUTER_API_KEY (opcional - gratis en https://openrouter.io)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  VERIFICACIÓN POST-CONFIGURACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+Después de configurar, verifica:
+
+PowerShell:
+───────────
+$env:EXNOVA_EMAIL              # Debe mostrar: dmenamosquera15@gmail.com
+$env:OPENCODE_ZEN_API_KEY      # Debe mostrar: tu_api_key (sin error)
+$env:OPENCODE_GO_API_KEY       # Debe mostrar: tu_api_key (sin error)
+$env:PORT                      # Debe mostrar: 8000
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  COMANDO PARA INICIAR CON VARIABLES
+═══════════════════════════════════════════════════════════════════════════════
+
+Después de configurar las variables, ejecuta:
+
+opencode start --config opencode.production.yaml --mode supervised
+
+
+═══════════════════════════════════════════════════════════════════════════════
+  NOTA IMPORTANTE
+═══════════════════════════════════════════════════════════════════════════════
+
+⚠️ NUNCA hardcodees credenciales en el código
+⚠️ NUNCA compartas API Keys en texto plano
+⚠️ USA siempre variables de entorno
+⚠️ SI accidentalmente compartes una key, invalídala inmediatamente en el proveedor
+
+═══════════════════════════════════════════════════════════════════════════════
