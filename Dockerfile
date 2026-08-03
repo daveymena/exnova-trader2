@@ -10,12 +10,14 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ git curl ca-certificates nodejs npm \
+    gcc g++ git curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar OpenCode CLI (orquestador de agentes IA).
-# El flag de supervisión free usa OPENCODE_ZEN_API_KEY (registro gratis en opencode.ai).
-RUN npm install -g @anthropic-ai/opencode 2>/dev/null || npm install -g opencode 2>/dev/null || echo "WARN: opencode CLI no instalado (se usara AUTO_SUPERVISOR_OFFLINE)"
+# OpenCode CLI (orquestador del supervisor) NO se instala: pesa mucho y el
+# supervisor esta desactivado por defecto (SUPERVISOR_ENABLED=false). El bot
+# llama al puente IA de OpenCode via REST (requests -> OPENCODE_BASE_URL),
+# sin necesidad del CLI. Si se activa el supervisor, poner AUTO_SUPERVISOR_OFFLINE
+# o instalar el CLI en una etapa posterior.
 
 WORKDIR /app
 
