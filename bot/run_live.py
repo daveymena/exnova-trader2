@@ -159,9 +159,9 @@ from core.self_evaluator import get_evaluator
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
 MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.55"))
-COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "300"))
-MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "180"))
-MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))
+COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "120"))
+MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "90"))
+MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "150"))
 MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "5"))
 PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "10"))
 PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
@@ -1042,10 +1042,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     same_asset_jitter = int(MIN_BETWEEN_SAME_ASSET + np.random.uniform(-30, 90))
                     same_asset_jitter = max(60, same_asset_jitter)
 
-                    # Anti-detección: skip aleatorio, TAMBIEN en REAL. Sin edge
-                    # demostrado, cada operacion evitada es un dolar real no
-                    # arriesgado sobre un sistema sin ventaja probada.
-                    if np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
+                    # Anti-detección: skip aleatorio SOLO en REAL. En PRACTICE
+                    # queremos volumen para que el bucle de mejora IA tenga datos
+                    # reales que analizar y calibrar la estrategia.
+                    if ACCOUNT_TYPE == "REAL" and np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
                         log(f"[ANTI-DETECCIÓN] Saltando trade válido para perfil humano")
                         continue
 
