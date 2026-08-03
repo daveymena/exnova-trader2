@@ -158,7 +158,7 @@ from core.self_evaluator import get_evaluator
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
-MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.60"))
+MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.55"))
 COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "300"))
 MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "180"))
 MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))
@@ -975,14 +975,14 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
                 # Validación de alineación de tendencia
                 trend_aligned = signal.get("trend_aligned", False)
-                if not trend_aligned and signal.get("score", 0) < 45:
+                if not trend_aligned and signal.get("score", 0) < 40:
                     log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
                     continue
 
                 direccion = signal.get("signal", "")
-                if direccion == "PUT" and confidence < MIN_CONFIDENCE + 0.15:
-                    log(f"[FILTRO] PUT confianza baja ({confidence:.2f} < {MIN_CONFIDENCE+0.15:.2f})", "WARNING")
-                    continue
+                # (Sesgo anti-PUT +0.15 retirado: castigaba solo PUTs sin evidencia.
+                #  La barrera real la pone _current_min_confidence(), que el bucle
+                #  de mejora IA calibra ciclo a ciclo con datos reales.)
 
                 if action == "TRADE" and confidence >= _current_min_confidence():
                     # ═══════════════════════════════════════════════════════════
