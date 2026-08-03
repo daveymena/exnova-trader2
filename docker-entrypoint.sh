@@ -19,7 +19,14 @@ python3 -u bot/run_live.py &
 BOT_PID=$!
 echo "[entrypoint] Bot PID: $BOT_PID"
 
-# 3. Supervisor IA periodico (cada SUPERVISOR_INTERVAL_SECONDS=1800s por defecto).
+# 3. Monitor HTTP (dashboard + API JSON en puerto PORT=8000).
+# Lee los JSON de persistencia del bot (read-only) y expone /api/* y dashboard.
+echo "[entrypoint] Arrancando monitor HTTP (bot/monitor/server.py, puerto ${PORT:-8000})..."
+python3 -u bot/monitor/server.py &
+MON_PID=$!
+echo "[entrypoint] Monitor PID: $MON_PID"
+
+# 4. Supervisor IA periodico (cada SUPERVISOR_INTERVAL_SECONDS=1800s por defecto).
 # El default del fallback (":-false") es deliberado: si SUPERVISOR_ENABLED no
 # esta definido, el supervisor de auto-aplicacion de codigo NO debe arrancar.
 if [ "${SUPERVISOR_ENABLED:-false}" = "true" ]; then
@@ -32,12 +39,13 @@ else
     SUP_PID=""
 fi
 
-# 4. Trap de señales: al recibir SIGTERM/SIGINT matar a los hijos graceful.
-trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
+# 5. Trap de señales: al recibir SIGTERM/SIGINT matar a los hijos graceful.
+trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; kill $MON_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
 
-# 5. Esperar a que el bot termine; si muere, salir.
+# 6. Esperar a que el bot termine; si muere, salir.
 wait $BOT_PID
 BOT_RC=$?
 echo "[entrypoint] Bot termino con rc=$BOT_RC"
+kill $MON_PID 2>/dev/null
 [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null
 exit $BOT_RC
