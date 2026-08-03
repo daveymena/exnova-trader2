@@ -1023,17 +1023,21 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # sigue operando uno ya demostrado perdedor (RETIRADO).
                         setup = setup_key(signal, asset)
                         ev_decision = self_eval.decision(setup)
-                        if not ev_decision["permitido"]:
-                            log(f"[EVALUADOR] {setup} RETIRADO: {ev_decision['motivo']}", "WAIT")
-                            amount = 0.0
-                        else:
+                        if ev_decision["permitido"]:
                             tamano_rel = ev_decision["tamano_relativo"]
                             if ev_decision["estado"] == "EXPLORACION":
                                 log(f"[EVALUADOR] {setup} en EXPLORACION (x{tamano_rel:.2f}): {ev_decision['motivo']}")
                             elif ev_decision["estado"] == "PRODUCCION":
                                 log(f"[EVALUADOR] {setup} en PRODUCCION: {ev_decision['motivo']}", "SUCCESS")
 
-                            if ACCOUNT_TYPE == "REAL":
+                            # FIXED_STAKE: si esta set (>0), fija el monto y
+                            # descarta Kelly/jitter/tamano_rel. Para probar con
+                            # $1 mientras se valida la estrategia. Default 0
+                            # (= comportamiento dinamico original).
+                            fixed_stake = float(os.getenv("FIXED_STAKE", "0") or 0)
+                            if fixed_stake > 0:
+                                amount = round(float(fixed_stake), 2)
+                            elif ACCOUNT_TYPE == "REAL":
                                 # Monto fijo, no Kelly: Kelly asume una
                                 # probabilidad de ganar conocida, y hoy no hay
                                 # edge demostrado. tamano_rel escala el monto
@@ -1043,6 +1047,8 @@ def bot_loop(market_data, rm, engine, agent_engine):
                             else:
                                 base_amount = rm.calculate_position_size(confidence=confidence)
                                 amount = max(1.0, round(base_amount * tamano_rel * np.random.uniform(0.80, 1.20), 2))
+                        else:
+                            amount = 0.0
                         if amount > 0:
                             executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15, df_m5, df_m1)
                             if executed:
