@@ -1,0 +1,351 @@
+# ═══════════════════════════════════════════════════════════════════════════
+# OpenCode Production Configuration - PCR Trading Bot with AI Rotation
+# ═══════════════════════════════════════════════════════════════════════════
+
+metadata:
+  name: "PCR Trading Bot - Autonomous with AI Rotation"
+  version: "2.0.0"
+  environment: "production"
+  description: "Autonomous trading bot with rotative AI optimization"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# GIT CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+git:
+  repository: "https://github.com/menadanyer/Exnova-Trading-Bot"
+  branch: "main"
+  auto_sync: true
+  sync_interval: 300  # Every 5 minutes
+
+  on_update:
+    - action: "pull_latest"
+    - action: "validate_config"
+    - action: "restart_bot_if_needed"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BOT DEPLOYMENT
+# ═══════════════════════════════════════════════════════════════════════════
+
+deployment:
+  type: "autonomous"
+  mode: "production"
+
+  startup:
+    command: "python run_pcr_live.py"
+    working_directory: "/bot"
+    timeout: 60
+    retry_on_failure: true
+    max_retries: 3
+
+  environment:
+    # Trading Credentials
+    EXNOVA_EMAIL: "${EXNOVA_EMAIL}"
+    EXNOVA_PASSWORD: "${EXNOVA_PASSWORD}"
+
+    # AI Credentials (Rotation)
+    DEEPSEEK_API_KEY: "${DEEPSEEK_API_KEY}"
+    GROQ_API_KEY: "${GROQ_API_KEY}"
+    OPENROUTER_API_KEY: "${OPENROUTER_API_KEY}"
+
+    # Bot Config
+    STRATEGY: "pcr_simple"
+    VALIDATION_MODE: "strict"
+    AUTO_SWITCH: "true"
+    AI_ROTATION_ENABLED: "true"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AI ROTATION CONFIGURATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+ai_rotation:
+  enabled: true
+
+  providers:
+    # Primary: DeepSeek (Fast, Free)
+    - name: "deepseek"
+      model: "deepseek-chat"
+      priority: 1  # Use first
+      api_key_env: "DEEPSEEK_API_KEY"
+      cost_per_1k_tokens: 0.14  # Cheapest
+      speed: "fast"
+      quality: "high"
+
+      capabilities:
+        - trade_analysis
+        - pattern_detection
+        - parameter_optimization
+        - strategy_recommendation
+
+    # Secondary: Groq (Very Fast, Good for quick analysis)
+    - name: "groq"
+      model: "mixtral-8x7b-32768"
+      priority: 2
+      api_key_env: "GROQ_API_KEY"
+      cost_per_1k_tokens: 0.27  # Slightly more expensive
+      speed: "very_fast"
+      quality: "good"
+
+      capabilities:
+        - quick_analysis
+        - pattern_detection
+        - fast_recommendations
+
+    # Tertiary: OpenRouter (Best quality fallback)
+    - name: "openrouter"
+      model: "mistral-7b"
+      priority: 3
+      api_key_env: "OPENROUTER_API_KEY"
+      cost_per_1k_tokens: 0.14
+      speed: "medium"
+      quality: "very_high"
+
+      capabilities:
+        - deep_analysis
+        - root_cause_analysis
+        - strategic_planning
+
+  rotation_strategy: "round_robin"  # Alternate between providers
+  fallback_on_error: true
+  timeout_per_request: 30
+
+  analysis_frequency:
+    per_trade: "every_10_trades"     # Analyze every 10 trades
+    deep_analysis: "every_50_trades" # Deep analysis every 50
+    optimization: "every_100_trades" # Optimize every 100
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MONITORING & SUPERVISION (Intelligent)
+# ═══════════════════════════════════════════════════════════════════════════
+
+monitoring:
+  enabled: true
+  intelligent_supervision: true
+
+  health_check:
+    interval: 10  # Every 10 seconds
+    checks:
+      - bot_process_running
+      - connection_to_exnova
+      - api_connectivity
+      - memory_usage
+      - cpu_usage
+
+  metrics_collection:
+    enabled: true
+    interval: 5
+    metrics:
+      - win_rate
+      - pnl_total
+      - pnl_per_trade
+      - consecutive_wins
+      - consecutive_losses
+      - volatility_exposure
+
+  alerts:
+    enabled: true
+    intelligent: true  # Use AI to generate smart alerts
+
+    rules:
+      - name: "WR Below Threshold"
+        condition: "wr < 54.4"
+        severity: "high"
+        action: "ai_diagnose"  # Call AI to diagnose
+
+      - name: "Consecutive Losses"
+        condition: "consecutive_losses >= 5"
+        severity: "critical"
+        action: "ai_diagnose_and_suggest_change"
+
+      - name: "Unusual Pattern"
+        condition: "ai_detects_anomaly"  # AI detects
+        severity: "medium"
+        action: "ai_analyze_deeply"
+
+      - name: "Extreme Volatility"
+        condition: "volatility > 0.02"
+        severity: "medium"
+        action: "reduce_position_size"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DASHBOARD & REPORTING
+# ═══════════════════════════════════════════════════════════════════════════
+
+dashboard:
+  enabled: true
+  port: 8080
+
+  display:
+    - metrics_live
+    - ai_recommendations
+    - parameter_history
+    - trade_log
+    - alert_log
+    - performance_chart
+
+  api_endpoints:
+    - GET  /api/metrics
+    - GET  /api/ai-analysis
+    - GET  /api/recommendations
+    - GET  /api/alerts
+    - GET  /api/performance
+    - POST /api/action
+
+# ═══════════════════════════════════════════════════════════════════════════
+# AUTONOMOUS OPTIMIZATION
+# ═══════════════════════════════════════════════════════════════════════════
+
+autonomous_optimization:
+  enabled: true
+
+  feedback_loop:
+    - collect_trade_data
+    - call_ai_for_analysis
+    - detect_patterns
+    - propose_optimizations
+    - ab_test_changes
+    - apply_best_version
+    - measure_improvement
+    - repeat
+
+  strategies:
+    pcr_simple:
+      enabled: true
+      auto_tune: true
+      parameters:
+        - confidence_threshold
+        - zone_tolerance
+        - min_touches
+        - volatility_filter
+
+    pcr_complete:
+      enabled: true
+      auto_tune: true
+
+    pcr_hybrid:
+      enabled: true
+      auto_tune: true
+
+  strategy_switching:
+    enabled: true
+    condition: "if_wr_below_54.4_and_ai_recommends"
+    ai_decision_required: true
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REFINEMENT ENGINE (Continuous Entry Improvement)
+# ═══════════════════════════════════════════════════════════════════════════
+
+refinement_engine:
+  enabled: true
+
+  entry_improvement:
+    enabled: true
+    frequency: "continuous"
+
+    methods:
+      - machine_learning_score_adjustment
+      - ai_confidence_calibration
+      - zone_quality_enhancement
+      - volatility_context_analysis
+      - time_filter_optimization
+
+  learning:
+    from_losses: true
+    from_wins: true
+    feedback_window: 100  # Learn from last 100 trades
+
+    apply_to:
+      - zone_detection
+      - confidence_calculation
+      - pattern_recognition
+      - entry_timing
+
+# ═══════════════════════════════════════════════════════════════════════════
+# CONSISTENCY TRACKING (Path to Winner)
+# ═══════════════════════════════════════════════════════════════════════════
+
+consistency_tracking:
+  enabled: true
+
+  targets:
+    - wr_minimum: 54.4
+    - wr_target: 60.0
+    - wr_stretch: 70.0
+
+    - pnl_per_100_trades: 500  # $5 per trade avg
+    - sharpe_ratio: 1.5
+    - max_drawdown: 200
+
+  milestone_tracking:
+    track_every: 50_trades
+    report_every: 100_trades
+
+  progression:
+    - phase_1: "Stabilize at 54.4% WR (Minimum viable)"
+    - phase_2: "Improve to 60% WR (Consistent winner)"
+    - phase_3: "Achieve 70% WR (Superior trader)"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# EXECUTION & SAFETY
+# ═══════════════════════════════════════════════════════════════════════════
+
+execution:
+  mode: "fully_autonomous"
+  human_override: false  # No manual intervention needed
+
+  safeguards:
+    - max_daily_loss: 500
+    - max_position_size: 50
+    - max_consecutive_losses_before_pause: 10
+    - trading_hours: "09:00-22:00"  # UTC
+
+  auto_recovery:
+    enabled: true
+    on_critical_failure: "pause_and_alert"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# DEPLOYMENT TRIGGERS
+# ═══════════════════════════════════════════════════════════════════════════
+
+deployment_triggers:
+
+  on_git_push:
+    action: "auto_sync_and_reload"
+    validation: true
+    rollback_on_error: true
+
+  on_restart:
+    load_optimized_params: true
+    check_ai_providers: true
+    verify_connectivity: true
+
+  scheduled:
+    daily_checkpoint: "00:00 UTC"
+    weekly_optimization: "Sunday 00:00 UTC"
+
+# ═══════════════════════════════════════════════════════════════════════════
+# LOGGING & PERSISTENCE
+# ═══════════════════════════════════════════════════════════════════════════
+
+logging:
+  level: "INFO"
+
+  outputs:
+    - console
+    - file: "/logs/trading.log"
+    - file: "/logs/ai_analysis.log"
+    - file: "/logs/optimization.log"
+
+persistence:
+  save_optimized_params: true
+  save_ai_recommendations: true
+  save_performance_metrics: true
+  backup_interval: 3600  # Every hour
+
+# ═══════════════════════════════════════════════════════════════════════════
+# STATUS
+# ═══════════════════════════════════════════════════════════════════════════
+
+status: "PRODUCTION_READY"
+last_updated: "2026-08-03"
+configured_by: "Claude AI"
