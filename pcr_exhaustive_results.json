@@ -1,0 +1,6464 @@
+{
+  "normal": {
+    "simple": {
+      "strategy": "PCR Simple",
+      "trades": [
+        {
+          "index": 255,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.57386186116214,
+          "exit": 114.6286976276988,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 256,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.6286976276988,
+          "exit": 114.57828212805775,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 257,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.57828212805775,
+          "exit": 115.30511485203105,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 259,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.6794290405372,
+          "exit": 114.89977750362253,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 260,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.89977750362253,
+          "exit": 114.77209371648075,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 261,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.77209371648075,
+          "exit": 114.60123762288522,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 262,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.60123762288522,
+          "exit": 114.28725742300344,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 264,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.47803085464555,
+          "exit": 114.68390555336175,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 265,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 114.68390555336175,
+          "exit": 115.29964836899782,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 324,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 126.91168128702044,
+          "exit": 128.18137428322848,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 359,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 130.64269189265985,
+          "exit": 130.64426147221684,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 360,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 130.64426147221684,
+          "exit": 132.14203801331425,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 385,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 135.73238346205318,
+          "exit": 136.0198104608861,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 397,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 136.3448720314179,
+          "exit": 135.98377545424896,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 400,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 136.45293201915948,
+          "exit": 136.77540871981978,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 402,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 136.44778300355975,
+          "exit": 134.9359207605262,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 444,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 140.3885783444253,
+          "exit": 141.297413303237,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 459,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 142.2472545819811,
+          "exit": 141.09174477442286,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 473,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 141.89427385261894,
+          "exit": 142.14967922021486,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 474,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 142.14967922021486,
+          "exit": 142.24955605902608,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 475,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 142.24955605902608,
+          "exit": 144.44615633351526,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 518,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 153.15192036532395,
+          "exit": 152.8294143277014,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 519,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 152.8294143277014,
+          "exit": 154.1599004702179,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 632,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 182.36891839220561,
+          "exit": 182.9418548616459,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 634,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 182.33600937458672,
+          "exit": 182.2316359562443,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 635,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 182.2316359562443,
+          "exit": 183.02021615362625,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 701,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 186.86810539504307,
+          "exit": 186.9459030540073,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 702,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 186.9459030540073,
+          "exit": 186.01674844788747,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 720,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 184.29530011989567,
+          "exit": 186.7337571971661,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 727,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 188.3042895271078,
+          "exit": 189.06006855719448,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 728,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 189.06006855719448,
+          "exit": 191.03046807116226,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 732,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 188.18672185000705,
+          "exit": 186.71017213416692,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 735,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 187.14909659056835,
+          "exit": 186.5805246913341,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 741,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 187.28503716794035,
+          "exit": 186.20989452304946,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 745,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 186.81774749756394,
+          "exit": 186.50520250165562,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 859,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 215.7275185223277,
+          "exit": 216.45380741664883,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 867,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 215.53702369902632,
+          "exit": 216.1869990029607,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 216.1869990029607,
+          "exit": 216.82616394980707,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 870,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 216.01875645728055,
+          "exit": 217.68020297911983,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 875,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 215.880412000008,
+          "exit": 216.886722084745,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 878,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 216.18721594770642,
+          "exit": 216.61578914926682,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 922,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 234.112035284924,
+          "exit": 233.90018974699126,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 923,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 233.90018974699126,
+          "exit": 236.20860313726055,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 932,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 233.3001549874629,
+          "exit": 235.31318660673736,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 934,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 233.8403139990189,
+          "exit": 233.22911335746258,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 938,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 234.14397437128324,
+          "exit": 234.499626009003,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 941,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 233.84027198610409,
+          "exit": 233.72382078368477,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 943,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 233.98253202608285,
+          "exit": 233.24172148446158,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 949,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 234.15209246696944,
+          "exit": 234.3289084750778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 34,
+        "PUT": 15,
+        "REJECTED": 701
+      },
+      "stats": {
+        "total": 49,
+        "wins": 28,
+        "losses": 21,
+        "wr": 57.1,
+        "pnl": 24.64,
+        "sharpe": 0.88,
+        "dd": 69.72,
+        "consecutive_wins": 7,
+        "consecutive_losses": 6,
+        "viable": true
+      }
+    },
+    "complete": {
+      "strategy": "PCR Complete",
+      "trades": [
+        {
+          "index": 260,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 114.89977750362253,
+          "exit": 114.77209371648075,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 261,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 114.77209371648075,
+          "exit": 114.60123762288522,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 314,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 125.77094511101818,
+          "exit": 126.51168621329103,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 358,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 131.9277630103127,
+          "exit": 130.64269189265985,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 361,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 132.14203801331425,
+          "exit": 133.22565979912687,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 385,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 135.73238346205318,
+          "exit": 136.0198104608861,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 411,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 135.4021271418464,
+          "exit": 137.2694514667478,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 447,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 142.03038560634482,
+          "exit": 142.93853369652152,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 450,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 141.85556965286804,
+          "exit": 141.3179567071766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 456,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 141.4908430491878,
+          "exit": 142.66672382996617,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 600,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 173.87263276897414,
+          "exit": 175.10440534365307,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 632,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 182.36891839220561,
+          "exit": 182.9418548616459,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 634,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 182.33600937458672,
+          "exit": 182.2316359562443,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 635,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 182.2316359562443,
+          "exit": 183.02021615362625,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 699,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 186.4643192822917,
+          "exit": 186.6632147498714,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 780,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 190.9056596196648,
+          "exit": 189.38061888730365,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 789,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 190.8705145402635,
+          "exit": 190.74910702889593,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 790,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 190.74910702889593,
+          "exit": 190.06363840093212,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 857,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 215.9404079667863,
+          "exit": 216.4208447450359,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 859,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 215.7275185223277,
+          "exit": 216.45380741664883,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 861,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 217.10541417330967,
+          "exit": 218.5631278055414,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 881,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 218.56009117801995,
+          "exit": 220.33274066021855,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 949,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 234.15209246696944,
+          "exit": 234.3289084750778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 950,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 234.3289084750778,
+          "exit": 235.17761926169987,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 986,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 243.93871121535992,
+          "exit": 244.31021331206858,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 987,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 244.31021331206858,
+          "exit": 245.39535611302333,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 6,
+        "PUT": 20,
+        "REJECTED": 724
+      },
+      "stats": {
+        "total": 26,
+        "wins": 12,
+        "losses": 14,
+        "wr": 46.2,
+        "pnl": -39.44,
+        "sharpe": -2.63,
+        "dd": 64.58,
+        "consecutive_wins": 4,
+        "consecutive_losses": 5,
+        "viable": false
+      }
+    },
+    "hybrid": {
+      "strategy": "PCR Hybrid",
+      "trades": [
+        {
+          "index": 255,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.57386186116214,
+          "exit": 114.6286976276988,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 256,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.6286976276988,
+          "exit": 114.57828212805775,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 257,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.57828212805775,
+          "exit": 115.30511485203105,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 259,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.6794290405372,
+          "exit": 114.89977750362253,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 260,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.89977750362253,
+          "exit": 114.77209371648075,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 261,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.77209371648075,
+          "exit": 114.60123762288522,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 262,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.60123762288522,
+          "exit": 114.28725742300344,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 265,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.68390555336175,
+          "exit": 115.29964836899782,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 324,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 126.91168128702044,
+          "exit": 128.18137428322848,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 359,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 130.64269189265985,
+          "exit": 130.64426147221684,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 360,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 130.64426147221684,
+          "exit": 132.14203801331425,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 385,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 135.73238346205318,
+          "exit": 136.0198104608861,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 397,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 136.3448720314179,
+          "exit": 135.98377545424896,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 400,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 136.45293201915948,
+          "exit": 136.77540871981978,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 444,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 140.3885783444253,
+          "exit": 141.297413303237,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 450,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 141.85556965286804,
+          "exit": 141.3179567071766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 473,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 141.89427385261894,
+          "exit": 142.14967922021486,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 474,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 142.14967922021486,
+          "exit": 142.24955605902608,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 475,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 142.24955605902608,
+          "exit": 144.44615633351526,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 518,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 153.15192036532395,
+          "exit": 152.8294143277014,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 519,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 152.8294143277014,
+          "exit": 154.1599004702179,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 632,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 182.36891839220561,
+          "exit": 182.9418548616459,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 634,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 182.33600937458672,
+          "exit": 182.2316359562443,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 635,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 182.2316359562443,
+          "exit": 183.02021615362625,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 701,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 186.86810539504307,
+          "exit": 186.9459030540073,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 727,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 188.3042895271078,
+          "exit": 189.06006855719448,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 728,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 189.06006855719448,
+          "exit": 191.03046807116226,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 735,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 187.14909659056835,
+          "exit": 186.5805246913341,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 741,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 187.28503716794035,
+          "exit": 186.20989452304946,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 745,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 186.81774749756394,
+          "exit": 186.50520250165562,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 857,
+          "signal": "CALL",
+          "confidence": 70,
+          "entry": 215.9404079667863,
+          "exit": 216.4208447450359,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 859,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 215.7275185223277,
+          "exit": 216.45380741664883,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 867,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 215.53702369902632,
+          "exit": 216.1869990029607,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 216.1869990029607,
+          "exit": 216.82616394980707,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 870,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 216.01875645728055,
+          "exit": 217.68020297911983,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 878,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 216.18721594770642,
+          "exit": 216.61578914926682,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 922,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 234.112035284924,
+          "exit": 233.90018974699126,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 923,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 233.90018974699126,
+          "exit": 236.20860313726055,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 932,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 233.3001549874629,
+          "exit": 235.31318660673736,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 934,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 233.8403139990189,
+          "exit": 233.22911335746258,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 938,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 234.14397437128324,
+          "exit": 234.499626009003,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 949,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 234.15209246696944,
+          "exit": 234.3289084750778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 29,
+        "PUT": 13,
+        "REJECTED": 708
+      },
+      "stats": {
+        "total": 42,
+        "wins": 26,
+        "losses": 16,
+        "wr": 61.9,
+        "pnl": 57.88,
+        "sharpe": 2.45,
+        "dd": 68.1,
+        "consecutive_wins": 11,
+        "consecutive_losses": 4,
+        "viable": true
+      }
+    },
+    "hybrid_strict": {
+      "strategy": "PCR Hybrid (Strict)",
+      "trades": [
+        {
+          "index": 255,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.57386186116214,
+          "exit": 114.6286976276988,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 256,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.6286976276988,
+          "exit": 114.57828212805775,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 260,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 114.89977750362253,
+          "exit": 114.77209371648075,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 518,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 153.15192036532395,
+          "exit": 152.8294143277014,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 632,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 182.36891839220561,
+          "exit": 182.9418548616459,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 216.1869990029607,
+          "exit": 216.82616394980707,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 6,
+        "PUT": 0,
+        "REJECTED": 744
+      },
+      "stats": {
+        "total": 6,
+        "wins": 3,
+        "losses": 3,
+        "wr": 50.0,
+        "pnl": -4.86,
+        "sharpe": -1.4,
+        "dd": 30.0,
+        "consecutive_wins": 2,
+        "consecutive_losses": 3,
+        "viable": false
+      }
+    }
+  },
+  "uptrend": {
+    "simple": {
+      "strategy": "PCR Simple",
+      "trades": [
+        {
+          "index": 308,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 270.30113041565824,
+          "exit": 270.47669084313975,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 309,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 270.47669084313975,
+          "exit": 270.39515258893795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 310,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 270.39515258893795,
+          "exit": 270.2720328999616,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 311,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 270.2720328999616,
+          "exit": 272.3329591432349,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 315,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 270.6865083063467,
+          "exit": 273.5647472950521,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 402,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 343.09526181572784,
+          "exit": 346.9167853231766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 652,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 853.8155787583961,
+          "exit": 856.2843034284119,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 701,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 986.1383325153505,
+          "exit": 981.1402342191562,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 702,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 981.1402342191562,
+          "exit": 988.9449335572784,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 710,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 991.178145534902,
+          "exit": 994.5693652917855,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 831,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 1472.5533700933595,
+          "exit": 1478.8172853993287,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 898,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 1828.8816209238405,
+          "exit": 1840.412642456118,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 915,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 1860.9038191318218,
+          "exit": 1864.6429099786083,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 948,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 1919.6268813274964,
+          "exit": 1918.2205155066583,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 14,
+        "PUT": 0,
+        "REJECTED": 736
+      },
+      "stats": {
+        "total": 14,
+        "wins": 10,
+        "losses": 4,
+        "wr": 71.4,
+        "pnl": 43.8,
+        "sharpe": 5.98,
+        "dd": 20.0,
+        "consecutive_wins": 5,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    },
+    "complete": {
+      "strategy": "PCR Complete",
+      "trades": [
+        {
+          "index": 315,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 270.6865083063467,
+          "exit": 273.5647472950521,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 946,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 1929.3925418863187,
+          "exit": 1916.462479327204,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 955,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 1930.0210733224671,
+          "exit": 1938.711361730825,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 1,
+        "PUT": 2,
+        "REJECTED": 747
+      },
+      "stats": {
+        "total": 3,
+        "wins": 2,
+        "losses": 1,
+        "wr": 66.7,
+        "pnl": 6.76,
+        "sharpe": 4.13,
+        "dd": 10.0,
+        "consecutive_wins": 2,
+        "consecutive_losses": 1,
+        "viable": true
+      }
+    },
+    "hybrid": {
+      "strategy": "PCR Hybrid",
+      "trades": [
+        {
+          "index": 308,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.30113041565824,
+          "exit": 270.47669084313975,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 309,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.47669084313975,
+          "exit": 270.39515258893795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 310,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.39515258893795,
+          "exit": 270.2720328999616,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 311,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.2720328999616,
+          "exit": 272.3329591432349,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 315,
+          "signal": "CALL",
+          "confidence": 85.0,
+          "entry": 270.6865083063467,
+          "exit": 273.5647472950521,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 402,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 343.09526181572784,
+          "exit": 346.9167853231766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 652,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 853.8155787583961,
+          "exit": 856.2843034284119,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 701,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 986.1383325153505,
+          "exit": 981.1402342191562,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 702,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 981.1402342191562,
+          "exit": 988.9449335572784,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 710,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 991.178145534902,
+          "exit": 994.5693652917855,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 831,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1472.5533700933595,
+          "exit": 1478.8172853993287,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 898,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1828.8816209238405,
+          "exit": 1840.412642456118,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 915,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1860.9038191318218,
+          "exit": 1864.6429099786083,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 948,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1919.6268813274964,
+          "exit": 1918.2205155066583,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 14,
+        "PUT": 0,
+        "REJECTED": 736
+      },
+      "stats": {
+        "total": 14,
+        "wins": 10,
+        "losses": 4,
+        "wr": 71.4,
+        "pnl": 43.8,
+        "sharpe": 5.98,
+        "dd": 20.0,
+        "consecutive_wins": 5,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    },
+    "hybrid_strict": {
+      "strategy": "PCR Hybrid (Strict)",
+      "trades": [
+        {
+          "index": 308,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.30113041565824,
+          "exit": 270.47669084313975,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 315,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 270.6865083063467,
+          "exit": 273.5647472950521,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 402,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 343.09526181572784,
+          "exit": 346.9167853231766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 652,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 853.8155787583961,
+          "exit": 856.2843034284119,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 701,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 986.1383325153505,
+          "exit": 981.1402342191562,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 702,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 981.1402342191562,
+          "exit": 988.9449335572784,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 831,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1472.5533700933595,
+          "exit": 1478.8172853993287,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 898,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 1828.8816209238405,
+          "exit": 1840.412642456118,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 8,
+        "PUT": 0,
+        "REJECTED": 742
+      },
+      "stats": {
+        "total": 8,
+        "wins": 7,
+        "losses": 1,
+        "wr": 87.5,
+        "pnl": 48.66,
+        "sharpe": 15.88,
+        "dd": 10.0,
+        "consecutive_wins": 4,
+        "consecutive_losses": 1,
+        "viable": true
+      }
+    }
+  },
+  "downtrend": {
+    "simple": {
+      "strategy": "PCR Simple",
+      "trades": [
+        {
+          "index": 397,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 31.40720610304092,
+          "exit": 31.400322976089495,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 398,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 31.400322976089495,
+          "exit": 31.528666971049514,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 402,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 31.356896527149583,
+          "exit": 31.436159216884825,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 403,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 31.436159216884825,
+          "exit": 31.40351428238259,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 404,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 31.40351428238259,
+          "exit": 31.304621487304782,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 517,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 22.841698545976968,
+          "exit": 22.739940467811444,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 663,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 13.131175473089192,
+          "exit": 13.01367677219552,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 738,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 9.896766636372439,
+          "exit": 9.83006427998323,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 7.269550383714256,
+          "exit": 7.208543468314154,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 915,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 6.223842888762588,
+          "exit": 6.265755125790179,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 918,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 6.231463854788769,
+          "exit": 6.22471032197405,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 919,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 6.22471032197405,
+          "exit": 6.218540304224183,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 920,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 6.218540304224183,
+          "exit": 6.151845063864781,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 993,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 4.947759601616749,
+          "exit": 4.95715162932947,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 994,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 4.95715162932947,
+          "exit": 4.925043325774165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 0,
+        "PUT": 15,
+        "REJECTED": 735
+      },
+      "stats": {
+        "total": 15,
+        "wins": 11,
+        "losses": 4,
+        "wr": 73.3,
+        "pnl": 52.18,
+        "sharpe": 6.79,
+        "dd": 20.0,
+        "consecutive_wins": 6,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    },
+    "complete": {
+      "strategy": "PCR Complete",
+      "trades": [
+        {
+          "index": 427,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 30.082936885609907,
+          "exit": 29.97919364480845,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 804,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 8.480592662627629,
+          "exit": 8.408339125783769,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 0,
+        "PUT": 2,
+        "REJECTED": 748
+      },
+      "stats": {
+        "total": 2,
+        "wins": 2,
+        "losses": 0,
+        "wr": 100.0,
+        "pnl": 16.76,
+        "sharpe": 0,
+        "dd": 0.0,
+        "consecutive_wins": 2,
+        "consecutive_losses": 0,
+        "viable": true
+      }
+    },
+    "hybrid": {
+      "strategy": "PCR Hybrid",
+      "trades": [
+        {
+          "index": 397,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.40720610304092,
+          "exit": 31.400322976089495,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 398,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.400322976089495,
+          "exit": 31.528666971049514,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 402,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.356896527149583,
+          "exit": 31.436159216884825,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 403,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.436159216884825,
+          "exit": 31.40351428238259,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 404,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.40351428238259,
+          "exit": 31.304621487304782,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 517,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 22.841698545976968,
+          "exit": 22.739940467811444,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 663,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 13.131175473089192,
+          "exit": 13.01367677219552,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 738,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 9.896766636372439,
+          "exit": 9.83006427998323,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 7.269550383714256,
+          "exit": 7.208543468314154,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 915,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.223842888762588,
+          "exit": 6.265755125790179,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 918,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.231463854788769,
+          "exit": 6.22471032197405,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 919,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.22471032197405,
+          "exit": 6.218540304224183,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 920,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.218540304224183,
+          "exit": 6.151845063864781,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 993,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 4.947759601616749,
+          "exit": 4.95715162932947,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 994,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 4.95715162932947,
+          "exit": 4.925043325774165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 0,
+        "PUT": 15,
+        "REJECTED": 735
+      },
+      "stats": {
+        "total": 15,
+        "wins": 11,
+        "losses": 4,
+        "wr": 73.3,
+        "pnl": 52.18,
+        "sharpe": 6.79,
+        "dd": 20.0,
+        "consecutive_wins": 6,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    },
+    "hybrid_strict": {
+      "strategy": "PCR Hybrid (Strict)",
+      "trades": [
+        {
+          "index": 397,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.40720610304092,
+          "exit": 31.400322976089495,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 398,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.400322976089495,
+          "exit": 31.528666971049514,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 402,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 31.356896527149583,
+          "exit": 31.436159216884825,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 663,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 13.131175473089192,
+          "exit": 13.01367677219552,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 738,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 9.896766636372439,
+          "exit": 9.83006427998323,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 7.269550383714256,
+          "exit": 7.208543468314154,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 918,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.231463854788769,
+          "exit": 6.22471032197405,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 919,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.22471032197405,
+          "exit": 6.218540304224183,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 920,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 6.218540304224183,
+          "exit": 6.151845063864781,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 993,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 4.947759601616749,
+          "exit": 4.95715162932947,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 994,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 4.95715162932947,
+          "exit": 4.925043325774165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 0,
+        "PUT": 11,
+        "REJECTED": 739
+      },
+      "stats": {
+        "total": 11,
+        "wins": 8,
+        "losses": 3,
+        "wr": 72.7,
+        "pnl": 37.04,
+        "sharpe": 6.53,
+        "dd": 20.0,
+        "consecutive_wins": 6,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    }
+  },
+  "extreme_volatility": {
+    "simple": {
+      "strategy": "PCR Simple",
+      "trades": [
+        {
+          "index": 346,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 179.66754754903377,
+          "exit": 179.50299497492145,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 347,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 179.50299497492145,
+          "exit": 184.66294941721083,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 373,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 179.3855990555252,
+          "exit": 179.58083496982275,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 374,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 179.58083496982275,
+          "exit": 179.88502005882066,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 419,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 188.90244889501344,
+          "exit": 186.84996299142168,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 423,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 189.11290304377772,
+          "exit": 191.6987016197741,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 460,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 201.56543658518663,
+          "exit": 199.7695651748783,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 555,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 224.86613183033398,
+          "exit": 226.03939158955788,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 577,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 225.07990197963156,
+          "exit": 224.84078848393168,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 579,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 225.0218179223425,
+          "exit": 229.78455184802866,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 588,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 234.9236814812088,
+          "exit": 239.26616056921563,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 592,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 235.39385715446437,
+          "exit": 234.94054392538726,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 593,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 234.94054392538726,
+          "exit": 238.26766948827049,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 730,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 245.71874544925652,
+          "exit": 246.832967494128,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 732,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 244.88614578152732,
+          "exit": 245.42979633806326,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 733,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 245.42979633806326,
+          "exit": 247.80614775015457,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 826,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 264.18723413896976,
+          "exit": 264.1419020851292,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 827,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 264.1419020851292,
+          "exit": 260.1080104184435,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 832,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 263.3458866921054,
+          "exit": 264.99518171704193,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 261.20154223201035,
+          "exit": 263.71146060388486,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 857,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 262.34334106439724,
+          "exit": 270.47209112673795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 867,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 260.16172283197125,
+          "exit": 258.459246710165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 951,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 266.6214722094009,
+          "exit": 272.17845792692566,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 956,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 267.2770673976153,
+          "exit": 266.9635247628372,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 957,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 266.9635247628372,
+          "exit": 263.320507226394,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 983,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 261.54088312148525,
+          "exit": 259.4470473108435,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 14,
+        "PUT": 12,
+        "REJECTED": 724
+      },
+      "stats": {
+        "total": 26,
+        "wins": 17,
+        "losses": 9,
+        "wr": 65.4,
+        "pnl": 52.46,
+        "sharpe": 3.66,
+        "dd": 33.24,
+        "consecutive_wins": 6,
+        "consecutive_losses": 3,
+        "viable": true
+      }
+    },
+    "complete": {
+      "strategy": "PCR Complete",
+      "trades": [
+        {
+          "index": 325,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 175.29223656645672,
+          "exit": 178.38328490254509,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 350,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 177.2932181015321,
+          "exit": 175.92571939035517,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 400,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 188.87361373514122,
+          "exit": 188.11549979109284,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 402,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 189.21887540710404,
+          "exit": 188.1175929214219,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 404,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 183.63544036869524,
+          "exit": 185.00244125930655,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 416,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 188.85854462596365,
+          "exit": 187.19527725033774,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 423,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 189.11290304377772,
+          "exit": 191.6987016197741,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 440,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 197.64423823232048,
+          "exit": 198.59755837648044,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 446,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 201.02584803532508,
+          "exit": 199.15437872557365,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 523,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 229.27060974833367,
+          "exit": 227.94733813616347,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 554,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 221.85374929114286,
+          "exit": 224.86613183033398,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 582,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 235.25881895474677,
+          "exit": 237.32606089949374,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 584,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 235.52842855760275,
+          "exit": 234.82225705229177,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 619,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 248.46886987989578,
+          "exit": 246.11850240628385,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 692,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 229.6182837236625,
+          "exit": 229.65019538860764,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 693,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 229.65019538860764,
+          "exit": 229.70446511511238,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 695,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 229.43268637573206,
+          "exit": 227.45373794688766,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 726,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 245.99915985060525,
+          "exit": 245.5440711019613,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 731,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 246.832967494128,
+          "exit": 244.88614578152732,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 734,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 247.80614775015457,
+          "exit": 250.10196584475312,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 781,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 275.5029895390957,
+          "exit": 280.98553620006413,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 807,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 263.48909060441764,
+          "exit": 260.82522655683516,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 832,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 263.3458866921054,
+          "exit": 264.99518171704193,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 987,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 260.46741088010276,
+          "exit": 257.12729115486985,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 6,
+        "PUT": 18,
+        "REJECTED": 726
+      },
+      "stats": {
+        "total": 24,
+        "wins": 7,
+        "losses": 17,
+        "wr": 29.2,
+        "pnl": -111.34,
+        "sharpe": -8.82,
+        "dd": 101.34,
+        "consecutive_wins": 2,
+        "consecutive_losses": 8,
+        "viable": false
+      }
+    },
+    "hybrid": {
+      "strategy": "PCR Hybrid",
+      "trades": [
+        {
+          "index": 346,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 179.66754754903377,
+          "exit": 179.50299497492145,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 347,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 179.50299497492145,
+          "exit": 184.66294941721083,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 373,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 179.3855990555252,
+          "exit": 179.58083496982275,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 374,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 179.58083496982275,
+          "exit": 179.88502005882066,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 404,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 183.63544036869524,
+          "exit": 185.00244125930655,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 419,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 188.90244889501344,
+          "exit": 186.84996299142168,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 423,
+          "signal": "PUT",
+          "confidence": 77.5,
+          "entry": 189.11290304377772,
+          "exit": 191.6987016197741,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 555,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 224.86613183033398,
+          "exit": 226.03939158955788,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 577,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 225.07990197963156,
+          "exit": 224.84078848393168,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 579,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 225.0218179223425,
+          "exit": 229.78455184802866,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 588,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 234.9236814812088,
+          "exit": 239.26616056921563,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 592,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 235.39385715446437,
+          "exit": 234.94054392538726,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 619,
+          "signal": "PUT",
+          "confidence": 70,
+          "entry": 248.46886987989578,
+          "exit": 246.11850240628385,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 726,
+          "signal": "CALL",
+          "confidence": 70,
+          "entry": 245.99915985060525,
+          "exit": 245.5440711019613,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 730,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 245.71874544925652,
+          "exit": 246.832967494128,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 732,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 244.88614578152732,
+          "exit": 245.42979633806326,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 733,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 245.42979633806326,
+          "exit": 247.80614775015457,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 826,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 264.18723413896976,
+          "exit": 264.1419020851292,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 827,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 264.1419020851292,
+          "exit": 260.1080104184435,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 261.20154223201035,
+          "exit": 263.71146060388486,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 857,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 262.34334106439724,
+          "exit": 270.47209112673795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 867,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 260.16172283197125,
+          "exit": 258.459246710165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 951,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 266.6214722094009,
+          "exit": 272.17845792692566,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 956,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 267.2770673976153,
+          "exit": 266.9635247628372,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 983,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 261.54088312148525,
+          "exit": 259.4470473108435,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 13,
+        "PUT": 12,
+        "REJECTED": 725
+      },
+      "stats": {
+        "total": 25,
+        "wins": 16,
+        "losses": 9,
+        "wr": 64.0,
+        "pnl": 44.08,
+        "sharpe": 3.17,
+        "dd": 20.0,
+        "consecutive_wins": 5,
+        "consecutive_losses": 2,
+        "viable": true
+      }
+    },
+    "hybrid_strict": {
+      "strategy": "PCR Hybrid (Strict)",
+      "trades": [
+        {
+          "index": 555,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 224.86613183033398,
+          "exit": 226.03939158955788,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 588,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 234.9236814812088,
+          "exit": 239.26616056921563,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 867,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 260.16172283197125,
+          "exit": 258.459246710165,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 2,
+        "PUT": 1,
+        "REJECTED": 747
+      },
+      "stats": {
+        "total": 3,
+        "wins": 3,
+        "losses": 0,
+        "wr": 100.0,
+        "pnl": 25.14,
+        "sharpe": 0,
+        "dd": 0.0,
+        "consecutive_wins": 3,
+        "consecutive_losses": 0,
+        "viable": true
+      }
+    }
+  },
+  "consolidation": {
+    "simple": {
+      "strategy": "PCR Simple",
+      "trades": [
+        {
+          "index": 253,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.3254724012031,
+          "exit": 106.97657191341116,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 254,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.97657191341116,
+          "exit": 106.80022549555841,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 255,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.80022549555841,
+          "exit": 106.8209417356351,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 256,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.8209417356351,
+          "exit": 106.55044901422248,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 262,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.91597902418931,
+          "exit": 106.95529014164725,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 263,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.95529014164725,
+          "exit": 106.65829892940225,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 265,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.92986495293314,
+          "exit": 107.18189142874908,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 267,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.8468786149728,
+          "exit": 107.03907528131529,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 268,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.03907528131529,
+          "exit": 106.87507374831767,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 269,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.87507374831767,
+          "exit": 106.59219612280542,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 286,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.46731570720908,
+          "exit": 106.39475160646987,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 290,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.30378350267783,
+          "exit": 106.6443974987998,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 292,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.3733855546729,
+          "exit": 106.22890897872959,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 293,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.22890897872959,
+          "exit": 106.13233139185417,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 294,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.13233139185417,
+          "exit": 105.91635462904064,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 297,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.20533746469013,
+          "exit": 106.84822543104032,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 323,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.4302701437387,
+          "exit": 106.74352468972334,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 325,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.62301055070233,
+          "exit": 106.54585785165858,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 326,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.54585785165858,
+          "exit": 106.2327737151931,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 327,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.2327737151931,
+          "exit": 106.63807719812755,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 328,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.63807719812755,
+          "exit": 106.6261572962417,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 329,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.6261572962417,
+          "exit": 106.43363287770826,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 345,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.60852663526884,
+          "exit": 106.28680055778696,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 362,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.40289855980627,
+          "exit": 106.3679072837116,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 384,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.60789599051785,
+          "exit": 105.39619805944781,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 396,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.75181177781408,
+          "exit": 105.76149463811147,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 397,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.76149463811147,
+          "exit": 105.66466025428174,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 398,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.66466025428174,
+          "exit": 105.68578214182732,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 399,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.68578214182732,
+          "exit": 105.90469778509802,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 400,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.90469778509802,
+          "exit": 106.25891528988909,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 404,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.71562227378044,
+          "exit": 105.70795292230345,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 405,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.70795292230345,
+          "exit": 105.98326148622847,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 410,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.74134571144539,
+          "exit": 106.23909647705106,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 414,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.8493862427933,
+          "exit": 105.7632867601205,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 415,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.7632867601205,
+          "exit": 105.76235440976546,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 416,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.76235440976546,
+          "exit": 106.0035757076106,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 424,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.5669612354442,
+          "exit": 105.53326527414117,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 425,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.53326527414117,
+          "exit": 105.5500338171487,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 426,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.5500338171487,
+          "exit": 105.60687937353535,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 427,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.60687937353535,
+          "exit": 105.79787040175528,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 428,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.79787040175528,
+          "exit": 105.49971192756306,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 429,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.49971192756306,
+          "exit": 105.7065960596348,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 430,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.7065960596348,
+          "exit": 105.57986679053765,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 431,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.57986679053765,
+          "exit": 105.93377669283068,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 434,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.6586359031019,
+          "exit": 105.3452012557717,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 437,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.84417488977635,
+          "exit": 106.11587746346632,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 439,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.8464902628898,
+          "exit": 105.5389926510857,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 441,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.78749195560135,
+          "exit": 106.24246544480368,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 466,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.13123559293973,
+          "exit": 106.0230771432559,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 467,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.0230771432559,
+          "exit": 106.19140390685527,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 468,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.19140390685527,
+          "exit": 106.31327886998571,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 475,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.19483821106162,
+          "exit": 106.21235633686507,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 477,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.15162573743136,
+          "exit": 106.22398431993288,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 478,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.22398431993288,
+          "exit": 106.17563237240778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 479,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.17563237240778,
+          "exit": 106.02964722102715,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 480,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.02964722102715,
+          "exit": 105.82415161726965,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 483,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.96941996871611,
+          "exit": 105.88438749516953,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 484,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.88438749516953,
+          "exit": 105.5866278634456,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 489,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.11920897792697,
+          "exit": 106.47869009641188,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 509,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.07597848253225,
+          "exit": 106.89350034304299,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 510,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.89350034304299,
+          "exit": 106.94700282059402,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 511,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.94700282059402,
+          "exit": 106.5174471994208,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 513,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.7150305834245,
+          "exit": 106.72394612241791,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 514,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.72394612241791,
+          "exit": 106.7699072655303,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 515,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.7699072655303,
+          "exit": 107.01177267325943,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 516,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.01177267325943,
+          "exit": 107.1819183337285,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 518,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.70054268292348,
+          "exit": 106.91991093062592,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 519,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.91991093062592,
+          "exit": 106.86431422037248,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 520,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.86431422037248,
+          "exit": 106.53351388513492,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 522,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.7641610819433,
+          "exit": 107.10089105573178,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 531,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.96010347597972,
+          "exit": 106.8142253712405,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 532,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.8142253712405,
+          "exit": 106.88220042773258,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 533,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.88220042773258,
+          "exit": 107.0858282099649,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 535,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.96339674372317,
+          "exit": 107.32771345539688,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 538,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.02031991861666,
+          "exit": 107.151148786149,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 539,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.151148786149,
+          "exit": 107.31559021369365,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 568,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.84255883954646,
+          "exit": 106.64523595693873,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 575,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.2353993930574,
+          "exit": 107.65185679768089,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 581,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.4618342522839,
+          "exit": 107.32295189892795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 583,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.75107761182268,
+          "exit": 107.42053794747343,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 587,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.60461418279513,
+          "exit": 107.6051625235114,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 588,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.6051625235114,
+          "exit": 107.24434966337292,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 598,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.26315574842268,
+          "exit": 107.23871297344523,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 601,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.65744263809364,
+          "exit": 107.73734624984259,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 602,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.73734624984259,
+          "exit": 107.90174972759105,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 610,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.57949947820467,
+          "exit": 107.64113144442844,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 611,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.64113144442844,
+          "exit": 107.58578425517545,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 612,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.58578425517545,
+          "exit": 107.48791918416842,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 613,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.48791918416842,
+          "exit": 107.11801634983442,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 645,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.28303047131962,
+          "exit": 105.06121665440514,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 646,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.06121665440514,
+          "exit": 105.01009595788044,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 647,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.01009595788044,
+          "exit": 104.79937854931579,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 651,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 104.99679298738255,
+          "exit": 105.37381710120806,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 659,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.54618364997076,
+          "exit": 105.60912373248418,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 660,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.60912373248418,
+          "exit": 105.63319589330936,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 661,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.63319589330936,
+          "exit": 105.81709930139708,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 664,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.63096327561745,
+          "exit": 105.90463730278863,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 680,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.35348117340102,
+          "exit": 106.07885402820692,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 681,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.07885402820692,
+          "exit": 106.0958711454326,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 682,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.0958711454326,
+          "exit": 105.97279065119551,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 683,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.97279065119551,
+          "exit": 105.69616148379329,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 684,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.69616148379329,
+          "exit": 104.96103309744501,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 695,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.60563209326776,
+          "exit": 105.77675378834313,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 699,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.69445313813766,
+          "exit": 105.55255866701265,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 703,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.7106085150077,
+          "exit": 105.61141395252422,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 718,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.92519751249853,
+          "exit": 105.58037657713824,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 721,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 105.7341393691335,
+          "exit": 105.90908423931842,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 722,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.90908423931842,
+          "exit": 105.8586909145751,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 723,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.8586909145751,
+          "exit": 105.5223190395676,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 745,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.79121408291385,
+          "exit": 105.6193243941097,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 779,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.07131249341774,
+          "exit": 104.97063351404138,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 780,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 104.97063351404138,
+          "exit": 105.30869065769717,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 803,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.19965960540578,
+          "exit": 106.28117792940643,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 804,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.28117792940643,
+          "exit": 106.2879009437996,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 805,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.2879009437996,
+          "exit": 105.78557736089185,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 809,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.36030140649623,
+          "exit": 106.06112918714608,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 814,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.19896505498097,
+          "exit": 105.91084259102483,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 828,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.913099539931,
+          "exit": 106.12076712919996,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 837,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.46816830753812,
+          "exit": 106.66803254876142,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 841,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.31289330112565,
+          "exit": 106.47445263710614,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 842,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.47445263710614,
+          "exit": 106.45449136245892,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 843,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.45449136245892,
+          "exit": 106.29306052314297,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 844,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.29306052314297,
+          "exit": 105.93812103612468,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 849,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.46306473001034,
+          "exit": 106.2585047625834,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 850,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.2585047625834,
+          "exit": 106.20092926909983,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 851,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.20092926909983,
+          "exit": 106.1771051107511,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 106.1771051107511,
+          "exit": 105.87647617973565,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 867,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.8529182039809,
+          "exit": 105.92043761397036,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 105.92043761397036,
+          "exit": 106.10766625590306,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 869,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 106.10766625590306,
+          "exit": 106.30459337309667,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 900,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 108.16558786832634,
+          "exit": 108.09007621692086,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 901,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 108.09007621692086,
+          "exit": 107.93863341101704,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 904,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 108.10865432398018,
+          "exit": 107.89379097426308,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 906,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.97672875553015,
+          "exit": 107.6473098633002,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 924,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.80413957423956,
+          "exit": 108.91402839887962,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 930,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.49669026144201,
+          "exit": 108.87245196548649,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 933,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.10735126452842,
+          "exit": 108.38994443039286,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 934,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.38994443039286,
+          "exit": 108.60702214620302,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 935,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.60702214620302,
+          "exit": 108.13753646760135,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 936,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.13753646760135,
+          "exit": 108.29974041808073,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 937,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.29974041808073,
+          "exit": 107.92659604687607,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 939,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.2172521502678,
+          "exit": 108.18176721543975,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 940,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.18176721543975,
+          "exit": 108.06434359272778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 941,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.06434359272778,
+          "exit": 107.94134950606,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 943,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.09662526820023,
+          "exit": 108.32278345069224,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 944,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.32278345069224,
+          "exit": 108.32686031839447,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 945,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.32686031839447,
+          "exit": 108.03631261067987,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 949,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 108.08797475096439,
+          "exit": 107.77535710379068,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 958,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.94536927552356,
+          "exit": 107.87080358590387,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 959,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.87080358590387,
+          "exit": 107.95605465035531,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 960,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.95605465035531,
+          "exit": 107.52476616855644,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 972,
+          "signal": "PUT",
+          "confidence": 65,
+          "entry": 107.53763167300139,
+          "exit": 107.03416045433273,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 984,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.25202522576568,
+          "exit": 107.28570731260969,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 985,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.28570731260969,
+          "exit": 107.2822178375354,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 986,
+          "signal": "CALL",
+          "confidence": 65,
+          "entry": 107.2822178375354,
+          "exit": 107.4044212939849,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 62,
+        "PUT": 93,
+        "REJECTED": 595
+      },
+      "stats": {
+        "total": 155,
+        "wins": 80,
+        "losses": 75,
+        "wr": 51.6,
+        "pnl": -79.6,
+        "sharpe": -0.89,
+        "dd": 130.16,
+        "consecutive_wins": 7,
+        "consecutive_losses": 8,
+        "viable": false
+      }
+    },
+    "complete": {
+      "strategy": "PCR Complete",
+      "trades": [
+        {
+          "index": 267,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.8468786149728,
+          "exit": 107.03907528131529,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 268,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.03907528131529,
+          "exit": 106.87507374831767,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 269,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.87507374831767,
+          "exit": 106.59219612280542,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 285,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.20341126688486,
+          "exit": 106.46731570720908,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 290,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.30378350267783,
+          "exit": 106.6443974987998,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 294,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.13233139185417,
+          "exit": 105.91635462904064,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 310,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 107.65895250665201,
+          "exit": 107.56923169660999,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 340,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.64257287186174,
+          "exit": 106.56960209403245,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 341,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.56960209403245,
+          "exit": 106.69580218427262,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 354,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.3522005569147,
+          "exit": 106.8684721852435,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 362,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.40289855980627,
+          "exit": 106.3679072837116,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 363,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.3679072837116,
+          "exit": 106.00387426700408,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 381,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 104.78318049766388,
+          "exit": 104.90253435225789,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 382,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 104.90253435225789,
+          "exit": 105.24224294452917,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 394,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.67139257082107,
+          "exit": 105.6015499545132,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 404,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.71562227378044,
+          "exit": 105.70795292230345,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 410,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.74134571144539,
+          "exit": 106.23909647705106,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 414,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.8493862427933,
+          "exit": 105.7632867601205,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 415,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.7632867601205,
+          "exit": 105.76235440976546,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 416,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.76235440976546,
+          "exit": 106.0035757076106,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 418,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.12086222389537,
+          "exit": 105.99884529731645,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 434,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.6586359031019,
+          "exit": 105.3452012557717,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 440,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.5389926510857,
+          "exit": 105.78749195560135,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 441,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.78749195560135,
+          "exit": 106.24246544480368,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 462,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.37791394434159,
+          "exit": 106.80332197159218,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 510,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.89350034304299,
+          "exit": 106.94700282059402,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 511,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.94700282059402,
+          "exit": 106.5174471994208,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 517,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.1819183337285,
+          "exit": 106.70054268292348,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 523,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.10089105573178,
+          "exit": 107.11897227368779,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 524,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.11897227368779,
+          "exit": 107.04622671208875,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 525,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.04622671208875,
+          "exit": 106.99218985500438,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 526,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.99218985500438,
+          "exit": 107.49976563294622,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 529,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.17589235016946,
+          "exit": 107.39363755764887,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 534,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.0858282099649,
+          "exit": 106.96339674372317,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 535,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.96339674372317,
+          "exit": 107.32771345539688,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 537,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.09922310387303,
+          "exit": 107.02031991861666,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 538,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.02031991861666,
+          "exit": 107.151148786149,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 539,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.151148786149,
+          "exit": 107.31559021369365,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 544,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.24165049107941,
+          "exit": 107.84287848261354,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 557,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.91673644900854,
+          "exit": 107.70462360724362,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 559,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.8442838015063,
+          "exit": 107.97607222440413,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 583,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.75107761182268,
+          "exit": 107.42053794747343,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 588,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.6051625235114,
+          "exit": 107.24434966337292,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 614,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 107.11801634983442,
+          "exit": 106.94578494564765,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 646,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.06121665440514,
+          "exit": 105.01009595788044,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 647,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.01009595788044,
+          "exit": 104.79937854931579,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 651,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 104.99679298738255,
+          "exit": 105.37381710120806,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 652,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.37381710120806,
+          "exit": 105.58317623171185,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 664,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.63096327561745,
+          "exit": 105.90463730278863,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 666,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.56744339800768,
+          "exit": 105.78231142713472,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 677,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 106.80477877791493,
+          "exit": 106.93138758750014,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 706,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.39304521983699,
+          "exit": 105.80841543565442,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 715,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 105.61667637515907,
+          "exit": 105.6389882046507,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 717,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.85434112669644,
+          "exit": 105.92519751249853,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 718,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.92519751249853,
+          "exit": 105.58037657713824,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 722,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.90908423931842,
+          "exit": 105.8586909145751,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 723,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.8586909145751,
+          "exit": 105.5223190395676,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 733,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.84905884009177,
+          "exit": 106.15348469684585,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 801,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 106.56711333840974,
+          "exit": 106.19248293932957,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 814,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 106.19896505498097,
+          "exit": 105.91084259102483,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 822,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.09352720111076,
+          "exit": 106.03800760994544,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 823,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.03800760994544,
+          "exit": 106.06696565736517,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 824,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.06696565736517,
+          "exit": 105.58435339420109,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 837,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 106.46816830753812,
+          "exit": 106.66803254876142,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 840,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.96563713150933,
+          "exit": 106.31289330112565,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 841,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 106.31289330112565,
+          "exit": 106.47445263710614,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 842,
+          "signal": "CALL",
+          "confidence": 75,
+          "entry": 106.47445263710614,
+          "exit": 106.45449136245892,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 846,
+          "signal": "PUT",
+          "confidence": 75,
+          "entry": 105.8980367902692,
+          "exit": 106.2547241579913,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 848,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.50396704037134,
+          "exit": 106.46306473001034,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 849,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.46306473001034,
+          "exit": 106.2585047625834,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.92043761397036,
+          "exit": 106.10766625590306,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 869,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.10766625590306,
+          "exit": 106.30459337309667,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 897,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.31329394358491,
+          "exit": 108.03335434050699,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 900,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.16558786832634,
+          "exit": 108.09007621692086,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 901,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.09007621692086,
+          "exit": 107.93863341101704,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 904,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.10865432398018,
+          "exit": 107.89379097426308,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 948,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.6360229301405,
+          "exit": 108.08797475096439,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 959,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.87080358590387,
+          "exit": 107.95605465035531,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 960,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.95605465035531,
+          "exit": 107.52476616855644,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 971,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.45430387295968,
+          "exit": 107.53763167300139,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 985,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.28570731260969,
+          "exit": 107.2822178375354,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 986,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.2822178375354,
+          "exit": 107.4044212939849,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 987,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.4044212939849,
+          "exit": 107.52316345154685,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 15,
+        "PUT": 68,
+        "REJECTED": 667
+      },
+      "stats": {
+        "total": 83,
+        "wins": 44,
+        "losses": 39,
+        "wr": 53.0,
+        "pnl": -21.28,
+        "sharpe": -0.44,
+        "dd": 85.92,
+        "consecutive_wins": 5,
+        "consecutive_losses": 5,
+        "viable": false
+      }
+    },
+    "hybrid": {
+      "strategy": "PCR Hybrid",
+      "trades": [
+        {
+          "index": 254,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.97657191341116,
+          "exit": 106.80022549555841,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 255,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.80022549555841,
+          "exit": 106.8209417356351,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 256,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.8209417356351,
+          "exit": 106.55044901422248,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 267,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.8468786149728,
+          "exit": 107.03907528131529,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 268,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.03907528131529,
+          "exit": 106.87507374831767,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 269,
+          "signal": "PUT",
+          "confidence": 77.5,
+          "entry": 106.87507374831767,
+          "exit": 106.59219612280542,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 286,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.46731570720908,
+          "exit": 106.39475160646987,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 290,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.30378350267783,
+          "exit": 106.6443974987998,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 292,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.3733855546729,
+          "exit": 106.22890897872959,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 293,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.22890897872959,
+          "exit": 106.13233139185417,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 294,
+          "signal": "PUT",
+          "confidence": 77.5,
+          "entry": 106.13233139185417,
+          "exit": 105.91635462904064,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 297,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.20533746469013,
+          "exit": 106.84822543104032,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 323,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.4302701437387,
+          "exit": 106.74352468972334,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 325,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.62301055070233,
+          "exit": 106.54585785165858,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 326,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.54585785165858,
+          "exit": 106.2327737151931,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 327,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.2327737151931,
+          "exit": 106.63807719812755,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 328,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.63807719812755,
+          "exit": 106.6261572962417,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 329,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.6261572962417,
+          "exit": 106.43363287770826,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 341,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 106.56960209403245,
+          "exit": 106.69580218427262,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 384,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.60789599051785,
+          "exit": 105.39619805944781,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 396,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.75181177781408,
+          "exit": 105.76149463811147,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 397,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.76149463811147,
+          "exit": 105.66466025428174,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 398,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.66466025428174,
+          "exit": 105.68578214182732,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 399,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.68578214182732,
+          "exit": 105.90469778509802,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 400,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.90469778509802,
+          "exit": 106.25891528988909,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 404,
+          "signal": "CALL",
+          "confidence": 85.0,
+          "entry": 105.71562227378044,
+          "exit": 105.70795292230345,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 405,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.70795292230345,
+          "exit": 105.98326148622847,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 414,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.8493862427933,
+          "exit": 105.7632867601205,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 415,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.7632867601205,
+          "exit": 105.76235440976546,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 424,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.5669612354442,
+          "exit": 105.53326527414117,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 425,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.53326527414117,
+          "exit": 105.5500338171487,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 426,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.5500338171487,
+          "exit": 105.60687937353535,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 427,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.60687937353535,
+          "exit": 105.79787040175528,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 428,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.79787040175528,
+          "exit": 105.49971192756306,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 429,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.49971192756306,
+          "exit": 105.7065960596348,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 430,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.7065960596348,
+          "exit": 105.57986679053765,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 431,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.57986679053765,
+          "exit": 105.93377669283068,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 434,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.6586359031019,
+          "exit": 105.3452012557717,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 441,
+          "signal": "CALL",
+          "confidence": 55,
+          "entry": 105.78749195560135,
+          "exit": 106.24246544480368,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 466,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.13123559293973,
+          "exit": 106.0230771432559,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 467,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.0230771432559,
+          "exit": 106.19140390685527,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 468,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.19140390685527,
+          "exit": 106.31327886998571,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 475,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.19483821106162,
+          "exit": 106.21235633686507,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 477,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.15162573743136,
+          "exit": 106.22398431993288,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 479,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.17563237240778,
+          "exit": 106.02964722102715,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 480,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.02964722102715,
+          "exit": 105.82415161726965,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 483,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.96941996871611,
+          "exit": 105.88438749516953,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 484,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.88438749516953,
+          "exit": 105.5866278634456,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 489,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.11920897792697,
+          "exit": 106.47869009641188,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 509,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.07597848253225,
+          "exit": 106.89350034304299,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 510,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.89350034304299,
+          "exit": 106.94700282059402,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 511,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.94700282059402,
+          "exit": 106.5174471994208,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 513,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.7150305834245,
+          "exit": 106.72394612241791,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 514,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.72394612241791,
+          "exit": 106.7699072655303,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 520,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.86431422037248,
+          "exit": 106.53351388513492,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 522,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.7641610819433,
+          "exit": 107.10089105573178,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 531,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.96010347597972,
+          "exit": 106.8142253712405,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 532,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.8142253712405,
+          "exit": 106.88220042773258,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 533,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.88220042773258,
+          "exit": 107.0858282099649,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 535,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.96339674372317,
+          "exit": 107.32771345539688,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 538,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.02031991861666,
+          "exit": 107.151148786149,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 539,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.151148786149,
+          "exit": 107.31559021369365,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 557,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 107.91673644900854,
+          "exit": 107.70462360724362,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 559,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 107.8442838015063,
+          "exit": 107.97607222440413,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 568,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.84255883954646,
+          "exit": 106.64523595693873,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 575,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.2353993930574,
+          "exit": 107.65185679768089,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 581,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.4618342522839,
+          "exit": 107.32295189892795,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 587,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.60461418279513,
+          "exit": 107.6051625235114,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 601,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.65744263809364,
+          "exit": 107.73734624984259,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 602,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.73734624984259,
+          "exit": 107.90174972759105,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 610,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.57949947820467,
+          "exit": 107.64113144442844,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 611,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.64113144442844,
+          "exit": 107.58578425517545,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 612,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.58578425517545,
+          "exit": 107.48791918416842,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 613,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.48791918416842,
+          "exit": 107.11801634983442,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 646,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.06121665440514,
+          "exit": 105.01009595788044,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 647,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.01009595788044,
+          "exit": 104.79937854931579,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 651,
+          "signal": "PUT",
+          "confidence": 85.0,
+          "entry": 104.99679298738255,
+          "exit": 105.37381710120806,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 660,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.60912373248418,
+          "exit": 105.63319589330936,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 661,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.63319589330936,
+          "exit": 105.81709930139708,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 664,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.63096327561745,
+          "exit": 105.90463730278863,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 666,
+          "signal": "CALL",
+          "confidence": 70,
+          "entry": 105.56744339800768,
+          "exit": 105.78231142713472,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 681,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.07885402820692,
+          "exit": 106.0958711454326,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 682,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.0958711454326,
+          "exit": 105.97279065119551,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 683,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.97279065119551,
+          "exit": 105.69616148379329,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 684,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.69616148379329,
+          "exit": 104.96103309744501,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 695,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.60563209326776,
+          "exit": 105.77675378834313,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 699,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.69445313813766,
+          "exit": 105.55255866701265,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 703,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.7106085150077,
+          "exit": 105.61141395252422,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 706,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 105.39304521983699,
+          "exit": 105.80841543565442,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 718,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.92519751249853,
+          "exit": 105.58037657713824,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 721,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.7341393691335,
+          "exit": 105.90908423931842,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 722,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.90908423931842,
+          "exit": 105.8586909145751,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 723,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.8586909145751,
+          "exit": 105.5223190395676,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 745,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.79121408291385,
+          "exit": 105.6193243941097,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 779,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.07131249341774,
+          "exit": 104.97063351404138,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 780,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 104.97063351404138,
+          "exit": 105.30869065769717,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 803,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.19965960540578,
+          "exit": 106.28117792940643,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 804,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.28117792940643,
+          "exit": 106.2879009437996,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 805,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.2879009437996,
+          "exit": 105.78557736089185,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 809,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.36030140649623,
+          "exit": 106.06112918714608,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 814,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.19896505498097,
+          "exit": 105.91084259102483,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 828,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.913099539931,
+          "exit": 106.12076712919996,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 841,
+          "signal": "CALL",
+          "confidence": 85.0,
+          "entry": 106.31289330112565,
+          "exit": 106.47445263710614,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 842,
+          "signal": "CALL",
+          "confidence": 85.0,
+          "entry": 106.47445263710614,
+          "exit": 106.45449136245892,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 843,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.45449136245892,
+          "exit": 106.29306052314297,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 844,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.29306052314297,
+          "exit": 105.93812103612468,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 849,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.46306473001034,
+          "exit": 106.2585047625834,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 851,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.20092926909983,
+          "exit": 106.1771051107511,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 852,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.1771051107511,
+          "exit": 105.87647617973565,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 867,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.8529182039809,
+          "exit": 105.92043761397036,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 868,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.92043761397036,
+          "exit": 106.10766625590306,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 869,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 106.10766625590306,
+          "exit": 106.30459337309667,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 900,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 108.16558786832634,
+          "exit": 108.09007621692086,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 901,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 108.09007621692086,
+          "exit": 107.93863341101704,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 904,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 108.10865432398018,
+          "exit": 107.89379097426308,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 906,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.97672875553015,
+          "exit": 107.6473098633002,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 924,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.80413957423956,
+          "exit": 108.91402839887962,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 930,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.49669026144201,
+          "exit": 108.87245196548649,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 933,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.10735126452842,
+          "exit": 108.38994443039286,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 934,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.38994443039286,
+          "exit": 108.60702214620302,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 935,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.60702214620302,
+          "exit": 108.13753646760135,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 936,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.13753646760135,
+          "exit": 108.29974041808073,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 939,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.2172521502678,
+          "exit": 108.18176721543975,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 940,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.18176721543975,
+          "exit": 108.06434359272778,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 941,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.06434359272778,
+          "exit": 107.94134950606,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 943,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.09662526820023,
+          "exit": 108.32278345069224,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 944,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.32278345069224,
+          "exit": 108.32686031839447,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 945,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.32686031839447,
+          "exit": 108.03631261067987,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 949,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.08797475096439,
+          "exit": 107.77535710379068,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 958,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.94536927552356,
+          "exit": 107.87080358590387,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 959,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.87080358590387,
+          "exit": 107.95605465035531,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 960,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.95605465035531,
+          "exit": 107.52476616855644,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 971,
+          "signal": "PUT",
+          "confidence": 55,
+          "entry": 107.45430387295968,
+          "exit": 107.53763167300139,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 972,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 107.53763167300139,
+          "exit": 107.03416045433273,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 984,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.25202522576568,
+          "exit": 107.28570731260969,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 985,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.28570731260969,
+          "exit": 107.2822178375354,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 986,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.2822178375354,
+          "exit": 107.4044212939849,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        }
+      ],
+      "signals": {
+        "CALL": 54,
+        "PUT": 83,
+        "REJECTED": 613
+      },
+      "stats": {
+        "total": 137,
+        "wins": 71,
+        "losses": 66,
+        "wr": 51.8,
+        "pnl": -65.02,
+        "sharpe": -0.82,
+        "dd": 121.06,
+        "consecutive_wins": 6,
+        "consecutive_losses": 9,
+        "viable": false
+      }
+    },
+    "hybrid_strict": {
+      "strategy": "PCR Hybrid (Strict)",
+      "trades": [
+        {
+          "index": 323,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.4302701437387,
+          "exit": 106.74352468972334,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 325,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.62301055070233,
+          "exit": 106.54585785165858,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 400,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 105.90469778509802,
+          "exit": 106.25891528988909,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 467,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.0230771432559,
+          "exit": 106.19140390685527,
+          "result": "LOSS",
+          "pnl": -10
+        },
+        {
+          "index": 480,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.02964722102715,
+          "exit": 105.82415161726965,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 483,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.96941996871611,
+          "exit": 105.88438749516953,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 484,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 105.88438749516953,
+          "exit": 105.5866278634456,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 568,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 106.84255883954646,
+          "exit": 106.64523595693873,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 602,
+          "signal": "CALL",
+          "confidence": 60,
+          "entry": 107.73734624984259,
+          "exit": 107.90174972759105,
+          "result": "WIN",
+          "pnl": 8.379999999999999
+        },
+        {
+          "index": 933,
+          "signal": "PUT",
+          "confidence": 60,
+          "entry": 108.10735126452842,
+          "exit": 108.38994443039286,
+          "result": "LOSS",
+          "pnl": -10
+        }
+      ],
+      "signals": {
+        "CALL": 2,
+        "PUT": 8,
+        "REJECTED": 740
+      },
+      "stats": {
+        "total": 10,
+        "wins": 7,
+        "losses": 3,
+        "wr": 70.0,
+        "pnl": 28.66,
+        "sharpe": 5.4,
+        "dd": 10.0,
+        "consecutive_wins": 5,
+        "consecutive_losses": 1,
+        "viable": true
+      }
+    }
+  }
+}
