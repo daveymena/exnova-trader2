@@ -36,10 +36,20 @@ python3 -c "from app.data.repository import repository; repository.migrate(); pr
 # 2. Bot de trading (foreground del PID 1 no; lo arrancamos en background).
 # bot/run_live.py es el UNICO runner canonico (fusion del que vivia en la raiz
 # con el de bot/, ver comentario al inicio de ese archivo).
-echo "[entrypoint] Arrancando bot de trading (bot/run_live.py)..."
-python3 -u bot/run_live.py &
+# Resiliencia: si el bot crashea o es matado (OOM, token expirado, error no
+# capturado), se REARranca solo. El contenedor no debe morir: monitor e
+# improvement deben seguir vivos siempre.
+echo "[entrypoint] Arrancando bot de trading (bot/run_live.py) con auto-restart..."
+(
+    while true; do
+        echo "[bot] === arranque $(date -u +%FT%TZ) ===" >> /app/data/bot.log
+        python3 -u bot/run_live.py >> /app/data/bot.log 2>&1
+        echo "[bot] === bot salio con rc=$? a las $(date -u +%FT%TZ) — reiniciando en 10s ===" >> /app/data/bot.log
+        sleep 10
+    done
+) &
 BOT_PID=$!
-echo "[entrypoint] Bot PID: $BOT_PID"
+echo "[entrypoint] Bot supervisor PID: $BOT_PID (log: /app/data/bot.log)"
 
 # 3. Monitor HTTP (dashboard + API JSON en puerto PORT=8000).
 # Lee los JSON de persistencia del bot (read-only) y expone /api/* y dashboard.
@@ -76,11 +86,9 @@ fi
 # 5. Trap de señales: al recibir SIGTERM/SIGINT matar a los hijos graceful.
 trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; kill $MON_PID 2>/dev/null; [ -n "$IMP_PID" ] && kill $IMP_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
 
-# 6. Esperar a que el bot termine; si muere, salir.
-wait $BOT_PID
-BOT_RC=$?
-echo "[entrypoint] Bot termino con rc=$BOT_RC"
-kill $MON_PID 2>/dev/null
-[ -n "$IMP_PID" ] && kill $IMP_PID 2>/dev/null
-[ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null
-exit $BOT_RC
+# 6. Mantener el contenedor vivo mientras corran los procesos hijas. El bot se
+# auto-reinicia (loop en background), asi que esperamos indefinidamente y solo
+# salimos por señal.
+while true; do
+    sleep 30
+done

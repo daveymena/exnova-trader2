@@ -138,6 +138,19 @@ def improvement():
     }
 
 
+@app.get("/api/botlog")
+def botlog():
+    """Tail del log del bot (escrito por entrypoint a /app/data/bot.log)."""
+    log_path = ROOT / "data" / "bot.log"
+    tail = ""
+    try:
+        if log_path.exists():
+            tail = "\n".join(log_path.read_text(errors="replace").splitlines()[-60:])
+    except Exception:
+        pass
+    return {"exists": log_path.exists(), "tail": tail}
+
+
 @app.get("/api/config")
 def config():
     def _hide(v):
