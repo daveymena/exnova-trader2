@@ -19,7 +19,7 @@ from typing import Dict, List, Optional
 
 import requests
 
-BOT = Path(__file__).resolve().parents[1]
+BOT = Path(__file__).absolute().parents[1]
 if str(BOT) not in sys.path:
     sys.path.insert(0, str(BOT))
 
