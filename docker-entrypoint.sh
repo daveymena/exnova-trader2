@@ -49,9 +49,9 @@ echo "[entrypoint] Monitor PID: $MON_PID"
 # escribe strategy_adjustments.json que run_live.py lee antes de operar.
 if [ "${IMPROVEMENT_ENABLED:-true}" = "true" ]; then
     echo "[entrypoint] Arrancando bucle de mejora IA (bot/brain/improvement_loop.py)..."
-    python3 -u bot/brain/improvement_loop.py &
+    python3 -u bot/brain/improvement_loop.py > /app/data/improvement_loop.log 2>&1 &
     IMP_PID=$!
-    echo "[entrypoint] Improvement PID: $IMP_PID"
+    echo "[entrypoint] Improvement PID: $IMP_PID (log: /app/data/improvement_loop.log)"
 else
     IMP_PID=""
 fi

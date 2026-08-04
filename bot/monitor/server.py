@@ -117,6 +117,14 @@ def improvement():
     now = time.time()
     hb_ts = hb.get("ts") if isinstance(hb, dict) else None
     alive = isinstance(hb_ts, (int, float)) and (now - hb_ts) < 180
+    # log del improvement loop (escrito por entrypoint a /app/data/improvement_loop.log)
+    log_path = ROOT / "data" / "improvement_loop.log"
+    log_tail = ""
+    try:
+        if log_path.exists():
+            log_tail = "\n".join(log_path.read_text(errors="replace").splitlines()[-20:])
+    except Exception:
+        pass
     return {
         "loop_alive": alive,
         "last_heartbeat": hb if hb else None,
@@ -126,6 +134,7 @@ def improvement():
         "assets_pause": adj.get("assets_pause") if isinstance(adj, dict) else [],
         "lessons": (adj.get("lessons") or [])[-8:] if isinstance(adj, dict) else [],
         "recent_history": (adj.get("history") or [])[-3:] if isinstance(adj, dict) else [],
+        "loop_log_tail": log_tail,
     }
 
 
