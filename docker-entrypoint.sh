@@ -6,22 +6,26 @@ echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
 echo "============================================================"
 
 # 0. Persistencia de estado del bot. /app/data es el VOLUMEN persistente de
-# EasyPanel, pero el bot guarda estado en bot/brain/ y bot/data/. Redirigimos
-# esos dirs al volumen via symlink para que sobrevivan reinicios.
-mkdir -p /app/data/bot_brain /app/data/bot_data
-# Mover contenido existente (primer arranque) y crear symlinks
-if [ -d /app/bot/brain ] && [ ! -L /app/bot/brain ]; then
-    cp -rn /app/bot/brain/. /app/data/bot_brain/ 2>/dev/null || true
-    rm -rf /app/bot/brain
-fi
-[ -e /app/bot/brain ] || ln -s /app/data/bot_brain /app/bot/brain
-if [ -d /app/bot/data ] && [ ! -L /app/bot/data ]; then
-    cp -rn /app/bot/data/. /app/data/bot_data/ 2>/dev/null || true
-    rm -rf /app/bot/data
-fi
-[ -e /app/bot/data ] || ln -s /app/data/bot_data /app/bot/data
-echo "[entrypoint] Persistencia: bot/brain -> /app/data/bot_brain, bot/data -> /app/data/bot_data"
-ls -la /app/bot/ | grep -E "brain|data" || true
+# EasyPanel. El bot escribe estado en bot/brain/*.json y bot/data/*.json.
+# Symlineamos SOLO los archivos de estado (no directorios, para no romper los
+# imports de Python) hacia /app/data/brain/ y /app/data/botdata/.
+mkdir -p /app/data/brain /app/data/botdata
+persist_link() {
+    local f="$1" dest="$2"
+    [ -f "$f" ] || return 0
+    if [ ! -L "$f" ]; then
+        [ ! -e "$dest" ] && cp "$f" "$dest"
+        rm -f "$f"
+    fi
+    [ -e "$f" ] || ln -s "$dest" "$f"
+}
+for f in /app/bot/brain/*.json; do
+    persist_link "$f" "/app/data/brain/$(basename "$f")"
+done
+for f in /app/bot/data/*.json; do
+    persist_link "$f" "/app/data/botdata/$(basename "$f")"
+done
+echo "[entrypoint] Estado persistente en /app/data/brain y /app/data/botdata (symlinks por archivo)"
 
 # 1. Inicializar SQLite (migrate) antes de arrancar nada.
 echo "[entrypoint] Ejecutando migrate de la base SQLite..."
