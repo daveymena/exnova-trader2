@@ -28,6 +28,7 @@ ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
 IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
 RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
 HISTORY_FILE = ROOT / "data" / "architect_history.json"
+LOSS_PATTERNS_FILE = BOT / "data" / "loss_patterns.json"
 
 MIN_SAMPLE = 20          # muestra mínima para proponer cambios de confianza
 MIN_RECENT = 10          # muestra mínima para hablar de tendencia reciente

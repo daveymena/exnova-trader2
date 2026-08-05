@@ -110,6 +110,7 @@ from brain.market_memory import get_market_memory
 from brain.supervised_zone_learner import get_supervised_zone_learner
 from brain.practice_trader import PracticeTrader
 from brain.trade_evaluator import TradeEvaluator
+from core.loss_pattern_tracker import get_loss_tracker
 from brain.adaptive_learning_mode import get_learning_mode
 from brain.trade_persistence import get_trade_persistence
 from engine.intelligent_engine import IntelligentEngine
@@ -647,6 +648,16 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             if result == "LOSS":
                 cause = diagnosis.get("primary_cause", "unknown")
                 log(f"[ANALISIS] Perdida por: {cause} | {diagnosis.get('lessons', ['-'])[0]}")
+                # Registrar huella de pérdida para evitar repetir errores
+                loss_record = loss_tracker.record_loss(diagnosis, conditions)
+                if loss_record.get("recorded"):
+                    count = loss_record.get("repeat_count", 0)
+                    if loss_record.get("blocked"):
+                        log(f"[LOSS TRACKER] Patrón bloqueado detectado: {cause} ({count} veces). "
+                            f"El bot NO entrará en condiciones similares.", "CRITICAL")
+                    elif count >= 2:
+                        log(f"[LOSS TRACKER] Patrón '{cause}' repetido {count} veces. "
+                            f"Si se repite una más, se bloqueará.", "WARNING")
             elif result == "WIN":
                 good = diagnosis.get("what_worked", ["-"])[0]
                 log(f"[ANALISIS] Ganancia por: {good}")
@@ -696,6 +707,9 @@ def bot_loop(market_data, rm, engine, agent_engine):
     practice = PracticeTrader(zone_learner)
     evaluator = TradeEvaluator()
     self_eval = get_evaluator()
+
+    # ── LOSS PATTERN TRACKER: memoria de pérdidas que evita repetir errores ──
+    loss_tracker = get_loss_tracker()
 
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
@@ -1098,7 +1112,28 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # sigue operando uno ya demostrado perdedor (RETIRADO).
                         setup = setup_key(signal, asset)
                         ev_decision = self_eval.decision(setup)
-                        if ev_decision["permitido"]:
+
+                        # ── LOSS PATTERN TRACKER: verificar si las condiciones actuales
+                        # coinciden con un patrón de pérdida conocido. Si el patrón se
+                        # ha repetido >= 3 veces, bloquear la operación.
+                        loss_check = {"allowed": True}
+                        if ev_decision["permitido"] and ACCOUNT_TYPE != "REAL":
+                            _loss_conds = {
+                                "rsi": signal.get("rsi", 50),
+                                "zone_strength": signal.get("zone_strength", 0),
+                                "phase": signal.get("phase", "unknown"),
+                                "trend_aligned": signal.get("trend_aligned", False),
+                                "counter_trend": signal.get("counter_trend", False),
+                                "pattern_strong": bool(signal.get("pattern")) and "none" not in str(signal.get("pattern", "")),
+                                "market_phase": signal.get("phase", "unknown"),
+                                "zone_context": {"zone_strength": signal.get("zone_strength", 0)},
+                                "momentum": {"rsi_m1": signal.get("rsi", 50)},
+                            }
+                            loss_check = loss_tracker.check_conditions(_loss_conds, signal)
+                            if not loss_check["allowed"]:
+                                log(f"[LOSS TRACKER] Bloqueado: {loss_check['reason']}", "WARNING")
+
+                        if ev_decision["permitido"] and loss_check["allowed"]:
                             tamano_rel = ev_decision["tamano_relativo"]
                             if ev_decision["estado"] == "EXPLORACION":
                                 log(f"[EVALUADOR] {setup} en EXPLORACION (x{tamano_rel:.2f}): {ev_decision['motivo']}")
@@ -1163,6 +1198,12 @@ def bot_loop(market_data, rm, engine, agent_engine):
                           f"Pend:{sz.get('analisis_pendientes', 0)} Completos:{sz.get('analisis_completados', 0)} "
                           f"WR_real:{sz.get('win_rate_real', 0):.0f}% "
                           f"Listas:{sz.get('listas_para_practice', 0)}", flush=True)
+                # Patrones de pérdida bloqueados
+                lt = loss_tracker.summary()
+                if lt["blocked_patterns"] > 0:
+                    print(f"  [LOSS TRACKER] {lt['blocked_patterns']} patrones bloqueados | "
+                          f"Pérdidas analizadas: {lt['total_losses_tracked']} | "
+                          f"Detalle: {lt['blocked_details']}", flush=True)
                 ps = practice.get_stats()
                 if ps["trades"] > 0:
                     print(f"  [PRACTICE] Balance:${ps['balance']:.2f} "
