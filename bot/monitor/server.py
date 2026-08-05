@@ -34,6 +34,13 @@ RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
 DASHBOARD_TOKEN = os.getenv("DASHBOARD_TOKEN", "")
 
+try:
+    from .architect import architect
+except ImportError:  # ejecución directa (python bot/monitor/server.py)
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from architect import architect
+
 PORT = int(os.getenv("MONITOR_PORT", os.getenv("PORT", "8000")))
 
 
@@ -198,6 +205,7 @@ def runtime_config():
         "mode": current.get("mode", os.getenv("ACCOUNT_TYPE", "PRACTICE").lower()),
         "asset": current.get("asset", os.getenv("DEFAULT_ASSET", "EURUSD-OTC")),
         "strategy": current.get("strategy", "auto"),
+        "stake": current.get("stake", float(os.getenv("FIXED_STAKE", "0") or 0)),
         "min_confidence": current.get("min_confidence", os.getenv("MIN_CONFIDENCE", "0.65")),
         "max_consecutive_losses": current.get("max_consecutive_losses", os.getenv("MAX_CONSEC_LOSSES", "4")),
         "cooldown_after_loss": current.get("cooldown_after_loss", os.getenv("COOLDOWN_AFTER_LOSS", "300")),
@@ -205,7 +213,7 @@ def runtime_config():
         "ai_model": current.get("ai_model", os.getenv("OPENCODE_MODEL", "deepseek-v4-flash-free")),
         "updated_at": current.get("updated_at"),
         "reason": current.get("reason", ""),
-        "apply_mode": "next_restart",
+        "apply_mode": "hot",
     }
 
 
@@ -221,6 +229,7 @@ def update_runtime_config(payload: dict, request: Request):
             "mode": mode,
             "asset": str(payload.get("asset", "EURUSD-OTC")).strip()[:80],
             "strategy": str(payload.get("strategy", "auto")).strip()[:80],
+            "stake": round(min(max(float(payload.get("stake", 0)), 0.5), 100.0), 2),
             "min_confidence": min(max(float(payload.get("min_confidence", .65)), .5), .99),
             "max_consecutive_losses": min(max(int(payload.get("max_consecutive_losses", 4)), 1), 10),
             "cooldown_after_loss": min(max(int(payload.get("cooldown_after_loss", 300)), 30), 3600),
@@ -231,7 +240,7 @@ def update_runtime_config(payload: dict, request: Request):
     except (TypeError, ValueError) as exc:
         return JSONResponse({"error": f"Configuración inválida: {exc}"}, status_code=400)
     _write_json(RUNTIME_CONFIG, data)
-    return {"ok": True, "apply_mode": "next_restart", "config": data}
+    return {"ok": True, "apply_mode": "hot", "config": data}
 
 
 @app.post("/api/ai/test")
@@ -251,6 +260,51 @@ def test_ai(payload: dict, request: Request):
         if result is None:
             return JSONResponse({"ok": False, "error": "Todos los proveedores IA fallaron", "providers": registry.get_available_providers()}, status_code=502)
         return {"ok": True, "response": result, "providers": registry.get_available_providers()}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@app.post("/api/architect/chat")
+def architect_chat(payload: dict, request: Request):
+    """Arquitecto IA: recibe una orden en lenguaje natural y la ejecuta
+    (solo paper/practice). Misma filosofía que el Arquitecto de VentasPro:
+    memoria -> análisis -> propuesta -> aprobación -> ejecución en caliente."""
+    if not _admin_allowed(request):
+        return JSONResponse({"error": "Dashboard token requerido"}, status_code=401)
+    message = str(payload.get("message", "")).strip()[:500]
+    if not message:
+        return JSONResponse({"error": "Mensaje vacío"}, status_code=400)
+    try:
+        result = architect.chat(message)
+        return result
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@app.get("/api/architect/state")
+def architect_state(request: Request):
+    """Estado real + análisis del arquitecto (read-only)."""
+    if not _admin_allowed(request):
+        return JSONResponse({"error": "Dashboard token requerido"}, status_code=401)
+    try:
+        return {"state": architect.get_state(), "analysis": architect.analyze(),
+                "memory": architect.memory}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
+@app.post("/api/architect/apply")
+def architect_apply(payload: dict, request: Request):
+    """Aplica una propuesta concreta dict (o la última propuesta) en caliente."""
+    if not _admin_allowed(request):
+        return JSONResponse({"error": "Dashboard token requerido"}, status_code=401)
+    proposal = payload.get("proposal") or {}
+    reason = str(payload.get("reason", "")).strip()[:300]
+    if not isinstance(proposal, dict) or not proposal:
+        return JSONResponse({"error": "Propuesta vacía. Ejecuta /api/architect/chat primero."}, status_code=400)
+    try:
+        res = architect.apply_proposal(proposal, reason=reason, mode_ok=True)
+        return res
     except Exception as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 

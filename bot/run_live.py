@@ -165,6 +165,9 @@ MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "150"))
 MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "5"))
 PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "10"))
 PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
+# Monto fijo por trade (stake). 0 = sizing dinámico (Kelly/tamano_rel).
+# Sobre-escribible en caliente desde el dashboard/chat via runtime_config.json.
+FIXED_STAKE        = float(os.getenv("FIXED_STAKE", "0") or 0)
 
 # Cuenta: PRACTICE (default) o REAL (solo si se fuerza explícitamente)
 ACCOUNT_TYPE = os.getenv("ACCOUNT_TYPE", "PRACTICE").upper()
@@ -737,6 +740,12 @@ def bot_loop(market_data, rm, engine, agent_engine):
             state["cycle"] += 1
             now = time.time()
 
+            # Hot-reload: aplicar cambios del dashboard/chat en caliente
+            try:
+                reload_runtime_overrides()
+            except Exception as exc:
+                log(f"[HOT-RELOAD] Error: {exc}", "WARNING")
+
             # Actualizar activos disponibles cada ciclo (por cambio de horario)
             activos_config = get_activos_activos()
             activos_disponibles = activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
@@ -1099,10 +1108,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                             # FIXED_STAKE: si esta set (>0), fija el monto y
                             # descarta Kelly/jitter/tamano_rel. Para probar con
                             # $1 mientras se valida la estrategia. Default 0
-                            # (= comportamiento dinamico original).
-                            fixed_stake = float(os.getenv("FIXED_STAKE", "0") or 0)
-                            if fixed_stake > 0:
-                                amount = round(float(fixed_stake), 2)
+                            # (= comportamiento dinamico original). Se puede
+                            # ajustar en caliente desde el dashboard/chat.
+                            if FIXED_STAKE > 0:
+                                amount = round(float(FIXED_STAKE), 2)
                             elif ACCOUNT_TYPE == "REAL":
                                 # Monto fijo, no Kelly: Kelly asume una
                                 # probabilidad de ganar conocida, y hoy no hay
@@ -1255,10 +1264,28 @@ def generate_mock_candles(asset: str, interval: str, limit: int = 100) -> pd.Dat
 
 # ─── Entry point ────────────────────────────────────────────────────────────
 
+def _apply_runtime_data(data, hot=False):
+    """Aplica un dict runtime_config a las variables globales del bot.
+    `hot=True` solo refresca las variables "en caliente" (no el modo de cuenta,
+    que ya fue fijado al arrancar)."""
+    global ACCOUNT_TYPE, DEFAULT_ASSET, MIN_CONFIDENCE, MAX_CONSEC_LOSSES
+    global COOLDOWN_AFTER_LOSS, MIN_BETWEEN_TRADES, FIXED_STAKE
+    mode = str(data.get("mode", "")).upper()
+    if mode in ("PAPER", "PRACTICE") and not hot:
+        ACCOUNT_TYPE = mode
+    DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
+    MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.99)
+    MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
+    COOLDOWN_AFTER_LOSS = min(max(int(data.get("cooldown_after_loss", COOLDOWN_AFTER_LOSS)), 30), 3600)
+    MIN_BETWEEN_TRADES = min(max(int(data.get("min_between_trades", MIN_BETWEEN_TRADES)), 30), 3600)
+    stake = float(data.get("stake", 0) or 0)
+    if 0 <= stake <= 10000:
+        FIXED_STAKE = round(stake, 2)
+    log(f"Configuración del dashboard aplicada: modo={ACCOUNT_TYPE}, activo={DEFAULT_ASSET}, "
+        f"stake=${FIXED_STAKE:.2f}, conf={MIN_CONFIDENCE}, max_perd={MAX_CONSEC_LOSSES}")
+
 def load_runtime_overrides():
     """Load safe dashboard settings from the persistent volume at startup."""
-    global ACCOUNT_TYPE, DEFAULT_ASSET, MIN_CONFIDENCE, MAX_CONSEC_LOSSES
-    global COOLDOWN_AFTER_LOSS, MIN_BETWEEN_TRADES
     path = "/app/data/runtime_config.json"
     try:
         if not os.path.exists(path):
@@ -1266,17 +1293,31 @@ def load_runtime_overrides():
         import json
         with open(path, encoding="utf-8") as f:
             data = json.load(f)
-        mode = str(data.get("mode", "")).upper()
-        if mode in ("PAPER", "PRACTICE"):
-            ACCOUNT_TYPE = mode
-        DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
-        MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.99)
-        MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
-        COOLDOWN_AFTER_LOSS = min(max(int(data.get("cooldown_after_loss", COOLDOWN_AFTER_LOSS)), 30), 3600)
-        MIN_BETWEEN_TRADES = min(max(int(data.get("min_between_trades", MIN_BETWEEN_TRADES)), 30), 3600)
-        log(f"Configuración del dashboard cargada: modo={ACCOUNT_TYPE}, activo={DEFAULT_ASSET}")
+        _apply_runtime_data(data)
     except Exception as exc:
         log(f"No se pudo cargar runtime_config.json: {exc}", "WARNING")
+
+_runtime_mtime = 0.0
+
+def reload_runtime_overrides():
+    """Hot-reload: si runtime_config.json cambió en disco, aplica los cambios
+    sin reiniciar el proceso. Se llama 1 vez por ciclo del bot."""
+    global _runtime_mtime
+    path = "/app/data/runtime_config.json"
+    try:
+        if not os.path.exists(path):
+            return
+        mtime = os.path.getmtime(path)
+        if mtime == _runtime_mtime:
+            return
+        import json
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        _runtime_mtime = mtime
+        _apply_runtime_data(data, hot=True)
+        log("[HOT-RELOAD] runtime_config.json detectado en caliente", "SUCCESS")
+    except Exception as exc:
+        log(f"[HOT-RELOAD] Error leyendo runtime_config.json: {exc}", "WARNING")
 
 def main():
     load_runtime_overrides()
