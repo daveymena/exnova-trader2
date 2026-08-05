@@ -1255,7 +1255,31 @@ def generate_mock_candles(asset: str, interval: str, limit: int = 100) -> pd.Dat
 
 # ─── Entry point ────────────────────────────────────────────────────────────
 
+def load_runtime_overrides():
+    """Load safe dashboard settings from the persistent volume at startup."""
+    global ACCOUNT_TYPE, DEFAULT_ASSET, MIN_CONFIDENCE, MAX_CONSEC_LOSSES
+    global COOLDOWN_AFTER_LOSS, MIN_BETWEEN_TRADES
+    path = "/app/data/runtime_config.json"
+    try:
+        if not os.path.exists(path):
+            return
+        import json
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        mode = str(data.get("mode", "")).upper()
+        if mode in ("PAPER", "PRACTICE"):
+            ACCOUNT_TYPE = mode
+        DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
+        MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.99)
+        MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
+        COOLDOWN_AFTER_LOSS = min(max(int(data.get("cooldown_after_loss", COOLDOWN_AFTER_LOSS)), 30), 3600)
+        MIN_BETWEEN_TRADES = min(max(int(data.get("min_between_trades", MIN_BETWEEN_TRADES)), 30), 3600)
+        log(f"Configuración del dashboard cargada: modo={ACCOUNT_TYPE}, activo={DEFAULT_ASSET}")
+    except Exception as exc:
+        log(f"No se pudo cargar runtime_config.json: {exc}", "WARNING")
+
 def main():
+    load_runtime_overrides()
     # Configuración de riesgo según tipo de cuenta.
     # Para REAL: se toma el mas conservador de cada dimension entre las dos
     # versiones que divergian (2/4/2/0.75 vs 5/15/3/0.70) porque no hay edge

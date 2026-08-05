@@ -29,6 +29,8 @@ PID_FILE = BOT / "run_live.lock"
 # improvement_loop escribe un heartbeat aqui cada minuto
 IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
 ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
+RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
+DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
 
 PORT = int(os.getenv("MONITOR_PORT", os.getenv("PORT", "8000")))
 
@@ -41,6 +43,13 @@ def _read_json(path: Path) -> dict:
             return json.load(f) or {}
     except Exception as e:
         return {"__read_error__": str(e)}
+
+
+def _write_json(path: Path, data: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    tmp.replace(path)
 
 
 def _bot_alive() -> bool:
@@ -175,6 +184,66 @@ def config():
     }
 
 
+@app.get("/api/runtime-config")
+def runtime_config():
+    current = _read_json(RUNTIME_CONFIG)
+    return {
+        "mode": current.get("mode", os.getenv("ACCOUNT_TYPE", "PRACTICE").lower()),
+        "asset": current.get("asset", os.getenv("DEFAULT_ASSET", "EURUSD-OTC")),
+        "strategy": current.get("strategy", "auto"),
+        "min_confidence": current.get("min_confidence", os.getenv("MIN_CONFIDENCE", "0.65")),
+        "max_consecutive_losses": current.get("max_consecutive_losses", os.getenv("MAX_CONSEC_LOSSES", "4")),
+        "cooldown_after_loss": current.get("cooldown_after_loss", os.getenv("COOLDOWN_AFTER_LOSS", "300")),
+        "min_between_trades": current.get("min_between_trades", os.getenv("MIN_BETWEEN_TRADES", "180")),
+        "ai_model": current.get("ai_model", os.getenv("OPENCODE_MODEL", "deepseek-v4-flash-free")),
+        "updated_at": current.get("updated_at"),
+        "reason": current.get("reason", ""),
+        "apply_mode": "next_restart",
+    }
+
+
+@app.post("/api/runtime-config")
+def update_runtime_config(payload: dict):
+    mode = str(payload.get("mode", "paper")).lower()
+    if mode not in {"paper", "practice"}:
+        return JSONResponse({"error": "Solo paper y practice se pueden configurar desde el dashboard."}, status_code=400)
+    try:
+        data = {
+            "mode": mode,
+            "asset": str(payload.get("asset", "EURUSD-OTC")).strip()[:80],
+            "strategy": str(payload.get("strategy", "auto")).strip()[:80],
+            "min_confidence": min(max(float(payload.get("min_confidence", .65)), .5), .99),
+            "max_consecutive_losses": min(max(int(payload.get("max_consecutive_losses", 4)), 1), 10),
+            "cooldown_after_loss": min(max(int(payload.get("cooldown_after_loss", 300)), 30), 3600),
+            "min_between_trades": min(max(int(payload.get("min_between_trades", 180)), 30), 3600),
+            "reason": str(payload.get("reason", "")).strip()[:300],
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    except (TypeError, ValueError) as exc:
+        return JSONResponse({"error": f"Configuración inválida: {exc}"}, status_code=400)
+    _write_json(RUNTIME_CONFIG, data)
+    return {"ok": True, "apply_mode": "next_restart", "config": data}
+
+
+@app.post("/api/ai/test")
+def test_ai(payload: dict):
+    """Test the configured OpenAI-compatible provider without exposing its key."""
+    try:
+        from app.services.ai_provider import AIProviderRegistry
+        registry = AIProviderRegistry()
+        result = registry.chat(
+            [{"role": "user", "content": str(payload.get("prompt", "Responde OK."))[:1000]}],
+            model=str(payload.get("model", "")).strip() or None,
+            max_tokens=64,
+            temperature=0,
+        )
+        if result is None:
+            return JSONResponse({"ok": False, "error": "Todos los proveedores IA fallaron", "providers": registry.get_available_providers()}, status_code=502)
+        return {"ok": True, "response": result, "providers": registry.get_available_providers()}
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
+
 DASHBOARD_HTML = """<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -262,7 +331,9 @@ load(); setInterval(load, 5000);
 
 @app.get("/", response_class=HTMLResponse)
 def index():
-    return HTMLResponse(DASHBOARD_HTML)
+    if DASHBOARD_HTML.exists():
+        return HTMLResponse(DASHBOARD_HTML.read_text(encoding="utf-8"))
+    return HTMLResponse("<h1>Dashboard no disponible</h1>", status_code=503)
 
 
 if __name__ == "__main__":
