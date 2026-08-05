@@ -255,7 +255,7 @@ def test_ai(payload: dict, request: Request):
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
 
 
-DASHBOARD_HTML = """<!doctype html>
+DASHBOARD_HTML_FALLBACK = """<!doctype html>
 <html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Exnova PCR Bot — Monitor</title>
@@ -344,7 +344,7 @@ load(); setInterval(load, 5000);
 def index():
     if DASHBOARD_HTML.exists():
         return HTMLResponse(DASHBOARD_HTML.read_text(encoding="utf-8"))
-    return HTMLResponse("<h1>Dashboard no disponible</h1>", status_code=503)
+    return HTMLResponse(DASHBOARD_HTML_FALLBACK)
 
 
 if __name__ == "__main__":
