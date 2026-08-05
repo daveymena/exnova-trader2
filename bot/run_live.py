@@ -170,6 +170,13 @@ PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
 # Sobre-escribible en caliente desde el dashboard/chat via runtime_config.json.
 FIXED_STAKE        = float(os.getenv("FIXED_STAKE", "0") or 0)
 
+# Activo preferido, editable desde el dashboard. _apply_runtime_data() lo lee
+# como `global` y lo usa de fallback de sí mismo (data.get("asset",
+# DEFAULT_ASSET)) -- sin esta inicialización, la primera vez que se aplica la
+# config guardada (arranque) tira NameError porque el nombre nunca existió en
+# el namespace del módulo (nunca se importaba de config.py, solo `Config`).
+DEFAULT_ASSET = os.getenv("DEFAULT_ASSET", Config.DEFAULT_ASSET if hasattr(Config, "DEFAULT_ASSET") else "EURUSD-OTC")
+
 # Cuenta: PRACTICE (default) o REAL (solo si se fuerza explícitamente)
 ACCOUNT_TYPE = os.getenv("ACCOUNT_TYPE", "PRACTICE").upper()
 if ACCOUNT_TYPE not in ("PRACTICE", "REAL"):
@@ -1312,8 +1319,19 @@ def _apply_runtime_data(data, hot=False):
     global ACCOUNT_TYPE, DEFAULT_ASSET, MIN_CONFIDENCE, MAX_CONSEC_LOSSES
     global COOLDOWN_AFTER_LOSS, MIN_BETWEEN_TRADES, FIXED_STAKE
     mode = str(data.get("mode", "")).upper()
+    # "mode" del dashboard (paper/practice) NO es el mismo concepto que
+    # ACCOUNT_TYPE de Exnova (que solo entiende PRACTICE/REAL) -- son dos ejes
+    # distintos que coinciden por casualidad en la palabra "practice". Antes
+    # se asignaba "PAPER" tal cual a ACCOUNT_TYPE, y eso se le pasaba directo
+    # a exnovaapi (MarketDataHandler -> Exnova(...).change_balance("PAPER")),
+    # que la rechaza con "ERROR doesn't have this mode" -- el bot se caía en
+    # CADA arranque en cuanto alguien dejara guardado el modo "Paper
+    # (simulación)" en el panel, y quedaba en loop de reinicio indefinido sin
+    # nunca llegar a operar. Los dos modos de dashboard mapean a la MISMA
+    # cuenta demo real de Exnova (PRACTICE) -- "paper" no tiene hoy un camino
+    # de simulación 100% desconectada del broker en este archivo.
     if mode in ("PAPER", "PRACTICE") and not hot:
-        ACCOUNT_TYPE = mode
+        ACCOUNT_TYPE = "PRACTICE"
     DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
     MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.99)
     MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
