@@ -13,10 +13,11 @@ Endpoints:
 import json
 import os
 import time
+import hmac
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -31,6 +32,7 @@ IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
 ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
 RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
+DASHBOARD_TOKEN = os.getenv("DASHBOARD_TOKEN", "")
 
 PORT = int(os.getenv("MONITOR_PORT", os.getenv("PORT", "8000")))
 
@@ -43,6 +45,11 @@ def _read_json(path: Path) -> dict:
             return json.load(f) or {}
     except Exception as e:
         return {"__read_error__": str(e)}
+
+
+def _admin_allowed(request: Request) -> bool:
+    supplied = request.headers.get("x-dashboard-token", "")
+    return bool(DASHBOARD_TOKEN) and hmac.compare_digest(supplied, DASHBOARD_TOKEN)
 
 
 def _write_json(path: Path, data: dict) -> None:
@@ -203,7 +210,9 @@ def runtime_config():
 
 
 @app.post("/api/runtime-config")
-def update_runtime_config(payload: dict):
+def update_runtime_config(payload: dict, request: Request):
+    if not _admin_allowed(request):
+        return JSONResponse({"error": "Dashboard token requerido"}, status_code=401)
     mode = str(payload.get("mode", "paper")).lower()
     if mode not in {"paper", "practice"}:
         return JSONResponse({"error": "Solo paper y practice se pueden configurar desde el dashboard."}, status_code=400)
@@ -226,7 +235,9 @@ def update_runtime_config(payload: dict):
 
 
 @app.post("/api/ai/test")
-def test_ai(payload: dict):
+def test_ai(payload: dict, request: Request):
+    if not _admin_allowed(request):
+        return JSONResponse({"error": "Dashboard token requerido"}, status_code=401)
     """Test the configured OpenAI-compatible provider without exposing its key."""
     try:
         from app.services.ai_provider import AIProviderRegistry

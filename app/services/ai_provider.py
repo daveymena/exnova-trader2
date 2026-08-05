@@ -46,24 +46,21 @@ class AIProviderRegistry:
     def _load_providers(self):
         providers = []
 
-        # 1. FastOpenAI / FreeModel (Hermes Engine) -- siempre activo con key embebida
+        # 1. FastOpenAI / FreeModel (Hermes Engine) -- opt-in via environment key
         #    Models: gpt-5.5, deepseek-v4-flash-free, deepseek-v3-ultra-free, big-pickle
         #    Si quieres sobreescribir la key, usa FAST_OPENAI_API_KEY o FREEMODEL_API_KEY
-        fast_openai_key = (
-            os.getenv("FAST_OPENAI_API_KEY") or
-            os.getenv("FREEMODEL_API_KEY") or
-            "fe_oa_db8434da9d092b657e26dba8e2cdbf5cc460848f7e3b490c"
-        )
+        fast_openai_key = os.getenv("FAST_OPENAI_API_KEY") or os.getenv("FREEMODEL_API_KEY", "")
         fast_openai_url = (
             os.getenv("FAST_OPENAI_API_URL") or
             os.getenv("FREEMODEL_API_URL") or
             "https://api.freemodel.dev/v1"
         )
-        providers.append(ProviderConfig(
-            name="fast_openai",
-            base_url=fast_openai_url,
-            api_key=fast_openai_key,
-            models=[
+        if fast_openai_key:
+            providers.append(ProviderConfig(
+                name="fast_openai",
+                base_url=fast_openai_url,
+                api_key=fast_openai_key,
+                models=[
                 # GPT
                 "gpt-5.5", "gpt-5.4", "gpt-5.4-mini", "gpt-5.3-codex",
                 # DeepSeek
@@ -75,9 +72,9 @@ class AIProviderRegistry:
                 # Fallback
                 "big-pickle",
             ],
-            default_model=os.getenv("FAST_OPENAI_MODEL", "gpt-5.5"),
-            priority=5,
-        ))
+                default_model=os.getenv("FAST_OPENAI_MODEL", "gpt-5.5"),
+                priority=5,
+            ))
 
         # 2. OpenCode Zen (primary)
         if os.getenv("OPENCODE_ZEN_API_KEY") or os.getenv("OPENCODE_API_KEY"):
