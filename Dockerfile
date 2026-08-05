@@ -71,8 +71,7 @@ ENV BROKER_NAME="exnova" \
 
 EXPOSE 8000
 
-HEALTHCHECK --interval=120s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import os,time; f='/app/bot/data/learning_progress.json'; \
-        exit(0) if os.path.exists(f) and time.time()-os.path.getmtime(f)<600 else exit(1)"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD curl -fsS "http://127.0.0.1:${PORT:-8000}/api/health" > /dev/null || exit 1
 
 CMD ["/app/docker-entrypoint.sh"]
