@@ -91,6 +91,111 @@ class IntelligentEngine:
         return None
 
     # ─────────────────────────────────────────────────────────────────────────────
+    def _detect_bounce_stage(self, df_m1: pd.DataFrame, zone_level: float,
+                              zone_type: str) -> Dict:
+        """
+        Detecta en qué etapa está el rebote respecto a la zona.
+        
+        Returns:
+            {
+                "stage": "EARLY" | "MIDDLE" | "LATE" | "DONE" | "NONE",
+                "distance_from_zone_pct": float,
+                "momentum_fading": bool,
+                "rejection_confirmed": bool,
+                "entry_viable": bool,
+                "reason": str
+            }
+        """
+        if len(df_m1) < 5:
+            return {
+                "stage": "NONE", "distance_from_zone_pct": 0,
+                "momentum_fading": False, "rejection_confirmed": False,
+                "entry_viable": False, "reason": "Datos insuficientes"
+            }
+        
+        price = float(df_m1["close"].iloc[-1])
+        distance_pct = abs(price - zone_level) / zone_level if zone_level > 0 else 1.0
+        
+        lookback = min(10, len(df_m1))
+        recent = df_m1.iloc[-lookback:].copy()
+        
+        touched_zone = False
+        touch_candle_idx = None
+        rejection_candle_idx = None
+        
+        for i in range(len(recent)):
+            candle = recent.iloc[i]
+            candle_high = float(candle["high"])
+            candle_low = float(candle["low"])
+            
+            if zone_type == "support" and candle_low <= zone_level * 1.002:
+                touched_zone = True
+                touch_candle_idx = i
+                if float(candle["close"]) > float(candle["open"]):
+                    rejection_candle_idx = i
+                break
+            elif zone_type == "resistance" and candle_high >= zone_level * 0.998:
+                touched_zone = True
+                touch_candle_idx = i
+                if float(candle["close"]) < float(candle["open"]):
+                    rejection_candle_idx = i
+                break
+        
+        if not touched_zone:
+            return {
+                "stage": "NONE", "distance_from_zone_pct": distance_pct,
+                "momentum_fading": False, "rejection_confirmed": False,
+                "entry_viable": False, "reason": "Precio no tocó zona en las últimas velas"
+            }
+        
+        if touch_candle_idx is not None:
+            touch_price = float(recent.iloc[touch_candle_idx]["low"]) if zone_type == "support" else float(recent.iloc[touch_candle_idx]["high"])
+            move_from_zone = abs(price - touch_price) / touch_price if touch_price > 0 else 0
+        else:
+            move_from_zone = distance_pct
+        
+        momentum_fading = False
+        if len(recent) >= 3:
+            last_3 = recent.iloc[-3:]
+            closes = last_3["close"].values
+            if zone_type == "support":
+                momentum_fading = closes[-1] <= closes[-2] and closes[-2] <= closes[-1] * 1.0001
+            else:
+                momentum_fading = closes[-1] >= closes[-2] and closes[-2] >= closes[-1] * 0.9999
+        
+        rejection_confirmed = rejection_candle_idx is not None
+        
+        if not rejection_confirmed:
+            stage = "NONE"
+            entry_viable = False
+            reason = "Sin rechazo confirmado en la zona"
+        elif move_from_zone < 0.001:
+            stage = "EARLY"
+            entry_viable = True
+            reason = f"Rechazo temprano: movimiento {move_from_zone*100:.3f}% desde zona"
+        elif move_from_zone < 0.003:
+            stage = "MIDDLE"
+            entry_viable = not momentum_fading
+            reason = f"Rebote en progreso: {move_from_zone*100:.3f}% desde zona" + (", momentum desvaneciéndose" if momentum_fading else "")
+        elif move_from_zone < 0.006:
+            stage = "LATE"
+            entry_viable = False
+            reason = f"Rebote avanzado: {move_from_zone*100:.3f}% desde zona. Entrada demasiado tarde."
+        else:
+            stage = "DONE"
+            entry_viable = False
+            reason = f"Rebote completado: {move_from_zone*100:.3f}% desde zona. Movimiento agotado."
+        
+        return {
+            "stage": stage,
+            "distance_from_zone_pct": move_from_zone,
+            "momentum_fading": momentum_fading,
+            "rejection_confirmed": rejection_confirmed,
+            "entry_viable": entry_viable,
+            "reason": reason
+        }
+
+    # ─────────────────────────────────────────────────────────────────────────────
     def _validate_no_opposite_zone_nearby(self, price: float, all_zones: list, 
                                           zone_dir: str, asset: str = "") -> tuple:
         """
@@ -436,21 +541,42 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 6. CONFIRMACIÓN 3 FASES (SUAVIZADO - solo informativo, no bloquea)
+        # 5.5 VALIDACIÓN DE ETAPA DEL REBOTE (CRÍTICO - ENTRADA TEMPRANA)
+        # =====================================================================
+        bounce = self._detect_bounce_stage(
+            df_m1, nearest_zone.get("level", 1.1), nearest_zone.get("zone_type", "support")
+        )
+        
+        if not bounce["entry_viable"]:
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"REBOTE {bounce['stage']}: {bounce['reason']}",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+                "bounce_stage": bounce["stage"],
+            }
+
+        # =====================================================================
+        # 6. CONFIRMACIÓN 3 FASES (NO BYPASS para rebotes en etapa MIDDLE)
         # =====================================================================
         phase = self.phase_analyzer.analyze_current_phase(
             df_m1, nearest_zone.get("level", 1.1), nearest_zone.get("zone_type", "support"),
             expected_dir
         )
 
-        # Si AI score es bueno, no bloquear por fase
-        if ai_score >= 40:
+        # Solo bypass si el rebote está en etapa EARLY (ideal para entrada)
+        # Si está en MIDDLE, requiere confirmación real
+        if bounce["stage"] == "EARLY" and ai_score >= 40:
             phase["ready"] = True
-            phase["message"] = f"Bypass 3-fase por IA score bueno ({ai_score:.0f})"
-        elif not phase.get("ready", False) and ai_score >= 30:
-            # Si IA es moderada, permitir pero con advertencia
+            phase["message"] = f"Bypass 3-fase: rebote EARLY + IA score ({ai_score:.0f})"
+        elif not phase.get("ready", False) and ai_score >= 50:
             phase["ready"] = True
-            phase["message"] = f"Permitido con IA moderada ({ai_score:.0f})"
+            phase["message"] = f"Permitido con IA alta ({ai_score:.0f}) en rebote {bounce['stage']}"
 
         # =====================================================================
         # 7. TRAMPAS
@@ -574,6 +700,8 @@ class IntelligentEngine:
             "trend_m15": trend_m15,
             "trend_htf": trend_htf,
             "trend_aligned": trend_aligned,
+            "bounce_stage": bounce.get("stage", "UNKNOWN"),
+            "bounce_distance_pct": bounce.get("distance_from_zone_pct", 0),
         }
         return r
 
