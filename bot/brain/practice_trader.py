@@ -13,6 +13,9 @@ from typing import Dict, List, Optional, Tuple
 VIRTUAL_BALANCE_INIT = 1000.0
 AMOUNT_PER_TRADE = 10.0
 BROKER_PAYOUT = 0.85  # 85% payout en win
+# Minimo de analisis completados antes de confiar en el win rate de una zona.
+# Con 3 muestras un 66-100% de acierto puede ser ruido puro.
+MIN_ZONE_ANALYSES = 8
 
 
 @dataclass
@@ -128,7 +131,10 @@ class PracticeTrader:
         best_dist = float("inf")
 
         for zone in zones:
-            if zone.completed_analyses < 3:
+            # Muestra minima para confiar en el win rate de una zona: con solo
+            # 3 analisis, un 66-100% de acierto puede ser pura casualidad y el
+            # bot queda "enganchado" operando una zona que ya no tiene edge.
+            if zone.completed_analyses < MIN_ZONE_ANALYSES:
                 continue
             if zone.analysis_win_rate < 0.55:
                 continue
@@ -143,6 +149,22 @@ class PracticeTrader:
 
             overshoot_buf = max(0.0, zone.avg_overshoot_adv / 10000.0) if hasattr(zone, 'avg_overshoot_adv') else 0.0
             max_dist = min(0.002 + overshoot_buf * 5.0, 0.010)
+
+            # Cambio de rol soporte/resistencia: si hay una zona del tipo
+            # OPUESTO al mismo nivel de precio con un toque mas reciente,
+            # el mercado probablemente rompio esta zona y ahora actua al
+            # reves. No operar la zona vieja hasta que ella misma acumule
+            # touques mas recientes que la nueva.
+            opposite_type = "resistance" if zone.zone_type == "support" else "support"
+            role_flipped = any(
+                other.zone_type == opposite_type
+                and abs(other.level - zone.level) / max(abs(zone.level), 0.0001) <= max_dist
+                and other.last_touch_ts > zone.last_touch_ts
+                for other in zones
+            )
+            if role_flipped:
+                continue
+
             if dist <= max_dist and dist < best_dist:
                 # Confirmar rechazo en M1 antes de entrar
                 if df_m1 is not None and len(df_m1) >= 2:

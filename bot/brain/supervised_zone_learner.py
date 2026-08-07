@@ -29,6 +29,9 @@ MIN_WICK_RATIO = 0.5
 MIN_REACTION_PIPS = 3
 SWING_WINDOW_M1 = 5
 EXPIRATIONS = [60, 120, 300]   # 1min, 2min, 5min en segundos
+# Minimo de analisis completados antes de confiar en el win rate de una zona.
+# Con 3 muestras un 66-100% de acierto puede ser ruido puro.
+MIN_ZONE_ANALYSES = 8
 PRACTICE_BALANCE = 1000.0       # balance inicial para modo demo
 
 
@@ -269,8 +272,8 @@ class SupervisedZoneLearner:
         zone = self._find_zone(asset, level, zone_type)
         if zone is None:
             return False, "Zona sin datos de mercado", {}
-        if zone.completed_analyses < 3:
-            return False, f"Solo {zone.completed_analyses}/3 analisis completados", self._details(zone)
+        if zone.completed_analyses < MIN_ZONE_ANALYSES:
+            return False, f"Solo {zone.completed_analyses}/{MIN_ZONE_ANALYSES} analisis completados", self._details(zone)
         if zone.analysis_win_rate < 0.55:
             return False, f"Win rate real {zone.analysis_win_rate*100:.0f}% < 55%", self._details(zone)
         if zone.strength < 0.50:
