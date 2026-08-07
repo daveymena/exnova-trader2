@@ -239,15 +239,18 @@ def _apply_refinements(parsed: Dict, batch_summary: Dict) -> Dict:
             applied.append(f"EXPIRY {asset}: -> {v}min")
     data["expiry_by_asset"] = ea
 
-    # 3) assets_pause (reemplaza la lista actual con la propuesta de la IA)
-    ap_new = parsed.get("assets_pause") or []
-    if isinstance(ap_new, list) and ap_new:
-        data["assets_pause"] = [a for a in ap_new if isinstance(a, str)][:40]
+    # 3) assets_pause: ADITIVO (union con lo ya pausado), nunca lo reemplaza.
+    # El prompt solo pide activos a pausar segun el lote actual - no le pide
+    # a la IA que re-liste los ya pausados de lotes anteriores. Un lote que
+    # no toca esos activos no es evidencia de que ya esten bien; interpretar
+    # "no los menciono" como "reabrir todos" (como hacia antes) deshacia casi
+    # cualquier pausa un ciclo despues de aplicarse.
+    ap_new = [a for a in (parsed.get("assets_pause") or []) if isinstance(a, str)]
+    if ap_new:
+        current_pause = list(data.get("assets_pause") or [])
+        merged = current_pause + [a for a in ap_new if a not in current_pause]
+        data["assets_pause"] = merged[:40]
         applied.append(f"PAUSE: {data['assets_pause']}")
-    elif isinstance(ap_new, list) and ap_new == [] and data.get("assets_pause"):
-        # la IA pidio reabrir todo
-        data["assets_pause"] = []
-        applied.append("PAUSE: reabrir todos")
 
     # 4) lecciones (acumula nuevas, cap MAX_LESSONS)
     lessons = list(data.get("lessons") or [])
