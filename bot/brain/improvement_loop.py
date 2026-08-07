@@ -28,10 +28,10 @@ TRADES_JSON = BOT / "brain" / "trade_history.json"
 from brain import strategy_adjustments as ADJ
 
 # ─── Configuracion (env) ───────────────────────────────────────────────────────
-OPENCODE_BASE_URL = os.getenv("OPENCODE_BASE_URL", "https://opencode.ai/zen/go/v1")
+OPENCODE_BASE_URL = os.getenv("OPENCODE_BASE_URL", "https://opencode.ai/zen/v1")
 OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
 OPENCODE_MODEL = os.getenv("IMPROVEMENT_MODEL", os.getenv("OPENCODE_MODEL_DEEP", "qwen3.7-max"))
-OPENCODE_MODEL_FAST = os.getenv("IMPROVEMENT_MODEL_FAST", "minimax-m2.5")
+OPENCODE_MODEL_FAST = os.getenv("IMPROVEMENT_MODEL_FAST", os.getenv("OPENCODE_MODEL_FAST", "deepseek-v4-flash-free"))
 
 BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "10"))
 BATCH_MIN_MINUTES = int(os.getenv("IMPROVEMENT_BATCH_MIN_MINUTES", "20"))
@@ -82,7 +82,7 @@ def _call_opencode(model: str, prompt: str) -> Optional[Dict]:
             {"role": "user", "content": prompt},
         ],
         "temperature": 0.2,
-        "max_tokens": 1200,
+        "max_tokens": 2500,
     }
     for attempt in range(1, 3):
         t0 = time.time()
