@@ -609,6 +609,8 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     'trend_aligned': signal.get("trend_aligned", False),
                     'confidence': confidence,
                     'score': signal.get("score", 0),
+                    'macro_trend': signal.get("macro_trend"),
+                    'retracement_stage': signal.get("retracement_stage"),
                 }
                 log(f"[AI] Registrando resultado en Agente IA para autocrítica y aprendizaje...")
                 agent_engine.record_trade_result(trade_to_learn)

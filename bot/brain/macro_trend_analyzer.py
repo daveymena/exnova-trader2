@@ -28,12 +28,13 @@ class MacroTrendAnalyzer:
         self.d1_trend_cache = None
         self.cache_time = None
         
-    def analyze_macro_context(self, 
+    def analyze_macro_context(self,
                               df_m1: pd.DataFrame,
                               df_m5: pd.DataFrame,
                               df_m15: pd.DataFrame,
                               df_h1: Optional[pd.DataFrame] = None,
-                              df_d1: Optional[pd.DataFrame] = None) -> Dict:
+                              df_d1: Optional[pd.DataFrame] = None,
+                              precomputed_structures: Optional[Dict[str, Dict]] = None) -> Dict:
         """
         Análisis macro completo: determina CONTEXTO GLOBAL del mercado.
         Devuelve recomendación de operación + riesgo de trampa.
@@ -56,12 +57,25 @@ class MacroTrendAnalyzer:
             }
         """
         
-        # Step 1: Analizar estructuras en cada timeframe
-        m1_structure = self._analyze_structure(df_m1, "M1")
-        m5_structure = self._analyze_structure(df_m5, "M5")
-        m15_structure = self._analyze_structure(df_m15, "M15")
-        h1_structure = self._analyze_structure(df_h1, "H1") if df_h1 is not None and len(df_h1) >= 10 else None
-        d1_structure = self._analyze_structure(df_d1, "D1") if df_d1 is not None and len(df_d1) >= 5 else None
+        # Step 1: Analizar estructuras en cada timeframe.
+        # `_analyze_structure` clasifica HH/LL mirando solo las últimas 3 velas
+        # crudas, así que durante cualquier retroceso de 3+ velas confunde el
+        # propio pullback con una reversión de tendencia. Si el llamador ya
+        # tiene una estructura robusta (pivots confirmados, p.ej. de
+        # ContextAnalyzer._market_structure vía MarketStructureEngine), se usa
+        # esa en vez de recalcular con el método ingenuo.
+        precomputed = precomputed_structures or {}
+        m1_structure = precomputed.get("m1") or self._analyze_structure(df_m1, "M1")
+        m5_structure = precomputed.get("m5") or self._analyze_structure(df_m5, "M5")
+        m15_structure = precomputed.get("m15") or self._analyze_structure(df_m15, "M15")
+        if "h1" in precomputed:
+            h1_structure = precomputed["h1"]
+        else:
+            h1_structure = self._analyze_structure(df_h1, "H1") if df_h1 is not None and len(df_h1) >= 10 else None
+        if "d1" in precomputed:
+            d1_structure = precomputed["d1"]
+        else:
+            d1_structure = self._analyze_structure(df_d1, "D1") if df_d1 is not None and len(df_d1) >= 5 else None
         
         # Step 2: Determinar tendencias por timeframe
         h1_trend = self._get_trend(h1_structure) if h1_structure else "neutral"
@@ -71,13 +85,15 @@ class MacroTrendAnalyzer:
         m1_trend = self._get_trend(m1_structure)
         
         # Step 3: Determinar MACRO TREND (jerarquía: D1 > H1 > M15)
-        macro_trend = self._determine_macro_trend(d1_trend, h1_trend, m15_trend)
+        d1_available = d1_structure is not None
+        macro_trend = self._determine_macro_trend(d1_trend, h1_trend, m15_trend, d1_available)
         
         # Step 4: Detectar DIVERGENCIAS (si M1 va contra macro)
         divergence_detected = self._detect_divergence(m1_trend, macro_trend, m5_trend)
         
         # Step 5: Detectar CONSOLIDACIÓN (precio está atrapado)
-        consolidation_level = self._detect_consolidation(df_m15 or df_m5)
+        df_for_consolidation = df_m15 if df_m15 is not None and len(df_m15) > 0 else df_m5
+        consolidation_level = self._detect_consolidation(df_for_consolidation)
         
         # Step 6: Calcular penalizaciones y bonificaciones
         confidence_boost, confidence_penalty = self._calculate_confidence_adjustments(
@@ -230,42 +246,50 @@ class MacroTrendAnalyzer:
         else:
             return "neutral"
     
-    def _determine_macro_trend(self, d1_trend: str, h1_trend: str, m15_trend: str) -> str:
+    def _determine_macro_trend(self, d1_trend: str, h1_trend: str, m15_trend: str,
+                                d1_available: bool = True) -> str:
         """
-        Jerarquía: D1 (60%) > H1 (30%) > M15 (10%)
-        Devuelve: strong_up, weak_up, neutral, weak_down, strong_down
+        Jerarquía: D1 (60%) > H1 (30%) > M15 (10%).
+        Si no hay velas D1 (el bot no las descarga), redistribuye ese peso
+        a H1 (70%) / M15 (30%) para que la tendencia macro sí pueda llegar
+        a "strong" usando solo H1/M15.
         """
         trend_score = 0.0
-        
-        # D1 (60% del peso)
+
+        if d1_available:
+            d1_w, h1_w, m15_w = 0.6, 0.3, 0.1
+        else:
+            d1_w, h1_w, m15_w = 0.0, 0.7, 0.3
+
+        # D1
         if d1_trend == "strong_up":
-            trend_score += 0.6
+            trend_score += d1_w
         elif d1_trend == "up":
-            trend_score += 0.35
+            trend_score += d1_w * 0.583
         elif d1_trend == "down":
-            trend_score -= 0.35
+            trend_score -= d1_w * 0.583
         elif d1_trend == "strong_down":
-            trend_score -= 0.6
-        
-        # H1 (30% del peso)
+            trend_score -= d1_w
+
+        # H1
         if h1_trend == "strong_up":
-            trend_score += 0.3
+            trend_score += h1_w
         elif h1_trend == "up":
-            trend_score += 0.15
+            trend_score += h1_w * 0.5
         elif h1_trend == "down":
-            trend_score -= 0.15
+            trend_score -= h1_w * 0.5
         elif h1_trend == "strong_down":
-            trend_score -= 0.3
-        
-        # M15 (10% del peso)
+            trend_score -= h1_w
+
+        # M15
         if m15_trend == "strong_up":
-            trend_score += 0.1
+            trend_score += m15_w
         elif m15_trend == "up":
-            trend_score += 0.05
+            trend_score += m15_w * 0.5
         elif m15_trend == "down":
-            trend_score -= 0.05
+            trend_score -= m15_w * 0.5
         elif m15_trend == "strong_down":
-            trend_score -= 0.1
+            trend_score -= m15_w
         
         # Convertir score a categoría
         if trend_score > 0.4:

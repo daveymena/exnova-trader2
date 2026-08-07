@@ -23,6 +23,8 @@ from brain.market_trap_detector import MarketTrapDetector
 from brain.three_phase_confirmation import ThreePhaseConfirmation
 from brain.trade_context_analyzer import TradeContextAnalyzer
 from brain.trade_rejection_rules import TradeRejectionRules
+from brain.market_structure_engine import MarketStructureEngine
+from core.asset_discovery import is_otc
 from config_assets import BAD_PATTERNS
 
 
@@ -36,6 +38,7 @@ class IntelligentEngine:
         self.phase_analyzer = ThreePhaseConfirmation()
         self.rejection_rules = TradeRejectionRules()
         self.context_analyzer = ContextAnalyzer()
+        self.market_structure_engine = MarketStructureEngine()
 
         if mode == "practice":
             # Modo práctica: mínimos filtros para ver muchas operaciones
@@ -497,6 +500,48 @@ class IntelligentEngine:
             }
 
         # =====================================================================
+        # 4.7 ESTRUCTURA DE MERCADO + TIMING DE RETROCESO (solo activos reales)
+        # =====================================================================
+        # El OTC es un paseo aleatorio medido (sin edge direccional confirmado
+        # en 57.000 velas / 138 reglas probadas), así que este motor solo
+        # aplica a activos reales. En OTC el comportamiento no cambia.
+        market_map = None
+        if not is_otc(asset):
+            market_map = self.market_structure_engine.build_map(
+                asset, df_m1, df_m5, df_m15, h1_data,
+                htf_minutes=30 if df_m30 is not None else 60,
+                context=context,
+            )
+            if market_map["entry_bias"] == "WAIT":
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"Estructura/timing: {market_map['reason']}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                    "macro_trend": market_map["macro_trend"],
+                    "retracement_stage": market_map["retracement_m15"]["stage"],
+                }
+            if market_map["entry_bias"] != "NEUTRAL" and market_map["entry_bias"] != expected_dir:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"Timing de retroceso sugiere {market_map['entry_bias']} pero la zona espera {expected_dir}: {market_map['reason']}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                    "macro_trend": market_map["macro_trend"],
+                    "retracement_stage": market_map["retracement_m15"]["stage"],
+                }
+
+        # =====================================================================
         # 5. REGLAS DE RECHAZO
         # =====================================================================
         trade_proposal = {
@@ -702,6 +747,8 @@ class IntelligentEngine:
             "trend_aligned": trend_aligned,
             "bounce_stage": bounce.get("stage", "UNKNOWN"),
             "bounce_distance_pct": bounce.get("distance_from_zone_pct", 0),
+            "macro_trend": market_map["macro_trend"] if market_map else None,
+            "retracement_stage": market_map["retracement_m15"]["stage"] if market_map else None,
         }
         return r
 

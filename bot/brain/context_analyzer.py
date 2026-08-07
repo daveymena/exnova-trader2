@@ -78,7 +78,8 @@ class ContextAnalyzer:
         """
         if len(df) < 10:
             return {"trend": "neutral", "hh": False, "hl": False, "lh": False, "ll": False,
-                    "swing_high": 0.0, "swing_low": 0.0, "structure": "unclear"}
+                    "swing_high": 0.0, "swing_low": 0.0, "structure": "unclear",
+                    "last_peak_idx": None, "last_trough_idx": None}
 
         closes = df["close"].values
         highs = df["high"].values
@@ -134,6 +135,11 @@ class ContextAnalyzer:
             "swing_low": swing_low,
             "structure": structure,
             "ema_slope": slope,
+            "last_peak_idx": peaks[-1][0] if peaks else None,
+            "last_trough_idx": troughs[-1][0] if troughs else None,
+            "peaks": peaks,
+            "troughs": troughs,
+            "n_candles": n,
         }
 
     def _dominant_trend(self, h1: Dict, m15: Dict, m5: Dict) -> str:
