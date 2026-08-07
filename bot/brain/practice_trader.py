@@ -75,6 +75,33 @@ class PracticeTrader:
         )
         return float(np.mean(tr[-period:]))
 
+    def _liquidity_sweep_against(self, df_m1, level: float, direction: str) -> bool:
+        """Detecta si una de las ultimas velas barrio el nivel en sentido
+        CONTRARIO a `direction` (mecha atraviesa el nivel, cierre de vuelta
+        del otro lado con fuerza) - señal clasica de toma de liquidez /
+        stop hunt seguida de reversion. Si se detecta, la entrada propuesta
+        va contra el rebote que se esta formando y no se debe tomar.
+        """
+        if df_m1 is None or len(df_m1) < 2:
+            return False
+        for c in (df_m1.iloc[-1], df_m1.iloc[-2]):
+            body = abs(c["close"] - c["open"])
+            if direction == "PUT":
+                # Barrida alcista: mecha bajo el nivel, cierre alcista sobre
+                # el nivel -> reversion al alza, contradice un PUT.
+                lower_wick = min(c["close"], c["open"]) - c["low"]
+                if (c["low"] < level and c["close"] > level
+                        and c["close"] > c["open"] and lower_wick > body * 1.2):
+                    return True
+            else:
+                # Barrida bajista: mecha sobre el nivel, cierre bajista bajo
+                # el nivel -> reversion a la baja, contradice un CALL.
+                upper_wick = c["high"] - max(c["close"], c["open"])
+                if (c["high"] > level and c["close"] < level
+                        and c["close"] < c["open"] and upper_wick > body * 1.2):
+                    return True
+        return False
+
     def _expiration_from_atr(self, atr, current_price, zone_strength):
         """Determina expiracion optima segun ATR (volatilidad) y fuerza de zona."""
         if atr is None or atr == 0 or current_price == 0:
@@ -177,6 +204,11 @@ class PracticeTrader:
                         # Debe mostrar vela bajista cerrando bajo resistencia
                         if not (last["close"] < last["open"] and last["close"] < zone.level):
                             continue
+
+                # Toma de liquidez contra la direccion propuesta: el precio
+                # ya esta revirtiendo hacia el otro lado, no entrar de vuelta.
+                if self._liquidity_sweep_against(df_m1, zone.level, direction):
+                    continue
 
                 # Verificar no duplicado reciente en esta zona
                 dup = False
