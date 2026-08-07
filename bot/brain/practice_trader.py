@@ -10,6 +10,11 @@ import numpy as np
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional, Tuple
 
+try:
+    from .strategy_adjustments import get_active_adjustments
+except ImportError:  # ejecucion directa fuera del paquete brain
+    from strategy_adjustments import get_active_adjustments
+
 VIRTUAL_BALANCE_INIT = 1000.0
 AMOUNT_PER_TRADE = 10.0
 BROKER_PAYOUT = 0.85  # 85% payout en win
@@ -56,8 +61,21 @@ class PracticeTrader:
         self.virtual_trades: List[VirtualTrade] = []
         self._last_trade_ts: Dict[str, float] = {}
         self._last_trade_global_ts: float = 0.0
+        self._adj_cache = {"ts": 0.0, "data": None}
         self._load()
         self._resolve_stale()
+
+    def _adjustments(self) -> Dict:
+        """Ajustes del improvement_loop (min_confidence, expiry_by_asset),
+        cacheados 60s para no leer disco en cada intento de escaneo."""
+        now = time.time()
+        if self._adj_cache["data"] is None or now - self._adj_cache["ts"] > 60:
+            try:
+                self._adj_cache["data"] = get_active_adjustments()
+            except Exception:
+                self._adj_cache["data"] = {"min_confidence": None, "expiry_by_asset": {}}
+            self._adj_cache["ts"] = now
+        return self._adj_cache["data"]
 
     def _calc_atr(self, df_m1, period=14):
         """Calcula ATR (Average True Range) desde velas M1."""
@@ -157,13 +175,21 @@ class PracticeTrader:
         best = None
         best_dist = float("inf")
 
+        # El improvement_loop puede endurecer el umbral de confianza segun lo
+        # que aprenda de lotes reales (ej. 0.55 -> 0.85 tras una mala racha).
+        # Usamos win_rate de zona como proxy de confianza: nunca baja de 0.55.
+        adj = self._adjustments()
+        adj_min_conf = adj.get("min_confidence")
+        min_wr = max(0.55, adj_min_conf) if isinstance(adj_min_conf, (int, float)) else 0.55
+        expiry_overrides = adj.get("expiry_by_asset") or {}
+
         for zone in zones:
             # Muestra minima para confiar en el win rate de una zona: con solo
             # 3 analisis, un 66-100% de acierto puede ser pura casualidad y el
             # bot queda "enganchado" operando una zona que ya no tiene edge.
             if zone.completed_analyses < MIN_ZONE_ANALYSES:
                 continue
-            if zone.analysis_win_rate < 0.55:
+            if zone.analysis_win_rate < min_wr:
                 continue
             if zone.strength < 0.50:
                 continue
@@ -233,9 +259,18 @@ class PracticeTrader:
 
         zone, direction, dist = best
 
-        # Determinar expiracion segun ATR (volatilidad real) y fuerza de zona
-        atr = self._calc_atr(df_m1)
-        expiration = self._expiration_from_atr(atr, current_price, zone.strength)
+        # Determinar expiracion segun ATR (volatilidad real) y fuerza de zona,
+        # salvo que el improvement_loop haya fijado un minimo para este activo
+        # (ej. tras detectar que expiraciones cortas se comportan como ruleta).
+        if asset in expiry_overrides:
+            try:
+                expiration = max(60, int(expiry_overrides[asset]) * 60)
+            except (TypeError, ValueError):
+                atr = self._calc_atr(df_m1)
+                expiration = self._expiration_from_atr(atr, current_price, zone.strength)
+        else:
+            atr = self._calc_atr(df_m1)
+            expiration = self._expiration_from_atr(atr, current_price, zone.strength)
 
         trade = VirtualTrade(
             asset=asset,
