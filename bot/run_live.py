@@ -289,6 +289,10 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             expiration = int(_ea[asset]) * 60
     except Exception:
         pass
+    # Piso de 3min (180s): medido en producción (ago-2026) las expiraciones de
+    # 1-2 min dan ~46% WR (-$24) mientras 3 min da 53.8% (+$0.83). Ningún
+    # override del loop o del motor puede operar bajo 180s.
+    expiration = max(180, int(expiration))
     pattern = signal.get("pattern", "")
     zone_str = signal.get("zone_strength", 0.0)
     # intelligent_engine.py NUNCA incluye "zone_object" en el dict que
@@ -829,28 +833,34 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                 "zone_level": demo.get("zone_level", 0),
                             })
 
-                            # Persistir en trade_history.json para que el bucle de
-                            # mejora IA (improvement_loop) lo analice y calibre la
-                            # estrategia. Marca demo_used=True para que la IA sepa
-                            # que proviene del scanner de zonas (no del motor PCR).
+                            # Persistir UNA SOLA VEZ en trade_history.json para el
+                            # bucle de mejora IA. Antes se escribia 2 registros del
+                            # MISMO trade (persistence.add_trade directo con
+                            # pattern "zone_scan" + agent_engine.record_trade_result
+                            # que internamente llama persistence.add_trade con
+                            # pattern "demo"), inflando el dataset ~20% y
+                            # contaminando las estadisticas con las que la IA
+                            # refina la estrategia. Se mantiene UN unico camino de
+                            # persistencia (el del agente) con los campos ricos.
                             try:
-                                persistence.add_trade({
-                                    "timestamp": time.time(),
-                                    "asset": demo["asset"],
-                                    "direction": demo["direction"],
-                                    "amount": demo["amount"],
-                                    "result": result,
-                                    "pnl": pnl,
-                                    "pattern": "zone_scan",
-                                    "zone": "support" if demo["direction"] == "CALL" else "resistance",
-                                    "zone_strength": demo.get("zone_strength", 0.5),
-                                    "confidence": demo.get("zone_win_rate", 0.5),
-                                    "expiry_minutes": max(1, demo["expiration_sec"] // 60),
-                                    "trend_aligned": False,
-                                    "demo_used": True,
+                                agent_engine.record_trade_result({
+                                    'asset': demo['asset'],
+                                    'direction': demo['direction'],
+                                    'amount': demo['amount'],
+                                    'result': result,
+                                    'pnl': pnl,
+                                    'pattern': 'zone_scan',
+                                    'zone': 'support' if demo['direction'] == 'CALL' else 'resistance',
+                                    'zone_strength': demo.get('zone_win_rate', demo.get('zone_strength', 0)),
+                                    'confidence': demo.get('zone_win_rate', 0.5),
+                                    'score': int(demo.get('zone_win_rate', 0.5) * 100),
+                                    'rsi_at_touch': 50,
+                                    'expiry_minutes': max(1, demo['expiration_sec'] // 60),
+                                    'trend_aligned': False,
+                                    'demo_used': True,
                                 })
                             except Exception as _e:
-                                log(f"[DEMO] persistence.add_trade falló: {_e}", "WARNING")
+                                log(f"[DEMO] agent_engine.record_trade_result falló: {_e}", "WARNING")
 
                             # Feedback al zone_learner (firma real: entry=/exit=)
                             zone_learner.record_trade_result(
@@ -1029,10 +1039,19 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     continue
 
                 # Validación de alineación de tendencia
+                # Edge real medido en producción (ago-2026): operar con tendencia
+                # da ~64% WR (+$13); contra-tendencia pierde (48.6% WR, -$47) y el
+                # PUT contra-tendencia es el peor segmento (43.9% WR = -$49). Se
+                # bloquea el PUT contra-tendencia por completo y se exige score
+                # alto (>=70) para cualquier entrada contra-tendencia.
                 trend_aligned = signal.get("trend_aligned", False)
-                if not trend_aligned and signal.get("score", 0) < 40:
-                    log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
-                    continue
+                if not trend_aligned:
+                    if signal.get("signal", "") == "PUT":
+                        log(f"[FILTRO] PUT contra-tendencia bloqueado (edge negativo): {asset}", "WARNING")
+                        continue
+                    if signal.get("score", 0) < 70:
+                        log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
+                        continue
 
                 direccion = signal.get("signal", "")
                 # (Sesgo anti-PUT +0.15 retirado: castigaba solo PUTs sin evidencia.

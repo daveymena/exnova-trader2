@@ -26,7 +26,12 @@ from typing import Dict, List, Optional
 ADJUSTMENTS_PATH = Path(__file__).resolve().parent / "strategy_adjustments.json"
 
 # Limites de seguridad: la IA no puede pedir valores fuera de estos rangos.
-MIN_CONF_RANGE = (0.55, 0.85)
+# El techo de 0.80 (no 0.85) es deliberado: medido en producción (ago-2026),
+# el bin de confianza 0.80 da 63.8% WR (+$25) mientras 0.85/0.90 caen a
+# ~41-51% WR. Subir el umbral por encima de 0.80 ya no filtra ruido: solo
+# recorta las entradas buenas de 0.80 y deja pasar contra-tendencia con
+# confianza alta inflada que pierde.
+MIN_CONF_RANGE = (0.55, 0.80)
 EXPIRY_RANGE = (1, 10)
 MAX_LESSONS = 60
 MAX_PAUSE_HOURS = 24

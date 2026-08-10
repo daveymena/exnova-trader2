@@ -33,7 +33,7 @@ OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
 OPENCODE_MODEL = os.getenv("IMPROVEMENT_MODEL", os.getenv("OPENCODE_MODEL_DEEP", "qwen3.7-max"))
 OPENCODE_MODEL_FAST = os.getenv("IMPROVEMENT_MODEL_FAST", os.getenv("OPENCODE_MODEL_FAST", "deepseek-v4-flash-free"))
 
-BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "10"))
+BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "30"))
 BATCH_MIN_MINUTES = int(os.getenv("IMPROVEMENT_BATCH_MIN_MINUTES", "20"))
 BATCH_MIN_SECONDS = BATCH_MIN_MINUTES * 60
 TIMEOUT_SEC = int(os.getenv("IMPROVEMENT_TIMEOUT", "90"))
@@ -285,7 +285,11 @@ def _run_cycle(last_ts: float) -> float:
     new = [t for t in trades if float(t.get("timestamp", 0) or 0) > last_ts]
     last_trade_ts = float(trades[-1].get("timestamp", 0) or 0)
     since_last = time.time() - last_ts if last_ts else 1e12
-    if len(new) < BATCH_N_TRADES and since_last < BATCH_MIN_SECONDS:
+    # Recién hay señal cuando hay AMBOS: un lote con suficientes trades nuevos
+    # Y tiempo acumulado. Antes era "len(new)<N o since<min" (condición AND para
+    # esperar), es decir bastaba que pasaran 20min para que la IA ajustara con
+    # lotes de 1-2 operaciones -> sobreajuste al ruido. Ahora exige las dos.
+    if len(new) < BATCH_N_TRADES or since_last < BATCH_MIN_SECONDS:
         return last_ts  # no toca aun
 
     if not new:
