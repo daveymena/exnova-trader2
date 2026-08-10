@@ -28,10 +28,11 @@ import numpy as np
 MIN_WICK_RATIO = 0.5
 MIN_REACTION_PIPS = 3
 SWING_WINDOW_M1 = 5
-EXPIRATIONS = [60, 120, 300]   # 1min, 2min, 5min en segundos
-# Minimo de analisis completados antes de confiar en el win rate de una zona.
-# Con 3 muestras un 66-100% de acierto puede ser ruido puro.
-MIN_ZONE_ANALYSES = 8
+# El motor live ejecuta con un piso de 180s. Medir otros horizontes como si
+# fueran entradas independientes triplica las muestras del mismo evento.
+EXPIRATIONS = [180]
+# Muestras independientes mínimas antes de confiar en una zona.
+MIN_ZONE_ANALYSES = 20
 PRACTICE_BALANCE = 1000.0       # balance inicial para modo demo
 
 
@@ -108,6 +109,19 @@ class ObservedZone:
         if total == 0:
             return 0.0
         return self.analysis_wins / total
+
+    @property
+    def analysis_lower_bound(self) -> float:
+        """Límite inferior Wilson 95% para no operar WR inflado por ruido."""
+        n = self.analysis_wins + self.analysis_losses
+        if n == 0:
+            return 0.0
+        z = 1.96
+        p = self.analysis_wins / n
+        denominator = 1 + z * z / n
+        center = (p + z * z / (2 * n)) / denominator
+        margin = z * np.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denominator
+        return max(0.0, center - margin)
 
     @property
     def strength(self) -> float:
@@ -274,8 +288,8 @@ class SupervisedZoneLearner:
             return False, "Zona sin datos de mercado", {}
         if zone.completed_analyses < MIN_ZONE_ANALYSES:
             return False, f"Solo {zone.completed_analyses}/{MIN_ZONE_ANALYSES} analisis completados", self._details(zone)
-        if zone.analysis_win_rate < 0.55:
-            return False, f"Win rate real {zone.analysis_win_rate*100:.0f}% < 55%", self._details(zone)
+        if zone.analysis_lower_bound < 0.54:
+            return False, f"Limite inferior estadístico {zone.analysis_lower_bound*100:.0f}% < 54%", self._details(zone)
         if zone.strength < 0.50:
             return False, f"Strength {zone.strength:.2f} < 0.50", self._details(zone)
         return True, f"Zona aprobada: WR={zone.analysis_win_rate*100:.0f}% ({zone.completed_analyses} analisis)", self._details(zone)
@@ -621,6 +635,7 @@ class SupervisedZoneLearner:
             "strength": zone.strength,
             "analisis_completados": zone.completed_analyses,
             "win_rate_real": zone.analysis_win_rate,
+            "win_rate_lower_bound": zone.analysis_lower_bound,
             "avg_m15_aligned": round(zone.avg_m15_aligned, 2),
         }
 
@@ -660,15 +675,65 @@ class SupervisedZoneLearner:
         if os.path.exists(self.analysis_path):
             try:
                 with open(self.analysis_path, "r", encoding="utf-8") as f:
-                    self.completed = json.load(f)
+                    self.completed = self._dedupe_completed(json.load(f))
             except Exception:
                 self.completed = []
         if os.path.exists(self.pending_path):
             try:
                 with open(self.pending_path, "r", encoding="utf-8") as f:
-                    self.pending = json.load(f)
+                    self.pending = self._dedupe_pending(json.load(f))
             except Exception:
                 self.pending = []
+        self._rebuild_analysis_stats()
+
+    @staticmethod
+    def _dedupe_completed(rows):
+        """Remove the old 1/2/5-minute copies of one observed entry."""
+        unique = {}
+        for row in rows if isinstance(rows, list) else []:
+            key = (
+                row.get("asset"), row.get("direction"),
+                round(float(row.get("entry_time", 0) or 0), 3),
+                round(float(row.get("entry_price", 0) or 0), 8),
+            )
+            current = unique.get(key)
+            if current is None or row.get("expiration_sec") == 180:
+                unique[key] = row
+        return list(unique.values())[-2000:]
+
+    @staticmethod
+    def _dedupe_pending(rows):
+        unique = {}
+        for row in rows if isinstance(rows, list) else []:
+            key = (
+                row.get("asset"), row.get("direction"),
+                round(float(row.get("entry_time", 0) or 0), 3),
+                round(float(row.get("entry_price", 0) or 0), 8),
+            )
+            current = unique.get(key)
+            if current is None or row.get("expiration_sec") == 180:
+                unique[key] = row
+        return list(unique.values())[-500:]
+
+    def _rebuild_analysis_stats(self):
+        """Rebuild zone counters from independent completed events."""
+        for zones in self.zones.values():
+            for zone in zones:
+                zone.completed_analyses = 0
+                zone.analysis_wins = 0
+                zone.analysis_losses = 0
+                zone.avg_m15_aligned = 0.0
+                zone.avg_overshoot_fav = 0.0
+                zone.avg_overshoot_adv = 0.0
+        for row in self.completed:
+            zone = self._find_zone(row.get("asset"), float(row.get("entry_price", 0) or 0), row.get("zone_type"))
+            if zone is None:
+                continue
+            zone.completed_analyses += 1
+            if str(row.get("result", "")).upper() == "WIN":
+                zone.analysis_wins += 1
+            elif str(row.get("result", "")).upper() == "LOSS":
+                zone.analysis_losses += 1
 
     def save(self):
         os.makedirs(os.path.dirname(self.persist_path), exist_ok=True)

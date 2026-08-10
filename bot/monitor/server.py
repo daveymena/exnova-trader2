@@ -24,11 +24,13 @@ from fastapi.middleware.cors import CORSMiddleware
 ROOT = Path(__file__).resolve().parents[2]  # /app
 BOT = Path(__file__).resolve().parents[1]   # /app/bot
 TRADES_JSON = BOT / "brain" / "trade_history.json"
+PRACTICE_JSON = BOT / "brain" / "practice_trades.json"
 LEARNING_JSON = BOT / "data" / "learning_progress.json"
 # run_live.py escribe su PID en run_live.lock (lock de instancia unica)
 PID_FILE = BOT / "run_live.lock"
 # improvement_loop escribe un heartbeat aqui cada minuto
 IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
+BOT_HEARTBEAT = ROOT / "data" / "bot_heartbeat.json"
 ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
 RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
@@ -68,6 +70,10 @@ def _write_json(path: Path, data: dict) -> None:
 
 def _bot_alive() -> bool:
     try:
+        heartbeat = _read_json(BOT_HEARTBEAT)
+        heartbeat_ts = heartbeat.get("ts") if isinstance(heartbeat, dict) else None
+        if isinstance(heartbeat_ts, (int, float)) and time.time() - heartbeat_ts < 120:
+            return True
         if not PID_FILE.exists():
             return False
         pid = int(PID_FILE.read_text().strip())
@@ -111,6 +117,7 @@ def status():
     }
     return {
         "bot_alive": _bot_alive(),
+        "bot_heartbeat": _read_json(BOT_HEARTBEAT),
         "account_type": os.getenv("ACCOUNT_TYPE", "PRACTICE"),
         "total_trades": total,
         "wins": wins,
@@ -122,6 +129,27 @@ def status():
         "learning": learning if learning else None,
         "ai": ai,
         "assets": os.getenv("ASSETS", os.getenv("DEFAULT_ASSET", "")),
+    }
+
+
+@app.get("/api/practice")
+def practice_status():
+    """Resultados virtuales para forward testing sin riesgo de broker."""
+    data = _read_json(PRACTICE_JSON)
+    rows = data.get("trades", []) if isinstance(data, dict) else []
+    closed = [t for t in rows if t.get("result") in {"WIN", "LOSS"}]
+    wins = sum(t.get("result") == "WIN" for t in closed)
+    losses = sum(t.get("result") == "LOSS" for t in closed)
+    pnl = sum(float(t.get("pnl", 0) or 0) for t in closed)
+    return {
+        "trades": len(rows),
+        "closed": len(closed),
+        "wins": wins,
+        "losses": losses,
+        "win_rate": round(wins / len(closed) * 100, 1) if closed else 0.0,
+        "pnl": round(pnl, 2),
+        "pending": len(rows) - len(closed),
+        "recent": rows[-20:],
     }
 
 

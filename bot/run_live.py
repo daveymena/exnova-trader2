@@ -39,10 +39,11 @@ Decisiones de reconciliacion tomadas al fusionar (documentadas, no ocultas):
     activo del historial tenia muestra suficiente para que "buen WR" fuera
     señal y no ruido.
 """
-import sys, os, time, threading
+import sys, os, time, threading, json
 import numpy as np
 import pandas as pd
 from datetime import datetime, timedelta
+from pathlib import Path
 
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
@@ -227,6 +228,22 @@ state = {
     "demo_wins": 0, "demo_losses": 0, "demo_pnl": 0.0, "demo_balance": 0.0,
     "demo_trades": [],
 }
+
+BOT_HEARTBEAT_PATH = Path(os.getenv("BOT_HEARTBEAT_PATH", "/app/data/bot_heartbeat.json"))
+
+def _write_bot_heartbeat():
+    try:
+        BOT_HEARTBEAT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        tmp = BOT_HEARTBEAT_PATH.with_suffix(".tmp")
+        tmp.write_text(json.dumps({
+            "ts": time.time(),
+            "cycle": state.get("cycle", 0),
+            "status": state.get("status", ""),
+            "asset": state.get("current_asset", ""),
+        }), encoding="utf-8")
+        tmp.replace(BOT_HEARTBEAT_PATH)
+    except Exception:
+        pass
 
 # Lock para evitar operaciones simultáneas
 trade_lock = threading.Lock()
@@ -642,24 +659,9 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             learner.learn_from_trade(conditions, result, diagnosis)
             state["last_diagnosis"] = evaluator.format_for_display(diagnosis)
 
-            try:
-                exit_price = 0.0
-                if df_after is not None and not df_after.empty:
-                    exit_price = float(df_after.iloc[-1].get("close", 0.0))
-                # Firma real: record_trade_result(asset, direction, entry, exit,
-                # result, level=0.0). Antes se llamaba con entry_price=/exit_price=,
-                # kwargs inexistentes -> TypeError tragado en silencio en cada trade.
-                zone_learner.record_trade_result(
-                    asset=trade_record["asset"],
-                    direction=trade_record["direction"],
-                    entry=float(trade_record.get("entry_price", 0.0)),
-                    exit=float(exit_price),
-                    result=result,
-                    level=float(trade_record.get("entry_price", 0.0))
-                )
-                log("[SUPERVISADO] Resultado guardado en memoria de zonas")
-            except Exception as e:
-                log(f"[SUPERVISADO] Error guardando aprendizaje: {e}", "WARNING")
+            # El IntelligentEngine no expone el nivel real de la zona. No
+            # inventar uno usando el precio de entrada: eso creaba zonas nuevas
+            # y contaminaba el aprendizaje supervisado con otra estrategia.
 
             if result == "LOSS":
                 cause = diagnosis.get("primary_cause", "unknown")
@@ -769,6 +771,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
         try:
             state["cycle"] += 1
             now = time.time()
+            _write_bot_heartbeat()
 
             # Hot-reload: aplicar cambios del dashboard/chat en caliente
             try:
