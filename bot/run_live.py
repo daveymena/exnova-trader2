@@ -99,7 +99,7 @@ from config import Config
 from config_assets import (
     get_activos_activos, get_config_sensibilidad,
     get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING,
-    BAD_PATTERNS, ASSETS_BLACKLIST, ASSETS_WHITELIST,
+    BAD_PATTERNS, ASSETS_BLACKLIST,
     REAL_PATTERNS_ALLOWED,
     REAL_ZONE_STRENGTH_MIN, REAL_ZONE_STRENGTH_MAX,
 )
@@ -190,9 +190,12 @@ elif ACCOUNT_TYPE == "REAL":
     else:
         print("[CRITICAL] ⚠️  CUENTA REAL ACTIVADA - Operando con dinero real")
 
-# Demo trading: envia ordenes demo reales al broker (PRACTICE), basadas en el
-# escaner de zonas de PracticeTrader. Desactivado por defecto.
-DEMO_TRADING = os.getenv("DEMO_TRADING", "false").lower() == "true"
+# Zone-scan execution is opt-in: the scanner remains virtual in PracticeTrader,
+# while the main IntelligentEngine route is evaluated independently.
+DEMO_TRADING = (
+    os.getenv("DEMO_TRADING", "false").lower() == "true"
+    and os.getenv("DEMO_ZONE_EXECUTION", "false").lower() == "true"
+)
 DEMO_AMOUNT = float(os.getenv("DEMO_AMOUNT", "2.0"))
 if DEMO_TRADING:
     print(f"[DEMO] Modo demo activado - enviando ordenes reales a Exnova PRACTICE (${DEMO_AMOUNT}/trade)")
@@ -889,7 +892,6 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
             # Filtrar activos blacklisteados (bajo rendimiento histórico)
             activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
-            activos_disponibles = [a for a in activos_disponibles if a in ASSETS_WHITELIST]
             _paused = _assets_paused()
             if _paused:
                 activos_disponibles = [a for a in activos_disponibles if a not in _paused]

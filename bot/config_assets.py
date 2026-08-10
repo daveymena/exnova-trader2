@@ -159,12 +159,6 @@ ASSETS_BLACKLIST = {
     "USDPLN-OTC",       # -$4.21, 50.0% WR (6t)
 }
 
-ASSETS_WHITELIST = {
-    "GBPAUD-OTC", "MORSTAN-OTC", "EURTHB-OTC", "DOTUSD-OTC",
-    "USDTHB-OTC", "USNDAQ100-OTC", "GBPNZD-OTC", "CHFJPY-OTC",
-    "USNDAQ100:N", "CADJPY-OTC", "XRPUSD-OTC",
-}
-
 BAD_PATTERNS = {
     "engulfing_bearish",  # 20.0% WR (2/10), -$83.85 PnL — PEOR PATRÓN
     "doji",               # 0% WR (0/1), -$10.05 PnL
