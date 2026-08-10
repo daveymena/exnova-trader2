@@ -99,7 +99,7 @@ from config import Config
 from config_assets import (
     get_activos_activos, get_config_sensibilidad,
     get_current_time_colombia, es_horario_manana, ASSETS_OTC_24_7, ASSETS_PTC_MORNING,
-    BAD_PATTERNS, ASSETS_BLACKLIST,
+    BAD_PATTERNS, ASSETS_BLACKLIST, ASSETS_WHITELIST,
     REAL_PATTERNS_ALLOWED,
     REAL_ZONE_STRENGTH_MIN, REAL_ZONE_STRENGTH_MAX,
 )
@@ -139,7 +139,7 @@ def _adjustments():
 def _current_min_confidence():
     a = _adjustments()
     mc = a.get("min_confidence")
-    return mc if isinstance(mc, (int, float)) else MIN_CONFIDENCE
+    return min(mc, 0.80) if isinstance(mc, (int, float)) else min(MIN_CONFIDENCE, 0.80)
 
 def _assets_paused():
     a = _adjustments()
@@ -869,20 +869,6 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                 result=result, level=demo.get("zone_level", 0),
                             )
 
-                            agent_engine.record_trade_result({
-                                'asset': demo['asset'],
-                                'direction': demo['direction'],
-                                'amount': demo['amount'],
-                                'result': result,
-                                'pnl': pnl,
-                                'pattern': demo.get('zone_type', 'demo'),
-                                'zone_strength': demo.get('zone_win_rate', 0),
-                                'confidence': demo.get('zone_win_rate', 0.5),
-                                'score': int(demo.get('zone_win_rate', 0.5) * 100),
-                                'rsi_at_touch': 50,
-                                'trend_aligned': False,
-                            })
-
                             icon = "🟢" if result == "WIN" else "🔴"
                             log(f"[DEMO] {icon} {result} {demo['direction']} {demo['asset']} "
                                 f"${pnl:+.2f} | balance demo: ${state['demo_balance']:.2f}", "INFO")
@@ -903,6 +889,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
             # Filtrar activos blacklisteados (bajo rendimiento histórico)
             activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
+            activos_disponibles = [a for a in activos_disponibles if a in ASSETS_WHITELIST]
             _paused = _assets_paused()
             if _paused:
                 activos_disponibles = [a for a in activos_disponibles if a not in _paused]
@@ -988,8 +975,9 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         log(f"[PRACTICE] 🎯 Trade virtual {pt_trade.direction} {asset} @ {pt_trade.entry_price:.5f} | "
                             f"zona WR={zs*100:.0f}% exp={pt_trade.expiration_sec}s", "SUCCESS")
 
-                        # Demo trading real: enviar orden al broker en modo PRACTICE
-                        if DEMO_TRADING and state["demo_order"] is None:
+                        # Demo trading real: solo setups con activo y zona probados.
+                        demo_allowed = asset in ASSETS_WHITELIST and zs >= 0.80
+                        if DEMO_TRADING and state["demo_order"] is None and demo_allowed:
                             try:
                                 action = "call" if pt_trade.direction == "CALL" else "put"
                                 exp_min = max(1, pt_trade.expiration_sec // 60)
@@ -1011,6 +999,8 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                         f"zona WR={zs*100:.0f}%", "SUCCESS")
                             except Exception as e:
                                 log(f"[DEMO] Error enviando orden: {e}", "WARNING")
+                        elif DEMO_TRADING and not demo_allowed:
+                            log(f"[DEMO] Entrada bloqueada: {asset} zona WR={zs*100:.0f}%", "WARNING")
 
                     res = practice.resolve_pending(asset, current_price)
                     if res > 0:
@@ -1354,7 +1344,7 @@ def _apply_runtime_data(data, hot=False):
     if mode in ("PAPER", "PRACTICE") and not hot:
         ACCOUNT_TYPE = "PRACTICE"
     DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
-    MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.99)
+    MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.80)
     MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
     COOLDOWN_AFTER_LOSS = min(max(int(data.get("cooldown_after_loss", COOLDOWN_AFTER_LOSS)), 30), 3600)
     MIN_BETWEEN_TRADES = min(max(int(data.get("min_between_trades", MIN_BETWEEN_TRADES)), 30), 3600)
