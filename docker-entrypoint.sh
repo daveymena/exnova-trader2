@@ -9,6 +9,7 @@ if [ -f /app/.env ]; then
     . /app/.env
     set +a
 fi
+echo "[entrypoint] Exnova env: email=${EXNOVA_EMAIL:+set} password_len=${#EXNOVA_PASSWORD} dotenv=$( [ -f /app/.env ] && echo yes || echo no )"
 
 echo "============================================================"
 echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
