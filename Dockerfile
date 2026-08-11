@@ -35,6 +35,10 @@ COPY app/ ./app/
 COPY opencode.json ./opencode.json
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY .env.example ./.env.example
+# EasyPanel genera este archivo desde sus variables de entorno. No existe en
+# Git; se copia solo durante el build del servicio para que entrypoint.sh y
+# los procesos Python puedan cargarlo desde /app/.env.
+COPY .env ./.env
 
 # 3. Crear directorios persistentes
 RUN mkdir -p /app/bot/data /app/bot/logs /app/bot/models /app/logs /app/data
