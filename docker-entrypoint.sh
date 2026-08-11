@@ -11,6 +11,12 @@ if [ -f /app/.env ]; then
 fi
 echo "[entrypoint] Exnova env: email=${EXNOVA_EMAIL:+set} password_len=${#EXNOVA_PASSWORD} dotenv=$( [ -f /app/.env ] && echo yes || echo no )"
 
+if [ "${RESET_STATE:-false}" = "true" ]; then
+    echo "[entrypoint] RESET_STATE activo: limpiando estado persistido del servicio"
+    rm -f /app/data/brain/*.json /app/data/botdata/*.json
+    rm -f /app/bot/brain/*.json /app/bot/data/*.json
+fi
+
 echo "============================================================"
 echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
 echo "============================================================"
