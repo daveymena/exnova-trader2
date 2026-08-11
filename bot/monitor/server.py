@@ -20,6 +20,9 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path="/app/.env")
 
 ROOT = Path(__file__).resolve().parents[2]  # /app
 BOT = Path(__file__).resolve().parents[1]   # /app/bot

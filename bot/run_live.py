@@ -93,7 +93,7 @@ import atexit
 atexit.register(release_lock)
 
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv(dotenv_path="/app/.env")
 
 # Importar directamente (estamos en bot/ así que config_assets.py está aquí)
 from config import Config
@@ -729,6 +729,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
     # ── LOSS PATTERN TRACKER: memoria de pérdidas que evita repetir errores ──
     loss_tracker = get_loss_tracker()
 
+    log(f"Auth Exnova: email_configurado={bool(email)} password_configurada={bool(password)} password_len={len(password)}")
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
     if not market_data.connect(email, password):
