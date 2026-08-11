@@ -159,7 +159,7 @@ ACCOUNT_TYPE=PRACTICE
 
 # Credenciales
 EXNOVA_EMAIL=dmenamosquera15@gmail.com
-EXNOVA_PASSWORD=6715320Dvd.
+EXNOVA_PASSWORD=<configurar-solo-en-EasyPanel>
 
 # Trading
 DEFAULT_ASSET=EURUSD-OTC

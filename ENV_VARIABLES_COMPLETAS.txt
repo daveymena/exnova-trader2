@@ -9,7 +9,7 @@
 ═══════════════════════════════════════════════════════════════════════════════
 
 EXNOVA_EMAIL=dmenamosquera15@gmail.com
-EXNOVA_PASSWORD=6715320Dvd.
+EXNOVA_PASSWORD=<configurar-solo-en-EasyPanel>
 ACCOUNT_TYPE=PRACTICE
 
 ═══════════════════════════════════════════════════════════════════════════════
@@ -136,7 +136,7 @@ $env:OPENCODE_GO_API_KEY = "tu_valor"
 ═══════════════════════════════════════════════════════════════════════════════
 
 ✅ EXNOVA_EMAIL=dmenamosquera15@gmail.com
-✅ EXNOVA_PASSWORD=6715320Dvd.
+✅ EXNOVA_PASSWORD=<configurada-solo-en-EasyPanel>
 ✅ ACCOUNT_TYPE=PRACTICE
 ✅ DEFAULT_ASSET=EURUSD-OTC
 ✅ CAPITAL_PER_TRADE=1

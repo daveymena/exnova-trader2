@@ -1,6 +1,15 @@
 #!/bin/bash
 set -e
 
+# EasyPanel puede crear el archivo .env sin exportarlo al proceso PID 1.
+# Cargarlo aquí garantiza que bot, monitor e improvement_loop compartan la
+# misma configuración sin copiar secretos al código fuente.
+if [ -f /app/.env ]; then
+    set -a
+    . /app/.env
+    set +a
+fi
+
 echo "============================================================"
 echo "  Exnova Trading Bot + OpenCode Supervisor (PRACTICE mode)"
 echo "============================================================"
