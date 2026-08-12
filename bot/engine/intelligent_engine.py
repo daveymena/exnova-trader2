@@ -12,6 +12,7 @@ Principios:
 """
 
 import time
+import os
 import numpy as np
 import pandas as pd
 from typing import Dict, Optional, Tuple
@@ -25,7 +26,15 @@ from brain.trade_context_analyzer import TradeContextAnalyzer
 from brain.trade_rejection_rules import TradeRejectionRules
 from brain.market_structure_engine import MarketStructureEngine
 from core.asset_discovery import is_otc
-from config_assets import BAD_PATTERNS
+from config_assets import (
+    BAD_PATTERNS,
+    EDGE_ASSETS,
+    EDGE_AVOID_ASSETS,
+    EDGE_HOURS,
+    EDGE_AVOID_HOURS,
+)
+from core.liquidity_sweep import LiquiditySweepDetector
+from core.smart_money_analyzer import SmartMoneyAnalyzer
 
 
 class IntelligentEngine:
@@ -39,6 +48,14 @@ class IntelligentEngine:
         self.rejection_rules = TradeRejectionRules()
         self.context_analyzer = ContextAnalyzer()
         self.market_structure_engine = MarketStructureEngine()
+
+        # Smart Money: barrido de liquidez + order blocks (SMC afinado a OTC)
+        self.sm_analyzer = SmartMoneyAnalyzer()
+        self.sweep_detector = LiquiditySweepDetector()
+
+        # Filtro de ventana/activo con edge real (calibrado sobre 500 trades)
+        # Toggle via env SMC_EDGE_FILTER (default "1" = activado)
+        self.edge_filter = os.getenv("SMC_EDGE_FILTER", "1") not in {"0", "false", "False"}
 
         if mode == "practice":
             # Modo práctica: mínimos filtros para ver muchas operaciones
@@ -294,6 +311,103 @@ class IntelligentEngine:
         elif price < ema21:
             return "PUT", 0.4
         return "NEUTRAL", 0.0
+
+    # ---------------------------------------------------------------------
+    def _nearest_ob(self, df: pd.DataFrame, obs: list, price: float) -> Optional[Dict]:
+        """Order block más cercano al precio entre los no mitigados."""
+        best = None
+        best_dist = None
+        for ob in obs:
+            if ob.get("mitigated"):
+                continue
+            mid = (ob.get("high", 0) + ob.get("low", 0)) / 2.0
+            if mid <= 0:
+                continue
+            dist = abs(price - mid) / mid
+            if best_dist is None or dist < best_dist:
+                best_dist = dist
+                best = ob
+        return best
+
+    # ---------------------------------------------------------------------
+    def _smc_validation(self, df_m1: pd.DataFrame, df_m15: Optional[pd.DataFrame],
+                        h1_data: Optional[pd.DataFrame], zone_level: float,
+                        zone_type: str, expected_dir: str, price: float) -> Dict:
+        """
+        Confirmación Smart Money para OTC (manipulación de liquidez):
+        1) Sweep de liquidez en la zona + reclaim (LiquiditySweepDetector).
+        2) Order block en la dirección del rebote, respetado y cercano
+           (SmartMoneyAnalyzer).
+
+        Devuelve:
+        {
+          "pass": bool,
+          "sweep": {...}, "order_block": {...}, "reason": str
+        }
+        """
+        sweep = self.sweep_detector.analyze(
+            df_m1, zone_level, zone_type, price=price
+        ) if df_m1 is not None else {"detected": False, "stage": "NONE"}
+
+        ob_info = {"valid": False, "type": "none", "strength": 0.0, "reason": "sin OB"}
+        try:
+            tf = df_m15 if df_m15 is not None and len(df_m15) >= 20 else h1_data
+            if tf is not None and len(tf) >= 20:
+                found = self.sm_analyzer.find_order_blocks(tf)
+                side = "bullish" if expected_dir == "CALL" else "bearish"
+                obs = found.get(side, [])
+                obs = [o for o in obs if o.get("strength", 0) >= 30]
+                nearest = self._nearest_ob(tf, obs, price)
+                if nearest is not None:
+                    respected, _ = self.sm_analyzer.check_ob_respect(tf, nearest)
+                    if respected:
+                        ob_info = {
+                            "valid": True,
+                            "type": side,
+                            "strength": nearest.get("strength", 0),
+                            "reason": f"OB {side} respetado (str={nearest.get('strength', 0):.0f})",
+                        }
+        except Exception as exc:
+            ob_info["reason"] = f"OB error: {str(exc)[:40]}"
+
+        swept_fresh = bool(sweep.get("detected")) and sweep.get("stage") == "FRESH"
+        ob_valid = bool(ob_info.get("valid"))
+
+        if swept_fresh or ob_valid:
+            reason = []
+            if swept_fresh:
+                reason.append(f"sweep {sweep.get('side')} fresco")
+            if ob_valid:
+                reason.append(ob_info["reason"])
+            return {
+                "pass": True,
+                "sweep": sweep,
+                "order_block": ob_info,
+                "reason": " + ".join(reason),
+            }
+
+        return {
+            "pass": False,
+            "sweep": sweep,
+            "order_block": ob_info,
+            "reason": f"Sin confirmación SMC (sweep={sweep.get('side')}/{sweep.get('stage')}, "
+                      f"ob={ob_info.get('reason')})",
+        }
+
+    # ---------------------------------------------------------------------
+    def e_tags(self) -> Dict:
+        """Etiquetas de edge por activo/hora para afinación de confianza."""
+        import datetime
+        try:
+            hour = datetime.datetime.now(datetime.timezone.utc).hour
+        except Exception:
+            hour = 12
+        return {
+            "hour": hour,
+            "edge_asset": None,
+            "edge_hour": hour in EDGE_HOURS,
+            "avoid_hour": hour in EDGE_AVOID_HOURS,
+        }
 
     # ---------------------------------------------------------------------
     def evaluate_market(self, asset: str, df_m1: pd.DataFrame, df_m5: pd.DataFrame,
@@ -642,6 +756,57 @@ class IntelligentEngine:
                 "zone_strength": zone_strength,
                 "rsi": current_rsi,
             }
+
+        # =====================================================================
+        # 7.5 CONFIRMACIÓN SMART MONEY (sweep de liquidez + order block)
+        # =====================================================================
+        # Afinado para binarias OTC cortas: la manipulación de liquidez precede
+        # al movimiento real. Se exige que el setup cumpla AL MENOS una de dos
+        # firmas SMC antes de entrar: (a) barrido de liquidez fresca + reclaim en
+        # la zona, o (b) order block respetado en la dirección del rebote. Esto
+        # elimina entradas "sin razón institucional" que dominaban el ~50% WR.
+        smc = self._smc_validation(
+            df_m1, df_m15, h1_data,
+            nearest_zone.get("level", 1.1),
+            nearest_zone.get("zone_type", "support"),
+            expected_dir, price,
+        )
+        if not smc.get("pass", False):
+            return {
+                "asset": asset,
+                "action": "WAIT",
+                "reason": f"SMC: {smc.get('reason', 'sin confirmación')}",
+                "confidence": ai_conf,
+                "score": ai_score,
+                "pattern": pattern_name,
+                "ai_label": ai_label,
+                "zone_strength": zone_strength,
+                "rsi": current_rsi,
+                "smc": smc,
+            }
+
+        # Filtro de ventana/activo con edge (afinación SMC, opcional via env)
+        # Solo bloquea horas/activos demonstrativa y estadísticamente perdedores.
+        smc_meta = self.e_tags()
+        smc_asset_hour_reason = None
+        if self.edge_filter:
+            if asset in EDGE_AVOID_ASSETS:
+                smc_asset_hour_reason = f"activo evitado por edge: {asset}"
+            elif smc_meta["avoid_hour"]:
+                smc_asset_hour_reason = f"hora UTC evitada por edge: {smc_meta['hour']}h"
+            if smc_asset_hour_reason:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"EDGE: {smc_asset_hour_reason}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                    "smc": smc,
+                }
 
         # =====================================================================
         # 8. VALIDACIONES ADICIONALES - Evitar operaciones malas

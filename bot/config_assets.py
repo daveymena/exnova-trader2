@@ -169,6 +169,39 @@ BAD_PATTERNS = {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# EDGE_FILTER - Activos y horas UTC con edge real (SMC afinación)
+# Calibrado sobre 500 trades OTC (bot/brain/trade_history.json).
+# El motor bloquea entradas en AVOID_ASSETS y AVOID_HOURS; da bonus de
+# confianza en EDGE_ASSETS y EDGE_HOURS. Toggle via env SMC_EDGE_FILTER.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Activos con edge positivo (n>=10, PnL>0): solo estos pasan el gate de seguridad
+EDGE_ASSETS = {
+    "LTCUSD-OTC",    # 80.0% WR (8/10), +$25.63
+    "USDNOK-OTC",    # 73.3% WR (11/15), +$10.70
+    "SP35-OTC",      # 66.7% WR (6/9), +$9.54
+    "NZDJPY-OTC",    # 60.0% WR (9/15), +$10.17
+    "EURUSD-OTC",    # 58.8% WR (10/17), +$6.55
+    "GOOGLE-OTC",    # 60.0% WR (6/10), +$16.70
+    "GBPAUD-OTC",    # 60.0% WR (6/10), +$16.71
+}
+
+# Activos perdedores confirmados (n>=10, WR<45% o PnL muy negativo)
+EDGE_AVOID_ASSETS = {
+    "AUDNZD-OTC",    # 37.5% WR (3/8), -$38.87 — PEOR
+    "USDDOP-OTC",    # 40.0% WR (6/15), -$9.83
+    "AIG-OTC",       # 38.5% WR (5/13), -$10.30
+    "AUDUSD-OTC",    # 41.7% WR (5/12), -$7.02
+    "USDCAD-OTC",    # 40.0% WR (4/10), -$13.02
+}
+
+# Horas UTC con edge (WR>55% o PnL>0, n>=10)
+EDGE_HOURS = {2, 5, 7, 9, 16}
+
+# Horas UTC perdedoras (WR<45%, n>=10) — bloqueo duro
+EDGE_AVOID_HOURS = {0, 1, 8, 19}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # REAL_WHITELIST - ACTIVOS Y PATRONES QUE SÍ FUNCIONAN (para cuenta REAL)
 # Basado en análisis de trades reales. Solo lo que tiene WR > 60%
 # ─────────────────────────────────────────────────────────────────────────────
