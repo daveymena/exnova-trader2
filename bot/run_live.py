@@ -981,8 +981,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         log(f"[PRACTICE] 🎯 Trade virtual {pt_trade.direction} {asset} @ {pt_trade.entry_price:.5f} | "
                             f"zona WR={zs*100:.0f}% exp={pt_trade.expiration_sec}s", "SUCCESS")
 
-                        # Demo trading real: solo setups con activo y zona probados.
-                        demo_allowed = asset in ASSETS_WHITELIST and zs >= 0.80
+                        # Demo trading real: solo setups con zona probada (WR>=80%).
+                        # El whitelist estatico de activos se retiro (f3defae); evaluar
+                        # solo por la zona, no por una lista que ya no existe.
+                        demo_allowed = zs >= 0.80
                         if DEMO_TRADING and state["demo_order"] is None and demo_allowed:
                             try:
                                 action = "call" if pt_trade.direction == "CALL" else "put"
