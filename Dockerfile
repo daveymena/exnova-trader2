@@ -38,7 +38,7 @@ COPY .env.example ./.env.example
 # EasyPanel genera este archivo desde sus variables de entorno. No existe en
 # Git; se copia solo durante el build del servicio para que entrypoint.sh y
 # los procesos Python puedan cargarlo desde /app/.env.
-COPY .env ./.env
+RUN touch /app/.env
 
 # 3. Crear directorios persistentes
 RUN mkdir -p /app/bot/data /app/bot/logs /app/bot/models /app/logs /app/data
