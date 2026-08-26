@@ -46,6 +46,21 @@ RUN chmod +x /app/docker-entrypoint.sh
 
 # 4. Variables de entorno (sobrescribir en EasyPanel)
 # ⚠️  Para cuenta REAL: ACCOUNT_TYPE=REAL y REAL_ACCOUNT_CONFIRMED=true
+ARG DEMO_ZONE_EXECUTION=false
+ARG EXNOVA_EMAIL=""
+ARG EXNOVA_PASSWORD=""
+ARG ACCOUNT_TYPE="PRACTICE"
+ARG RESET_STATE=false
+ARG DASHBOARD_TOKEN=""
+ARG OPENCODE_API_KEY=""
+ARG IMPROVEMENT_MODEL="hy3-free"
+ARG IMPROVEMENT_MODEL_FAST="nemotron-3.5-lightning-free"
+ARG IMPROVEMENT_MODEL_FALLBACK="mimo-v2.5-free"
+ARG IMPROVEMENT_ENABLED="true"
+ARG IMPROVEMENT_BATCH_TRADES="20"
+ARG IMPROVEMENT_BATCH_MIN_MINUTES="15"
+ARG GIT_SHA=""
+
 ENV BROKER_NAME="exnova" \
     ACCOUNT_TYPE="PRACTICE" \
     REAL_ACCOUNT_CONFIRMED="false" \
@@ -54,9 +69,18 @@ ENV BROKER_NAME="exnova" \
     OPENCODE_API_KEY="" \
     OPENCODE_ZEN_API_KEY="" \
     OPENCODE_BASE_URL="https://opencode.ai/zen/v1" \
-    OPENCODE_MODEL="opencode/deepseek-v4-flash-free" \
-    OPENCODE_MODEL_FAST="opencode/deepseek-v4-flash-free" \
-    OPENCODE_MODEL_DEEP="opencode/qwen3.6-plus-free" \
+    OPENCODE_MODEL="hy3-free" \
+    OPENCODE_MODEL_FAST="nemotron-3.5-lightning-free" \
+    OPENCODE_MODEL_DEEP="hy3-free" \
+    DEMO_ZONE_EXECUTION="false" \
+    RESET_STATE="false" \
+    DASHBOARD_TOKEN="" \
+    IMPROVEMENT_MODEL="hy3-free" \
+    IMPROVEMENT_MODEL_FAST="nemotron-3.5-lightning-free" \
+    IMPROVEMENT_MODEL_FALLBACK="mimo-v2.5-free" \
+    IMPROVEMENT_ENABLED="true" \
+    IMPROVEMENT_BATCH_TRADES="20" \
+    IMPROVEMENT_BATCH_MIN_MINUTES="15" \
     GITHUB_TOKEN="" \
     MIN_CONFIDENCE="0.65" \
     MAX_CONSEC_LOSSES="4" \
