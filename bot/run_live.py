@@ -156,7 +156,7 @@ from core.position_guard import get_guard, GuardConfig
 # mecanismo que hace que el sistema "elija solo lo que funciona": nunca
 # promueve una regla ajustada a ruido, nunca bloquea un setup nuevo antes de
 # darle su presupuesto de exploracion.
-from core.self_evaluator import get_evaluator
+from core.self_evaluator import get_evaluator, EvaluatorConfig
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
@@ -724,7 +724,11 @@ def bot_loop(market_data, rm, engine, agent_engine):
     zone_learner = get_supervised_zone_learner()
     practice = PracticeTrader(zone_learner)
     evaluator = TradeEvaluator()
-    self_eval = get_evaluator()
+    _eval_cfg = EvaluatorConfig()
+    if ACCOUNT_TYPE == "PRACTICE":
+        _eval_cfg.min_observaciones = 80   # Aprendizaje más rápido en practice
+        _eval_cfg.crecimiento_checkpoint = 1.5  # Checkpoints más frecuentes
+    self_eval = get_evaluator(config=_eval_cfg)
 
     # ── LOSS PATTERN TRACKER: memoria de pérdidas que evita repetir errores ──
     loss_tracker = get_loss_tracker()
@@ -895,12 +899,13 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 continue
 
             # Filtrar activos blacklisteados (bajo rendimiento histórico)
+            _antes = len(activos_disponibles)
             activos_disponibles = [a for a in activos_disponibles if a not in ASSETS_BLACKLIST]
             _paused = _assets_paused()
             if _paused:
                 activos_disponibles = [a for a in activos_disponibles if a not in _paused]
-                if len(activos_disponibles) < len([a for a in activos_disponibles]):
-                    log(f"[IA] activos pausados por improvement_loop: {sorted(_paused)}", "INFO")
+            if len(activos_disponibles) < _antes:
+                log(f"[IA] activos filtrados: blacklist={_antes - len(activos_disponibles)}, pausados={sorted(_paused) if _paused else []}", "INFO")
             if persistence is not None and persistence.total_trades >= 50:
                 bad = set()
                 for a in activos_disponibles:
@@ -1138,6 +1143,16 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # sigue operando uno ya demostrado perdedor (RETIRADO).
                         setup = setup_key(signal, asset)
                         ev_decision = self_eval.decision(setup)
+
+                        # Pasar win rate del setup al risk manager para sizing dinámico
+                        try:
+                            _stats = self_eval.stats(setup)
+                            if _stats and _stats.get("n", 0) >= 20:
+                                rm.set_setup_winrate(_stats.get("winrate"))
+                            else:
+                                rm.set_setup_winrate(None)
+                        except Exception:
+                            rm.set_setup_winrate(None)
 
                         # ── LOSS PATTERN TRACKER: verificar si las condiciones actuales
                         # coinciden con un patrón de pérdida conocido. Si el patrón se
@@ -1426,7 +1441,7 @@ def main():
         )
     rm = initialize_risk_manager(INITIAL_BALANCE, risk_config)
     market_data = MarketDataHandler(broker_name="exnova", account_type=ACCOUNT_TYPE)
-    engine = IntelligentEngine(session_name="bot_live")
+    engine = IntelligentEngine(session_name="bot_live", mode=ACCOUNT_TYPE.lower())
     state["start_time"] = time.time()
 
     # Inicializar el motor del agente IA para filtrado y aprendizaje continuo

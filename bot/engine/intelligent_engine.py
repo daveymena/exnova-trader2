@@ -589,29 +589,27 @@ class IntelligentEngine:
             }
 
         # =====================================================================
-        # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA (CRÍTICO - BLOQUEO DURO)
+        # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA
         # =====================================================================
-        # Es la señal más robusta de todo el sistema, confirmada en dos análisis
-        # independientes (265 trades y 500 trades):
-        # - Trend Aligned: 54-55% WR
-        # - Trend NOT Aligned: 18-23% WR
-        # - Diferencia: 32-36 puntos porcentuales
-        # Sin excepciones: ni por modo practice, ni por score de IA. Un score de
-        # IA alto no compensa operar contra-tendencia; los datos muestran que
-        # contra-tendencia pierde incluso cuando el resto del setup parece bueno.
+        # En practice:Soft filter — contra-tendencia reduce confianza 30%
+        # En real: HARD BLOCK — datos muestran 18-23% WR contra-tendencia
         trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)
+        trend_penalty = 0.0
         if not trend_aligned:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"Contra-tendencia: zona={zone_dir}, tendencia={main_trend}. Bloqueo duro (sin excepciones).",
-                "confidence": 0,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": "SKIP",
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            if self.mode == "practice":
+                trend_penalty = 0.30  # Reducir confianza 30% en practice
+            else:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"Contra-tendencia: zona={zone_dir}, tendencia={main_trend}. Bloqueo duro (sin excepciones).",
+                    "confidence": 0,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": "SKIP",
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                }
 
         # =====================================================================
         # 4.7 ESTRUCTURA DE MERCADO + TIMING DE RETROCESO (solo activos reales)
@@ -771,19 +769,23 @@ class IntelligentEngine:
             nearest_zone.get("zone_type", "support"),
             expected_dir, price,
         )
+        smc_penalty = 0.0
         if not smc.get("pass", False):
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"SMC: {smc.get('reason', 'sin confirmación')}",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-                "smc": smc,
-            }
+            if self.mode == "practice":
+                smc_penalty = 0.20  # Reducir confianza 20% sin SMC en practice
+            else:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"SMC: {smc.get('reason', 'sin confirmación')}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                    "smc": smc,
+                }
 
         # Filtro de ventana/activo con edge (afinación SMC, opcional via env)
         # Solo bloquea horas/activos demonstrativa y estadísticamente perdedores.
@@ -890,6 +892,10 @@ class IntelligentEngine:
             confidence = max(0.30, confidence - rsi_penalty)
         if confidence_phase_penalty > 0:
             confidence = max(0.30, confidence - confidence_phase_penalty)
+        if trend_penalty > 0:
+            confidence = max(0.30, confidence - trend_penalty)
+        if smc_penalty > 0:
+            confidence = max(0.30, confidence - smc_penalty)
 
         # Verificar si la tendencia está alineada (zona + tendencia principal)
         trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)

@@ -71,6 +71,7 @@ class AdvancedRiskManager:
         self.stop_reason: Optional[str] = None
         self.last_trade_time: Optional[datetime] = None
         self.last_trade_was_loss = False
+        self._setup_winrate: Optional[float] = None  # Win rate del setup actual
 
     def initialize(self, balance: float):
         """Inicializar con balance inicial"""
@@ -78,6 +79,10 @@ class AdvancedRiskManager:
         self.current_balance = balance
         self.peak_balance = balance
         print(f"[OK] Risk Manager inicializado con balance: ${balance:.2f}")
+
+    def set_setup_winrate(self, winrate: Optional[float]):
+        """Establecer el win rate del setup actual (del self_evaluator)"""
+        self._setup_winrate = winrate
 
     def update_balance(self, new_balance: float, trade_result: Optional[Dict] = None):
         """
@@ -269,30 +274,63 @@ class AdvancedRiskManager:
         # Kelly base
         kelly_fraction = self.calculate_kelly()
 
-        # Ajuste por confianza de la señal
-        confidence_adjustment = confidence
+        # ─── AJUSTE DINÁMICO POR CONFIANZA (Tiers) ──────────────────────
+        # En vez de lineal, usar escalera: confianza alta = tamaño desproporcionalmente mayor
+        if confidence >= 0.85:
+            confidence_adjustment = 1.2  # Boost +20% para setups excelentes
+        elif confidence >= 0.75:
+            confidence_adjustment = 1.0  # Base completa
+        elif confidence >= 0.65:
+            confidence_adjustment = 0.8  # Reducir 20%
+        elif confidence >= 0.55:
+            confidence_adjustment = 0.6  # Reducir 40%
+        else:
+            confidence_adjustment = 0.4  # Reducir 60% — exploración mínima
+
+        # ─── BONUS POR WIN RATE COMPROBADO ──────────────────────────────
+        # Si el setup tiene >60 trades y WR >55%, dar bonus de tamaño
+        win_rate_bonus = 1.0
+        if hasattr(self, '_setup_winrate') and self._setup_winrate is not None:
+            wr = self._setup_winrate
+            if wr >= 0.65:
+                win_rate_bonus = 1.15  # +15% para setups ganadores
+            elif wr >= 0.58:
+                win_rate_bonus = 1.05  # +5% para setups prometedores
+            elif wr < 0.45:
+                win_rate_bonus = 0.7   # -30% para setups perdedores
+
+        # ─── MODO RECUPERACIÓN INTELIGENTE ──────────────────────────────
+        # Después de pérdidas, recuperar gradualmente en vez de volver full
+        recovery_adjustment = 1.0
+        if self.stats.consecutive_losses >= 2:
+            # Empezar recuperación: escalar 50% → 70% → 90% → 100%
+            recovery_adjustment = min(1.0, 0.5 + (self.stats.consecutive_losses - 2) * 0.1)
 
         # Ajuste por volatilidad (menor posición = mayor volatilidad)
         volatility_adjustment = 1.0
         if self.config.volatility_adjustment and atr and atr > 0:
-            # ATR normalizado: si ATR > 2% del precio, reducir posición
             normalized_atr = atr / (self.current_balance * 0.01)
             if normalized_atr > 1:
                 volatility_adjustment = 1.0 / normalized_atr
 
-        # Ajuste por racha actual
+        # Ajuste por racha actual (orden importa: >=5 primero)
         streak_adjustment = 1.0
-        if self.stats.consecutive_losses >= 3:
-            # Reducir después de 3+ pérdidas consecutivas
-            streak_adjustment = 0.7
-        elif self.stats.consecutive_losses >= 5:
+        if self.stats.consecutive_losses >= 5:
             streak_adjustment = 0.5
+        elif self.stats.consecutive_losses >= 3:
+            streak_adjustment = 0.7
+
+        # Bonus por racha ganadora (momentum positivo)
+        if self.stats.consecutive_wins >= 3:
+            streak_adjustment = min(1.2, streak_adjustment + 0.1)
 
         # Calcular posición final
         base_position = self.current_balance * kelly_fraction
         final_position = (
             base_position *
             confidence_adjustment *
+            win_rate_bonus *
+            recovery_adjustment *
             volatility_adjustment *
             streak_adjustment *
             asset_volatility
