@@ -67,34 +67,34 @@ class AdaptiveLearningMode:
         MODO EXPERTO: Filtros normales para mayor selectividad
         """
         if self.phase == "LEARNING":
-            # MODO APRENDIZAJE: Opera ~3-5 veces/día (calidad sobre cantidad)
+            # MODO APRENDIZAJE: Opera más frecuentemente para recolectar datos
             return {
-                'min_confidence': 0.60,      # Más estricto (antes 0.55)
-                'min_zone_strength': 0.35,   # Antes 0.30
-                'min_score': 0.40,           # Antes 0.35
-                'zone_tolerance_pct': 0.0020,  # Antes 0.0025
-                'min_rsi_distance': 9.0,     # Antes 8.0
-                'min_zone_hold_rate': 0.40,
+                'min_confidence': 0.45,      # Más bajo para practice
+                'min_zone_strength': 0.25,   # Más bajo
+                'min_score': 0.30,           # Más bajo
+                'zone_tolerance_pct': 0.0025,  # Más tolerante
+                'min_rsi_distance': 7.0,     # Más bajo
+                'min_zone_hold_rate': 0.35,  # Más bajo
             }
         else:
-            # MODO EXPERTO: Opera ~2-3 veces/día (más selectivo)
+            # MODO EXPERTO: Opera ~3-5 veces/día (calidad sobre cantidad)
             return {
-                'min_confidence': 0.70,      # Antes 0.65
-                'min_zone_strength': 0.40,   # Antes 0.35
-                'min_score': 0.50,           # Antes 0.45
-                'zone_tolerance_pct': 0.0015, # Antes 0.0020
-                'min_rsi_distance': 12.0,    # Antes 10.0
-                'min_zone_hold_rate': 0.50,  # Antes 0.45
+                'min_confidence': 0.55,      # Antes 0.70
+                'min_zone_strength': 0.30,   # Antes 0.40
+                'min_score': 0.40,           # Antes 0.50
+                'zone_tolerance_pct': 0.0020, # Antes 0.0015
+                'min_rsi_distance': 9.0,     # Antes 12.0
+                'min_zone_hold_rate': 0.40,  # Antes 0.50
             }
     
     def get_cooldown_multiplier(self) -> float:
         """
         Retorna multiplicador para cooldowns.
         
-        MODO APRENDIZAJE: Cooldowns NORMALES (1.0x) - necesita tiempo para analizar
-        MODO EXPERTO: Cooldowns aún más largos (1.2x) - más selectivo, más análisis
+        MODO APRENDIZAJE: Cooldowns cortos (0.7x) - necesita más datos
+        MODO EXPERTO: Cooldowns normales (1.0x)
         """
-        return 1.0 if self.phase == "LEARNING" else 1.2
+        return 0.7 if self.phase == "LEARNING" else 1.0
     
     def get_learning_progress(self) -> float:
         """Retorna progreso de aprendizaje (0.0 - 1.0)"""

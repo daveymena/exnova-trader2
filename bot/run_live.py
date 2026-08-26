@@ -160,9 +160,9 @@ from core.self_evaluator import get_evaluator, EvaluatorConfig
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
-MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.55"))
-COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "120"))
-MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "90"))
+MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.45"))
+COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "60"))
+MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "45"))
 MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "150"))
 MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "5"))
 PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "10"))
@@ -202,7 +202,7 @@ if DEMO_TRADING:
     print(f"[DEMO] Modo demo activado - enviando ordenes reales a Exnova PRACTICE (${DEMO_AMOUNT}/trade)")
 
 # ─── Anti-detección / Humanización ──────────────────────────────────────────
-HUMAN_SKIP_PROBABILITY = 0.18  # 18% de trades válidos se saltan (parecer humano)
+HUMAN_SKIP_PROBABILITY = 0.05 if ACCOUNT_TYPE == "PRACTICE" else 0.18  # 5% practice, 18% real
 HUMAN_JITTER_FACTOR = 0.25  # ±25% de variación aleatoria en tiempos
 HUMAN_DELAY_AFTER_TRADE_MIN = 5  # Delay post-trade mínimo (seg)
 HUMAN_DELAY_AFTER_TRADE_MAX = 20  # Delay post-trade máximo (seg)
@@ -1044,17 +1044,22 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 # Validación de alineación de tendencia
                 # Edge real medido en producción (ago-2026): operar con tendencia
                 # da ~64% WR (+$13); contra-tendencia pierde (48.6% WR, -$47) y el
-                # PUT contra-tendencia es el peor segmento (43.9% WR = -$49). Se
-                # bloquea el PUT contra-tendencia por completo y se exige score
-                # alto (>=70) para cualquier entrada contra-tendencia.
+                # PUT contra-tendencia es el peor segmento (43.9% WR = -$49).
+                # En practice: permitir contra-tendencia con penalización de score
                 trend_aligned = signal.get("trend_aligned", False)
                 if not trend_aligned:
-                    if signal.get("signal", "") == "PUT":
-                        log(f"[FILTRO] PUT contra-tendencia bloqueado (edge negativo): {asset}", "WARNING")
-                        continue
-                    if signal.get("score", 0) < 70:
-                        log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
-                        continue
+                    if ACCOUNT_TYPE == "REAL":
+                        if signal.get("signal", "") == "PUT":
+                            log(f"[FILTRO] PUT contra-tendencia bloqueado (edge negativo): {asset}", "WARNING")
+                            continue
+                        if signal.get("score", 0) < 70:
+                            log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
+                            continue
+                    else:
+                        # Practice: permitir pero con score mínimo más bajo
+                        if signal.get("score", 0) < 40:
+                            log(f"[FILTRO] Contra-tendencia score muy bajo: score={signal.get('score',0):.0f}", "WARNING")
+                            continue
 
                 direccion = signal.get("signal", "")
                 # (Sesgo anti-PUT +0.15 retirado: castigaba solo PUTs sin evidencia.
