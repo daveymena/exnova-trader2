@@ -30,8 +30,9 @@ from brain import strategy_adjustments as ADJ
 # ─── Configuracion (env) ───────────────────────────────────────────────────────
 OPENCODE_BASE_URL = os.getenv("OPENCODE_BASE_URL", "https://opencode.ai/zen/v1")
 OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
-OPENCODE_MODEL = os.getenv("IMPROVEMENT_MODEL", os.getenv("OPENCODE_MODEL_DEEP", "qwen3.7-max"))
-OPENCODE_MODEL_FAST = os.getenv("IMPROVEMENT_MODEL_FAST", os.getenv("OPENCODE_MODEL_FAST", "deepseek-v4-flash-free"))
+OPENCODE_MODEL = os.getenv("IMPROVEMENT_MODEL", os.getenv("OPENCODE_MODEL_DEEP", "hy3-free"))
+OPENCODE_MODEL_FAST = os.getenv("IMPROVEMENT_MODEL_FAST", os.getenv("OPENCODE_MODEL_FAST", "nemotron-3.5-lightning-free"))
+OPENCODE_MODEL_FALLBACK = os.getenv("IMPROVEMENT_MODEL_FALLBACK", "mimo-v2.5-free")
 
 BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "30"))
 BATCH_MIN_MINUTES = int(os.getenv("IMPROVEMENT_BATCH_MIN_MINUTES", "20"))
@@ -305,6 +306,9 @@ def _run_cycle(last_ts: float) -> float:
     if parsed is None:
         _log("fallback a modelo rapido")
         parsed = _call_opencode(OPENCODE_MODEL_FAST, prompt)
+    if parsed is None and OPENCODE_MODEL_FALLBACK:
+        _log(f"fallback a modelo extra: {OPENCODE_MODEL_FALLBACK}")
+        parsed = _call_opencode(OPENCODE_MODEL_FALLBACK, prompt)
     if parsed is None:
         _log("ciclo fallido (sin respuesta IA)")
         return last_trade_ts  # avanzar igual para no reintentar el mismo lote
