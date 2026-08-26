@@ -62,6 +62,11 @@ class AdvancedRiskManager:
         self.stop_reason: Optional[str] = None
         self.last_trade_time: Optional[datetime] = None
         self.last_trade_was_loss = False
+        self._setup_winrate: Optional[float] = None
+
+    def set_setup_winrate(self, winrate: Optional[float]):
+        """Establecer el win rate del setup actual (del self_evaluator)"""
+        self._setup_winrate = winrate
 
     def initialize(self, balance: float):
         self.initial_balance = balance
