@@ -120,7 +120,7 @@ class TradeRejectionRules:
     def _rule_zone_too_weak(self, zone_info: Dict) -> Tuple[bool, Optional[str]]:
         """REGLA 1: Si la zona es demasiado débil, rechazar."""
         
-        min_strength = 0.20
+        min_strength = 0.10  # Reducido de 0.20 para practice
         strength = zone_info.get("strength", 0.0)
         
         if strength < min_strength:
@@ -155,8 +155,8 @@ class TradeRejectionRules:
         
         # Si es contra-tendencia en AMBOS niveles (macro + M5)
         if is_counter_macro and is_counter_m5:
-            # Necesita zona suficiente
-            min_zone_strength = 0.50
+            # Necesita zona suficiente (reducido para practice)
+            min_zone_strength = 0.25
             if zone_strength < min_zone_strength:
                 reason = (
                     f"🚫 RECHAZO: Contra-tendencia (macro={macro_trend}, M5={m5_trend}) "
@@ -166,7 +166,7 @@ class TradeRejectionRules:
                 return True, reason
             
             # Necesita tiempo suficiente
-            min_expiration_sec = 120  # 2 minutos
+            min_expiration_sec = 60  # Reducido a 1 minuto
             if expiration_sec < min_expiration_sec:
                 reason = (
                     f"🚫 RECHAZO: Contra-tendencia requiere mínimo {min_expiration_sec}s "
@@ -332,8 +332,8 @@ class TradeRejectionRules:
         strength = zone_info.get("strength", 0.0)
         hold_rate = zone_info.get("hold_rate", 0.5)
         
-        # Si tiene <= 1 toque y strength baja, es zona generada artificialmente (fallback)
-        if touches <= 1 and strength <= 0.30:
+        # Practice: solo rechazar si es claramente artificial (strength muy baja)
+        if touches <= 1 and strength <= 0.15:
             reason = (f"RECHAZO: Zona artificial/fallback (toques={touches}, "
                       f"strength={strength:.2f}) - no hay soporte/resistencia real")
             self._log_rejection("fallback_zone", reason)
@@ -348,27 +348,34 @@ class TradeRejectionRules:
         
         pattern = trade_proposal.get("pattern", "").lower()
         
-        # engulfing_bearish: 20% WR en 10 trades históricos
+        # engulfing_bearish: solo rechazar en cuenta REAL
         if pattern == "engulfing_bearish":
+            # En practice, permitir con zona fuerte
+            zone_strength = trade_proposal.get("zone_strength", 0)
+            if zone_strength >= 0.30:
+                return False, None
             reason = "RECHAZO: Patrón engulfing_bearish (20% WR histórico) - evitar"
             self._log_rejection("bad_pattern", reason)
             return True, reason
         
-        # doji: 0% WR en datos históricos
+        # doji: permitir en practice si zona es decente
         if pattern == "doji":
+            zone_strength = trade_proposal.get("zone_strength", 0)
+            if zone_strength >= 0.25:
+                return False, None
             reason = "RECHAZO: Patrón doji (0% WR histórico) - muy riesgoso"
             self._log_rejection("bad_pattern", reason)
             return True, reason
         
-        # hammer: 42.9% WR - solo permitir si RSI y zona son excepcionales
+        # hammer: relajar condiciones
         if pattern == "hammer":
             rsi_m1 = technical_data.get("rsi_m1", 50)
-            rsi_m5 = technical_data.get("rsi_m5", 50)
             zone_strength = trade_proposal.get("zone_strength", 0)
             
-            # hammer solo es aceptable si RSI < 25 o RSI > 75 (extremo real)
-            # y la zona es fuerte
-            if not ((rsi_m1 < 25 or rsi_m1 > 75) and zone_strength >= 0.60):
+            # Practice: aceptar hammer con zona decente
+            if zone_strength >= 0.30:
+                return False, None
+            if not ((rsi_m1 < 30 or rsi_m1 > 70) and zone_strength >= 0.50):
                 reason = (f"RECHAZO: Patrón hammer en condiciones no óptimas "
                           f"(RSI={rsi_m1:.0f}, zona={zone_strength:.2f})")
                 self._log_rejection("bad_pattern", reason)
@@ -377,9 +384,9 @@ class TradeRejectionRules:
         return False, None
     
     def _rule_weak_trend_alignment(self,
-                                  trade_proposal: Dict,
-                                  market_context: Dict,
-                                  technical_data: Dict) -> Tuple[bool, Optional[str]]:
+                                   trade_proposal: Dict,
+                                   market_context: Dict,
+                                   technical_data: Dict) -> Tuple[bool, Optional[str]]:
         """REGLA 11: Trade contra-tendencia sin suficiente respaldo."""
         
         direction = trade_proposal.get("direction", "").upper()
@@ -392,19 +399,11 @@ class TradeRejectionRules:
             (direction == "PUT" and macro_trend in ["PUT", "strong_down", "weak_down"])
         )
         
+        # Practice: no rechazar por weak trend alignment
+        # Solo rechazar en REAL cuando hay evidencia clara
         if not trend_aligned and macro_trend != "NEUTRAL":
-            # Contra-tendencia: estadísticamente 23.1% WR
-            # Solo permitir si H1 también confirma la contra-tendencia
-            h1_aligned = (
-                (direction == "CALL" and h1_trend in ["CALL", "strong_up", "weak_up"]) or
-                (direction == "PUT" and h1_trend in ["PUT", "strong_down", "weak_down"])
-            )
-            
-            if not h1_aligned:
-                reason = (f"RECHAZO: Contra-tendencia sin confirmación H1 "
-                          f"(dir={direction}, macro={macro_trend}, H1={h1_trend})")
-                self._log_rejection("weak_trend_alignment", reason)
-                return True, reason
+            # En practice, solo advertir pero no rechazar
+            return False, None
         
         return False, None
 

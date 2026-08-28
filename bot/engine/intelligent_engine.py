@@ -834,12 +834,14 @@ class IntelligentEngine:
         distance_to_zone = abs(price - zone_level)
         zone_range = nearest_zone.get("range", 0.01)  # Rango de la zona
         
-        # Si estamos dentro del 10% del rango de la zona, esperar movimiento
-        if distance_to_zone < zone_range * 0.1:
+        # Practice: solo bloquear si está exactamente EN la zona (5% del rango)
+        # Real: mantener 10% original
+        zone_pct = 0.05 if self.mode == "practice" else 0.10
+        if distance_to_zone < zone_range * zone_pct:
             return {
                 "asset": asset,
                 "action": "WAIT",
-                "reason": f"Precio muy cerca de zona ({distance_to_zone:.5f} < {zone_range*0.3:.5f}). Esperar movimiento.",
+                "reason": f"Precio muy cerca de zona ({distance_to_zone:.5f} < {zone_range*zone_pct:.5f}). Esperar movimiento.",
                 "confidence": ai_conf,
                 "score": ai_score,
                 "pattern": pattern_name,
