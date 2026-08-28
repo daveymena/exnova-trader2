@@ -475,7 +475,9 @@ class MarketAI:
         score_against = sum(e.weight * e.value for e in ev_against)
 
         # Ratio favor/contra (0-1)
-        net_score = (score_for - score_against * 0.8) / (total_weight + 1e-8)
+        # En practice: reducir impacto de evidencias negativas para permitir más trades
+        negative_impact = 0.5  # Practice: evidencias negativas tienen 50% de impacto
+        net_score = (score_for - score_against * negative_impact) / (total_weight + 1e-8)
         net_score = max(0.0, min(1.0, net_score))
 
         # Confianza ajustada por número de evidencias convergentes
@@ -497,7 +499,8 @@ class MarketAI:
         )
 
         # Threshold dinámico para operar (suavizado)
-        trade_threshold = 0.20 if len(ev_for) >= 2 else 0.28
+        # En practice: umbrales mucho más bajos para recolectar datos
+        trade_threshold = 0.12 if len(ev_for) >= 2 else 0.18
 
         should_trade = net_score >= trade_threshold and direction != "NEUTRAL"
 
@@ -508,15 +511,15 @@ class MarketAI:
             label = "BUENO"
         elif score_100 >= 20:
             label = "MODERADO"
-        elif score_100 >= 10:
+        elif score_100 >= 8:
             label = "DEBIL"
         else:
             label = "SKIP"
 
         if label == "SKIP":
             should_trade = False
-        # DEBIL no bloquea automaticamente
-        if label == "DEBIL" and net_score >= 0.15 and direction != "NEUTRAL":
+        # DEBIL siempre permite en practice
+        if label == "DEBIL" and net_score >= 0.08 and direction != "NEUTRAL":
             should_trade = True
 
         evidence_for_text  = [e.description for e in ev_for]

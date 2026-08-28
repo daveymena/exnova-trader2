@@ -186,9 +186,15 @@ class IntelligentEngine:
         rejection_confirmed = rejection_candle_idx is not None
         
         if not rejection_confirmed:
-            stage = "NONE"
-            entry_viable = False
-            reason = "Sin rechazo confirmado en la zona"
+            # Practice: permitir entrada sin rechazo confirmado si precio está cerca
+            if distance_pct < 0.003:
+                stage = "EARLY"
+                entry_viable = True
+                reason = f"Sin rechazo confirmado pero precio cerca ({distance_pct*100:.3f}%)"
+            else:
+                stage = "NONE"
+                entry_viable = False
+                reason = "Sin rechazo confirmado en la zona"
         elif move_from_zone < 0.001:
             stage = "EARLY"
             entry_viable = True
@@ -728,12 +734,13 @@ class IntelligentEngine:
 
         # Solo bypass si el rebote está en etapa EARLY (ideal para entrada)
         # Si está en MIDDLE, requiere confirmación real
-        if bounce["stage"] == "EARLY" and ai_score >= 40:
+        # Practice: bypass más agresivo para permitir más trades
+        if bounce["stage"] == "EARLY" and ai_score >= 25:
             phase["ready"] = True
             phase["message"] = f"Bypass 3-fase: rebote EARLY + IA score ({ai_score:.0f})"
-        elif not phase.get("ready", False) and ai_score >= 50:
+        elif not phase.get("ready", False) and ai_score >= 35:
             phase["ready"] = True
-            phase["message"] = f"Permitido con IA alta ({ai_score:.0f}) en rebote {bounce['stage']}"
+            phase["message"] = f"Permitido con IA ({ai_score:.0f}) en rebote {bounce['stage']}"
 
         # =====================================================================
         # 7. TRAMPAS
