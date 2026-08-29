@@ -158,30 +158,57 @@ class AgentTradingEngine:
             'direction': trade_params.get('direction')
         }
         
-        analysis = self.agent.analyze_trade_opportunity(market_context)
+        # analyze_trade_opportunity sale a la red (proveedor de IA): un timeout,
+        # un 5xx o una respuesta con otra forma lanzaban excepcion desde aqui
+        # hasta el bucle de run_live.py, que solo la loguea. El problema es que
+        # para entonces la operacion ya estaba marcada como "en curso", asi que
+        # el bot quedaba mudo indefinidamente. Un fallo del proveedor tiene que
+        # ser un RECHAZO explicito de esta operacion, nunca una excepcion.
+        try:
+            analysis = self.agent.analyze_trade_opportunity(market_context)
+        except Exception as exc:
+            trade_result['executed'] = False
+            trade_result['reason'] = f"Agente IA no disponible: {str(exc)[:120]}"
+            return trade_result
+
+        if not isinstance(analysis, dict):
+            trade_result['executed'] = False
+            trade_result['reason'] = f"Respuesta del agente IA no valida ({type(analysis).__name__})"
+            return trade_result
+
         trade_result['agent_analysis'] = analysis
-        
+
+        # Campos leidos con .get: una respuesta incompleta del proveedor no debe
+        # reventar con KeyError, debe rechazar la operacion y seguir viva.
+        incoherences = analysis.get('incoherences_detected') or []
+        confidence = analysis.get('confidence')
+        decision = analysis.get('decision')
+        if confidence is None or decision is None:
+            trade_result['executed'] = False
+            trade_result['reason'] = "Respuesta del agente IA incompleta (sin confidence/decision)"
+            return trade_result
+
         # Verificar incoherencias
-        if analysis['incoherences_detected']:
+        if incoherences:
             if self.config['auto_correct']:
                 # Aplicar correcciones
-                for incoherence in analysis['incoherences_detected']:
+                for incoherence in incoherences:
                     correction = self.agent.auto_correct_incoherence(incoherence)
                     trade_result['corrections'].append(correction)
-                
+
                 # Usar dirección corregida
-                trade_result['direction'] = analysis['direction']
-        
+                trade_result['direction'] = analysis.get('direction', trade_result['direction'])
+
         # Verificar confianza
-        if analysis['confidence'] < self.config['min_confidence'] * 100:
+        if confidence < self.config['min_confidence'] * 100:
             trade_result['executed'] = False
-            trade_result['reason'] = f"Confianza baja ({analysis['confidence']:.0f}%)"
+            trade_result['reason'] = f"Confianza baja ({confidence:.0f}%)"
             return trade_result
-        
+
         # Verificar decisión
-        if analysis['decision'] not in ['ENTER', 'STRONG_ENTER']:
+        if decision not in ['ENTER', 'STRONG_ENTER']:
             trade_result['executed'] = False
-            trade_result['reason'] = f"Decisión: {analysis['decision']}"
+            trade_result['reason'] = f"Decisión: {decision}"
             return trade_result
         
         # Trade aprobado

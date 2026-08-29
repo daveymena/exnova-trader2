@@ -164,6 +164,12 @@ MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.45"))
 COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "60"))
 MIN_BETWEEN_TRADES  = int(os.getenv("MIN_BETWEEN_TRADES", "45"))
 MIN_BETWEEN_SAME_ASSET = int(os.getenv("MIN_BETWEEN_SAME_ASSET", "150"))
+# Margen antes de que el watchdog declare zombi una orden marcada como activa.
+# La operacion mas larga que abre el bot es de 5 min (duration <= 5) + espera de
+# resultado + delay post-trade, y durante todo eso execute_trade tiene bloqueado
+# el hilo del bucle: si el bucle ve el flag tomado pasados 10 min, nadie lo va a
+# soltar ya.
+STUCK_ORDER_TIMEOUT = int(os.getenv("STUCK_ORDER_TIMEOUT", "600"))
 MAX_CONSEC_LOSSES   = int(os.getenv("MAX_CONSEC_LOSSES", "5"))
 PAUSE_AFTER_WIN_STREAK = int(os.getenv("PAUSE_AFTER_WIN_STREAK", "10"))
 PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
@@ -219,6 +225,9 @@ state = {
     "cycle": 0, "start_time": time.time(),
     "last_trade_time": 0, "current_asset": "",
     "status": "INICIANDO", "active_order": None,
+    # Momento en que se tomo active_order. Lo usa el watchdog del bucle para
+    # detectar un flag que nadie solto (ver STUCK_ORDER_TIMEOUT).
+    "active_order_since": 0.0,
     "consecutive_losses": 0, "best_streak": 0, "current_streak": 0,
     "last_signal": {}, "last_diagnosis": [],
     "last_trade_by_asset": {}, "rejection_stats": {},
@@ -443,73 +452,91 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
         trade_in_progress = True
         state["active_order"] = f"pending_{time.time()}"
 
-    # ── ORDER BLOCK M15: potenciador de confianza, NO bloqueante ────────────
-    ob_validation = {'valid': False, 'reason': 'No M15 data', 'trend_aligned': False, 'trend': 'neutral'}
-    if df_m15 is not None and len(df_m15) >= 20:
-        ob_validation = sm_analyzer.validate_trade_with_ob(df_m15, direction)
-
-        if ob_validation.get('ob') is not None:
-            ob = ob_validation['ob']
-            ob_type = "alcista" if ob['type'] == 'bullish' else "bajista"
-            log(f"[OB M15] Order Block {ob_type} detectado: {ob['low']:.5f}-{ob['high']:.5f} (fuerza: {ob['strength']:.0f}%)")
-
-        if not ob_validation['valid']:
-            log(f"[OB M15] ⚠️ Sin OB M15, operando solo con señales técnicas", "WARNING")
-        elif not ob_validation['trend_aligned']:
-            log(f"[OB M15] ⚠️ Tendencia ({ob_validation['trend']}) no alineada, pero se procede con precaución", "WARNING")
-        else:
-            log(f"[OB M15] ✅ Order Block respetado. Tendencia alineada: {ob_validation['trend']}")
-    else:
-        log(f"[OB M15] ⚠️ Sin datos M15, operando con validación técnica solamente", "WARNING")
-
-    # ── VALIDACIÓN CON AGENTE IA ──────────────────────────────────────────────
-    current_price = 0.0
+    # A partir de aqui `active_order`/`trade_in_progress` estan TOMADOS: todo lo
+    # que siga tiene que liberarlos pase lo que pase. Este tramo (OB M15 +
+    # agente IA, los dos con llamadas de red) estaba fuera de cualquier
+    # try/except: una excepcion subia hasta el catch-all del bucle principal
+    # ("Error en loop:"), que solo la loguea y continua, y los flags quedaban
+    # tomados PARA SIEMPRE. El proceso seguia vivo, asi que el auto-restart del
+    # entrypoint tampoco rescataba nada: el bot se quedaba mudo -- cada señal
+    # posterior moria en "ya hay una operacion en progreso" -- hasta un
+    # redeploy manual.
     try:
-        candles_1m = market_data.get_candles(asset, "1m", 1)
-        if not candles_1m.empty:
-            current_price = float(candles_1m.iloc[-1]["close"])
-    except Exception:
-        pass
-    if current_price <= 0:
-        # Fallback honesto: la ultima vela M1 ya disponible. Antes caia en
-        # signal.get("zone", 0.0) or amount -- "zone" es fantasma (nunca
-        # existe en el dict del motor) asi que terminaba usando el MONTO EN
-        # DOLARES de la apuesta como si fuera el precio del activo.
-        if df_m1 is not None and not df_m1.empty:
-            current_price = float(df_m1["close"].iloc[-1])
+        # ── ORDER BLOCK M15: potenciador de confianza, NO bloqueante ────────────
+        ob_validation = {'valid': False, 'reason': 'No M15 data', 'trend_aligned': False, 'trend': 'neutral'}
+        if df_m15 is not None and len(df_m15) >= 20:
+            ob_validation = sm_analyzer.validate_trade_with_ob(df_m15, direction)
 
-    trade_params = {
-        'asset': asset,
-        'direction': direction,
-        'amount': amount,
-        'price': current_price,
-        # RSI real: viene directo de signal["rsi"], que intelligent_engine.py
-        # rellena con el RSI de Wilder calculado sobre velas M1 en TODAS sus
-        # ramas de retorno. Antes se leia via context.get(...) con context
-        # siempre {}, lo que fijaba este valor en 50 constante.
-        'rsi': rsi_val,
-        'trend': signal.get("trend_m15", "NEUTRAL"),
-        'pattern': pattern or "none",
-        'zone_type': zone_type_derivado,
-        # El nivel exacto de la zona no llega hasta aqui (el motor no lo
-        # expone); current_price es la mejor aproximacion honesta ya que la
-        # señal solo dispara cuando el precio esta tocando esa zona.
-        'zone': current_price,
-    }
+            if ob_validation.get('ob') is not None:
+                ob = ob_validation['ob']
+                ob_type = "alcista" if ob['type'] == 'bullish' else "bajista"
+                log(f"[OB M15] Order Block {ob_type} detectado: {ob['low']:.5f}-{ob['high']:.5f} (fuerza: {ob['strength']:.0f}%)")
 
-    log(f"[AI] Evaluando propuesta de trade con Agente IA...")
-    agent_result = agent_engine.execute_trade(trade_params)
+            if not ob_validation['valid']:
+                log(f"[OB M15] ⚠️ Sin OB M15, operando solo con señales técnicas", "WARNING")
+            elif not ob_validation['trend_aligned']:
+                log(f"[OB M15] ⚠️ Tendencia ({ob_validation['trend']}) no alineada, pero se procede con precaución", "WARNING")
+            else:
+                log(f"[OB M15] ✅ Order Block respetado. Tendencia alineada: {ob_validation['trend']}")
+        else:
+            log(f"[OB M15] ⚠️ Sin datos M15, operando con validación técnica solamente", "WARNING")
 
-    if not agent_result.get('executed', False):
-        log(f"[AI] Trade RECHAZADO por Agente IA. Razón: {agent_result.get('reason')}", "WARNING")
+        # ── VALIDACIÓN CON AGENTE IA ──────────────────────────────────────────────
+        current_price = 0.0
+        try:
+            candles_1m = market_data.get_candles(asset, "1m", 1)
+            if not candles_1m.empty:
+                current_price = float(candles_1m.iloc[-1]["close"])
+        except Exception:
+            pass
+        if current_price <= 0:
+            # Fallback honesto: la ultima vela M1 ya disponible. Antes caia en
+            # signal.get("zone", 0.0) or amount -- "zone" es fantasma (nunca
+            # existe en el dict del motor) asi que terminaba usando el MONTO EN
+            # DOLARES de la apuesta como si fuera el precio del activo.
+            if df_m1 is not None and not df_m1.empty:
+                current_price = float(df_m1["close"].iloc[-1])
+
+        trade_params = {
+            'asset': asset,
+            'direction': direction,
+            'amount': amount,
+            'price': current_price,
+            # RSI real: viene directo de signal["rsi"], que intelligent_engine.py
+            # rellena con el RSI de Wilder calculado sobre velas M1 en TODAS sus
+            # ramas de retorno. Antes se leia via context.get(...) con context
+            # siempre {}, lo que fijaba este valor en 50 constante.
+            'rsi': rsi_val,
+            'trend': signal.get("trend_m15", "NEUTRAL"),
+            'pattern': pattern or "none",
+            'zone_type': zone_type_derivado,
+            # El nivel exacto de la zona no llega hasta aqui (el motor no lo
+            # expone); current_price es la mejor aproximacion honesta ya que la
+            # señal solo dispara cuando el precio esta tocando esa zona.
+            'zone': current_price,
+        }
+
+        log(f"[AI] Evaluando propuesta de trade con Agente IA...")
+        agent_result = agent_engine.execute_trade(trade_params)
+
+        if not agent_result.get('executed', False):
+            log(f"[AI] Trade RECHAZADO por Agente IA. Razón: {agent_result.get('reason')}", "WARNING")
+            state["status"] = "ANALIZANDO"
+            state["active_order"] = None
+            trade_in_progress = False
+            return False
+
+        direction = agent_result.get('direction', direction)
+        action_str = "call" if direction == "CALL" else "put"
+        log(f"[AI] Trade APROBADO por Agente IA. Dirección final: {direction} (Confianza IA: {agent_result.get('agent_analysis', {}).get('confidence', 0):.0f}%)")
+    except Exception as e:
+        # Nada de esto llego a abrir orden en el broker: se libera el estado y
+        # se deja pasar el siguiente ciclo en vez de bloquear el bot entero.
+        log(f"[TRADE] Error preparando la entrada ({asset}), liberando estado: {e}", "WARNING")
         state["status"] = "ANALIZANDO"
         state["active_order"] = None
         trade_in_progress = False
         return False
-
-    direction = agent_result.get('direction', direction)
-    action_str = "call" if direction == "CALL" else "put"
-    log(f"[AI] Trade APROBADO por Agente IA. Dirección final: {direction} (Confianza IA: {agent_result.get('agent_analysis', {}).get('confidence', 0):.0f}%)")
 
     log(f"ENTRANDO A EXNOVA: {asset} {direction} ${amount:.2f} | {pattern} | {exp_min}min")
     state["status"] = "OPERANDO"
@@ -716,6 +743,10 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 # ─── Bucle principal ────────────────────────────────────────────────────────
 
 def bot_loop(market_data, rm, engine, agent_engine):
+    # El watchdog de orden colgada escribe sobre el flag global, no sobre una
+    # copia local: sin este `global` la liberacion seria un no-op silencioso.
+    global trade_in_progress
+
     email = os.getenv("EXNOVA_EMAIL", "")
     password = os.getenv("EXNOVA_PASSWORD", "")
     persistence = get_trade_persistence()
@@ -777,6 +808,30 @@ def bot_loop(market_data, rm, engine, agent_engine):
             state["cycle"] += 1
             now = time.time()
             _write_bot_heartbeat()
+
+            # ── WATCHDOG DE ORDEN COLGADA ────────────────────────────────────
+            # Segundo cinturon sobre el try/except de execute_trade. Mientras
+            # hay una operacion viva, execute_trade BLOQUEA este hilo (duerme
+            # hasta la expiracion), asi que si al empezar un ciclo seguimos
+            # viendo active_order tomado es que nadie lo solto: estado zombi.
+            # Sin esto, un flag colgado silencia el bot indefinidamente y el
+            # proceso sigue vivo, de modo que ni el auto-restart del entrypoint
+            # lo detecta. Se da margen de STUCK_ORDER_TIMEOUT antes de soltar.
+            if state.get("active_order") is None:
+                state["active_order_since"] = 0.0
+            else:
+                if not state.get("active_order_since"):
+                    state["active_order_since"] = now
+                elif (now - state["active_order_since"]) > STUCK_ORDER_TIMEOUT:
+                    colgada = state["active_order"]
+                    atascada_s = int(now - state["active_order_since"])
+                    with trade_lock:
+                        state["active_order"] = None
+                        state["active_order_since"] = 0.0
+                        trade_in_progress = False
+                    state["status"] = "ANALIZANDO"
+                    log(f"[WATCHDOG] Orden colgada {colgada} liberada tras {atascada_s}s "
+                        f"sin cierre. El bot vuelve a operar.", "WARNING")
 
             # Hot-reload: aplicar cambios del dashboard/chat en caliente
             try:

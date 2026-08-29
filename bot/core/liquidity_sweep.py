@@ -36,12 +36,34 @@ def _atr(df: pd.DataFrame, period: int = 14) -> float:
 class LiquiditySweepDetector:
     """Detecta barrido de liquidez (sweep) + reconquista (reclaim) en M1/M5."""
 
-    def __init__(self, lookback: int = 8, max_fresh_bars: int = 2,
+    def __init__(self, lookback: int = 8, max_fresh_bars: int = 4,
                  buffer_atr_mult: float = 0.30, reclaim_close_mult: float = 0.20):
+        # max_fresh_bars=4 (antes 2): con el calculo de bars_since arreglado, el
+        # valor pasa a significar de verdad "cuantas velas atras ocurrio el
+        # barrido". Con 2 -- y sobre todo con el bug, que exigia el barrido en la
+        # vela EN CURSO -- la ventana FRESH duraba ~1 minuto, mientras el
+        # escaner tarda ~15 min en volver a mirar el mismo activo (103 activos,
+        # uno por ciclo): se perdian casi todos los setups validos.
         self.lookback = lookback
         self.max_fresh_bars = max_fresh_bars
         self.buffer_atr_mult = buffer_atr_mult
         self.reclaim_close_mult = reclaim_close_mult
+
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _last_sweep(swept: pd.Series) -> tuple:
+        """Indice del barrido MAS RECIENTE y cuantas velas han pasado desde el.
+
+        El recorrido anterior iba de la ultima vela hacia atras y hacia `break`
+        en la primera que no barria, de modo que si el barrido no estaba en la
+        vela en curso, `candles_since` se quedaba en None -> stage="STALE"
+        siempre, y el gate SMC del motor solo acepta "FRESH". Ese detalle es lo
+        que dejo al bot practicamente sin operar. `extent_pct` tambien salia 0.0
+        por el mismo motivo (extreme_idx=None).
+        """
+        posiciones = np.flatnonzero(swept.to_numpy())
+        idx = int(posiciones[-1])
+        return idx, len(swept) - 1 - idx
 
     # ------------------------------------------------------------------
     def analyze(self, df: Optional[pd.DataFrame], zone_level: float,
@@ -72,57 +94,43 @@ class LiquiditySweepDetector:
 
         if zone_type == "support":
             swept = recent["low"] <= (zone_level - base_buffer)
-            candles_since = None
-            extreme_idx = None
-            for i in range(len(recent) - 1, -1, -1):
-                if recent.iloc[i]["low"] <= (zone_level - base_buffer):
-                    extreme_idx = i
-                    candles_since = len(recent) - 1 - i
-                else:
-                    break
             if not swept.any():
                 return empty
+            extreme_idx, candles_since = self._last_sweep(swept)
             if last_close <= zone_level:
                 return {
                     "detected": False, "side": "bullish_pending", "stage": "NO_RECLAIM",
                     "reason": "sweep bajo soporte sin reconquista aun",
                     "extent_pct": self._extent(recent, zone_level, "low", "below", extreme_idx),
-                    "bars_since": candles_since or 0,
+                    "bars_since": candles_since,
                 }
-            stage = "FRESH" if (candles_since is not None and candles_since <= self.max_fresh_bars) else "STALE"
+            stage = "FRESH" if candles_since <= self.max_fresh_bars else "STALE"
             return {
                 "detected": True, "side": "bullish", "stage": stage,
                 "reason": "sweep bajo soporte + reclaim alcista",
                 "extent_pct": self._extent(recent, zone_level, "low", "below", extreme_idx),
-                "bars_since": candles_since or 0,
+                "bars_since": candles_since,
                 "reclaim_pct": max(0.0, (last_close - zone_level) / zone_level * 100.0),
             }
 
         # resistance
         swept = recent["high"] >= (zone_level + base_buffer)
-        extreme_idx = None
-        candles_since = None
-        for i in range(len(recent) - 1, -1, -1):
-            if recent.iloc[i]["high"] >= (zone_level + base_buffer):
-                extreme_idx = i
-                candles_since = len(recent) - 1 - i
-            else:
-                break
         if not swept.any():
             return empty
+        extreme_idx, candles_since = self._last_sweep(swept)
         if last_close >= zone_level:
             return {
                 "detected": False, "side": "bearish_pending", "stage": "NO_RECLAIM",
                 "reason": "sweep sobre resistencia sin reconquista aun",
                 "extent_pct": self._extent(recent, zone_level, "high", "above", extreme_idx),
-                "bars_since": candles_since or 0,
+                "bars_since": candles_since,
             }
-        stage = "FRESH" if (candles_since is not None and candles_since <= self.max_fresh_bars) else "STALE"
+        stage = "FRESH" if candles_since <= self.max_fresh_bars else "STALE"
         return {
             "detected": True, "side": "bearish", "stage": stage,
             "reason": "sweep sobre resistencia + reclaim bajista",
             "extent_pct": self._extent(recent, zone_level, "high", "above", extreme_idx),
-            "bars_since": candles_since or 0,
+            "bars_since": candles_since,
             "reclaim_pct": max(0.0, (zone_level - last_close) / zone_level * 100.0),
         }
 
