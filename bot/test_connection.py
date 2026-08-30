@@ -1,13 +1,49 @@
 #!/usr/bin/env python3
 """
-Script de diagnóstico para probar la conexión a Exnova
+Script de diagnóstico para probar la conexión a Exnova.
+
+Verifica en orden:
+  0. Red: ¿se puede alcanzar TLS ws.trade.exnova.com / auth.trade.exnova.com?
+  1. Login con las credenciales (PRACTICE).
+  2. Balance de la cuenta demo.
+  3. Actualización de activos.
+
+Si el paso 0 falla, el problema es de RED (firewall/proxy/país bloqueando
+Cloudflare), NO de credenciales ni del bot.
 """
 import sys
 import os
+import socket
+import ssl
 from dotenv import load_dotenv
 
-# Cargar variables de entorno
+# Cargar variables de entorno (.env en la raíz del repo o cwd)
 load_dotenv()
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+
+
+def preflight_network(hosts=("ws.trade.exnova.com", "auth.trade.exnova.com")):
+    """Chequeo TCP+TLS. Devuelve (ok: bool, detalle: str)."""
+    print("0. Verificando conectividad de red a Exnova...")
+    for host in hosts:
+        try:
+            ip = socket.gethostbyname(host)
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
+            raw = socket.create_connection((host, 443), timeout=10)
+            s = ctx.wrap_socket(raw, server_hostname=host)
+            s.close()
+            print(f"   [OK] {host} ({ip}) — TLS responde")
+        except Exception as e:
+            print(f"   [RED-BLOQUEADA] {host}: {type(e).__name__} {str(e)[:80]}")
+            print("   -> La RED corta la conexión (firewall/proxy/país). No es")
+            print("      problema del bot ni de las credenciales. Usa una red")
+            print("      que llegue a exnova.com (EasyPanel/VPS) o configura proxy.")
+            return False
+    print()
+    return True
+
 
 # Importar la API
 from exnovaapi.stable_api import Exnova
@@ -23,6 +59,10 @@ def test_connection():
     print(f"Password: {'*' * len(password)}")
     print(f"Tipo de cuenta: PRACTICE")
     print(f"===================================================\n")
+    
+    # Paso 0: red. Si no hay ruta TLS a Exnova, no se gasta tiempo en el login.
+    if not preflight_network():
+        return False
     
     try:
         print("1. Creando instancia de Exnova API...")
