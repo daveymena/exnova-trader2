@@ -93,6 +93,11 @@ import atexit
 atexit.register(release_lock)
 
 from dotenv import load_dotenv
+# Docker/EasyPanel usa /app/.env; en local/Replit el .env vive en la raíz del
+# repo. Cargar ambos (el primero que exista gana, por eso explicit=False y el
+# orden).
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+load_dotenv(dotenv_path=os.path.join(_REPO_ROOT, ".env"))
 load_dotenv(dotenv_path="/app/.env")
 
 # Importar directamente (estamos en bot/ así que config_assets.py está aquí)
@@ -734,12 +739,48 @@ def bot_loop(market_data, rm, engine, agent_engine):
     loss_tracker = get_loss_tracker()
 
     log(f"Auth Exnova: email_configurado={bool(email)} password_configurada={bool(password)} password_len={len(password)}")
-    log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
     state["status"] = "CONECTANDO"
-    if not market_data.connect(email, password):
-        log("ERROR: No se pudo conectar.")
-        state["status"] = "ERROR"
-        return
+
+    if not email or not password:
+        log("ERROR: EXNOVA_EMAIL/EXNOVA_PASSWORD no configurados. Sin credenciales "
+            "no hay conexión al broker: copia .env.example a .env y completa tus "
+            "credenciales de la cuenta PRACTICE de Exnova (o pon las variables en "
+            "el panel de EasyPanel).", "CRITICAL")
+
+    # Reintentos internos con backoff: el websocket de Exnova falla a menudo por
+    # TLS/rate-limit transitorio. Salir inmediatamente provoca el crash-loop del
+    # entrypoint (reinicio cada 10s, trampa si las credenciales faltan o el
+    # broker está caído). Reintentamos aquí con backoff creciente y log claro.
+    max_connect_attempts = int(os.getenv("CONNECT_MAX_ATTEMPTS", "5"))
+    connected_ok = False
+    for attempt in range(1, max_connect_attempts + 1):
+        log(f"Conectando a Exnova {ACCOUNT_TYPE} (intento {attempt}/{max_connect_attempts})...")
+        if market_data.connect(email, password):
+            connected_ok = True
+            break
+        wait_s = min(30 * attempt, 120)
+        if attempt < max_connect_attempts:
+            log(f"Conexión fallida. Reintentando en {wait_s}s... (verifica credenciales "
+                "EXNOVA_EMAIL/EXNOVA_PASSWORD y que la red permita wss://exnova.com)", "WARNING")
+            _write_bot_heartbeat()
+            time.sleep(wait_s)
+    if not connected_ok:
+        log("ERROR: No se pudo conectar a Exnova tras los reintentos. El proceso "
+            "queda vivo reintentando; el monitor sigue disponible. Revisa credenciales "
+            "y conectividad.", "CRITICAL")
+        state["status"] = "ERROR_CONEXION"
+        # Seguir reintentando en segundo plano mientras el proceso vive: cuando
+        # el broker vuelva (o las credenciales se corrijan vía .env en el
+        # próximo reinicio del contenedor), no hará falta intervenir.
+        while state["running"]:
+            time.sleep(60)
+            _write_bot_heartbeat()
+            log("Reintento de conexión tras error persistente...", "WARNING")
+            if market_data.connect(email, password):
+                connected_ok = True
+                break
+        if not connected_ok:
+            return
 
     try:
         balance = market_data.get_balance()
@@ -1035,9 +1076,11 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 confidence = signal.get("confidence", 0)
                 score = signal.get("score", 0)
 
-                # Validación extra de patrón (doble filtro)
+                # Validación extra de patrón (doble filtro). El motor ya los
+                # rechaza en REAL; en PRACTICE el motor solo penaliza porque
+                # necesitamos volumen de datos para recalibrar.
                 pattern = signal.get("pattern", "")
-                if pattern in BAD_PATTERNS:
+                if pattern in BAD_PATTERNS and ACCOUNT_TYPE == "REAL":
                     log(f"[FILTRO] Patrón peligroso saltado: {pattern}", "WARNING")
                     continue
 

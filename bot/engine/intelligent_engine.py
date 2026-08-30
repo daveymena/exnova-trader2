@@ -445,6 +445,12 @@ class IntelligentEngine:
             }
 
         nearest_zone = zones[0] if isinstance(zones, list) else zones
+        # ZoneDetector devuelve la clave "type" (support/resistance); algunas
+        # rutas legacy usan "zone_type". Normalizar para que ambas funcionen:
+        # sin esto, zone_type=None y TODA zona se trataba como resistencia
+        # (zone_dir="PUT" siempre) — el bot solo operaba PUTs.
+        if not nearest_zone.get("zone_type") and nearest_zone.get("type"):
+            nearest_zone["zone_type"] = nearest_zone["type"]
         zone_strength = nearest_zone.get("strength", 0)
         zone_touches = nearest_zone.get("touches", 0)
 
@@ -538,19 +544,26 @@ class IntelligentEngine:
                 "rsi": current_rsi,
             }
 
-        # AI dirección debe coincidir con zona
-        if ai_dir != expected_dir:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"IA sugiere {ai_dir} pero zona dice {expected_dir}",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+        # AI dirección vs dirección de la zona.
+        # La tesis del motor es REVERSIÓN en zona: en soporte se busca CALL
+        # (rebote hacia arriba) y en resistencia PUT. La "IA" (MarketAI) deduce
+        # dirección principalmente de la tendencia/impulso reciente, así que es
+        # ESPERADO que no coincida con la tesis de reversión: el precio llegó a
+        # la zona PORQUE venía bajando a soporte (IA=PUT) o subiendo a
+        # resistencia (IA=CALL). Exigir coincidencia mataba el 77% de los setups
+        # (medido sobre 342 evaluaciones: solo 0.29% llegaba a TRADE).
+        #  - REAL: la IA en contra es una advertencia fuerte -> se reduce score.
+        #  - PRACTICE: penalización suave para no impedir la recolección de datos.
+        ai_dir_penalty = 0.0
+        ai_dir_conflict = ai_dir != expected_dir
+        if ai_dir_conflict:
+            if self.mode == "practice":
+                ai_dir_penalty = 0.15
+            else:
+                # En real, una IA direccionalmente en contra sin patrón de
+                # reversión claro no tiene edge: bajar el score de forma fuerte.
+                ai_dir_penalty = 0.35
+            ai_score = max(0, ai_score - int(ai_dir_penalty * 100))
 
         # Score mínimo de IA (suavizado)
         if ai_score < self.MIN_AI_SCORE_TRADE:
@@ -579,9 +592,12 @@ class IntelligentEngine:
         # Todo lo demás (pin_bar_bearish, shooting_star, "none") queda neutral:
         # muestra insuficiente o resultado inconsistente entre cortes de datos,
         # no se rechaza ni se favorece.
-        # Se aplica SIEMPRE (no solo en modo real) para que los datos recolectados
-        # en práctica sean representativos de lo que pasaría en real.
-        if pattern_name in BAD_PATTERNS:
+        # En REAL se rechazan (el análisis histórico los marca como perdedores);
+        # en PRACTICE son soft-penalty: necesitamos VOLUMEN de datos para que el
+        # bucle de mejora IA recalibre con muestras grandes, y bloquearlos aquí
+        # eliminaba ~7% de los setups restantes.
+        bad_pattern = pattern_name in BAD_PATTERNS
+        if bad_pattern and self.mode != "practice":
             return {
                 "asset": asset,
                 "action": "WAIT",
@@ -593,6 +609,9 @@ class IntelligentEngine:
                 "zone_strength": zone_strength,
                 "rsi": current_rsi,
             }
+        bad_pattern_penalty = 0.15 if bad_pattern else 0.0
+        if bad_pattern_penalty:
+            ai_score = max(0, ai_score - int(bad_pattern_penalty * 100))
 
         # =====================================================================
         # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA
@@ -905,6 +924,10 @@ class IntelligentEngine:
             confidence = max(0.30, confidence - trend_penalty)
         if smc_penalty > 0:
             confidence = max(0.30, confidence - smc_penalty)
+        if ai_dir_penalty > 0:
+            confidence = max(0.30, confidence - ai_dir_penalty)
+        if bad_pattern_penalty > 0:
+            confidence = max(0.30, confidence - bad_pattern_penalty)
 
         # Verificar si la tendencia está alineada (zona + tendencia principal)
         trend_aligned = (main_trend != "NEUTRAL" and zone_dir == main_trend)
