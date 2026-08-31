@@ -164,11 +164,11 @@ class LiveTrader(QThread):
         self.last_trade_time = 0
         # Control de tiempo entre operaciones (BALANCEADO)
         self.last_trade_time = 0
-        self.min_time_between_trades = 120  # 2 MINUTOS entre operaciones
-        self.cooldown_after_loss = 300      # 5 MINUTOS de espera después de perder
+        self.min_time_between_trades = 30  # 2 MINUTOS entre operaciones
+        self.cooldown_after_loss = 60      # 5 MINUTOS de espera después de perder
         self.consecutive_losses = 0
         self.last_trade_result = None
-        self.max_consecutive_losses = 5    
+        self.max_consecutive_losses = 10    
         
         # Control de operaciones por hora
         self.trades_last_hour = []  
@@ -176,10 +176,10 @@ class LiveTrader(QThread):
         
         # 🆕 MEJORA 1: Cooldown por activo
         self.last_trade_per_asset = {}  
-        self.cooldown_per_asset = 30   # 30 segundos por activo
+        self.cooldown_per_asset = 10   # 30 segundos por activo
         
         # Control de escaneo
-        self.scan_interval = 15 # Escanear cada 15 segundos
+        self.scan_interval = 10 # Escanear cada 15 segundos
         self.last_scan_time = 0
         
         # 🆕 MEJORA 5: Límite de operaciones por hora
