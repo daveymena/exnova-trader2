@@ -55,13 +55,13 @@ class IntelligentEngine:
 
         # Filtro de ventana/activo con edge real (calibrado sobre 500 trades)
         # Toggle via env SMC_EDGE_FILTER (default "1" = activado)
-        self.edge_filter = os.getenv("SMC_EDGE_FILTER", "1") not in {"0", "false", "False"}
+        self.edge_filter = os.getenv("SMC_EDGE_FILTER", "0") not in {"0", "false", "False"}
 
         if mode == "practice":
             # Modo práctica: mínimos filtros para ver muchas operaciones
-            self.MIN_ZONE_STRENGTH = 0.10
-            self.MIN_AI_SCORE_PHASE_BYPASS = 10
-            self.MIN_AI_SCORE_TRADE = 5
+            self.MIN_ZONE_STRENGTH = 0.03
+            self.MIN_AI_SCORE_PHASE_BYPASS = 2
+            self.MIN_AI_SCORE_TRADE = 2
             self.MIN_TREND_ALIGNED_CONFIDENCE = 0.0
         else:
             # Umbrales optimizados (basados en análisis de 265 trades históricos)
