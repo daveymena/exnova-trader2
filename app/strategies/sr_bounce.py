@@ -17,9 +17,9 @@ class SRBounceStrategy:
     def __init__(self, config: Optional[dict] = None):
         self.config = config or {}
         self.atr_period = self.config.get("atr_period", 14)
-        self.min_confidence = self.config.get("min_confidence", 0.50)
-        self.level_distance_atr = self.config.get("level_distance_atr", 1.5)
-        self.min_rejection_wick_ratio = self.config.get("min_rejection_wick_ratio", 2.0)
+        self.min_confidence = self.config.get("min_confidence", 0.65)
+        self.level_distance_atr = self.config.get("level_distance_atr", 2.0)
+        self.min_rejection_wick_ratio = self.config.get("min_rejection_wick_ratio", 2.5)
         self.lookback_m5 = self.config.get("lookback_m5", 30)
         self.lookback_m15 = self.config.get("lookback_m15", 20)
 
