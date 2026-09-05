@@ -159,6 +159,32 @@ from core.position_guard import get_guard, GuardConfig
 from core.self_evaluator import get_evaluator, EvaluatorConfig
 
 # ─── Constantes (sobreescribibles via env vars para EasyPanel) ──────────────
+# --- Embudo de rechazos -----------------------------------------------------
+# El bot tiene siete puertas que pueden matar una senal y ninguna llevaba la
+# cuenta: cuando dejaba de operar no habia forma de saber cual la estaba
+# ahogando, solo cabia adivinar y aflojar filtros a ciegas. FUNNEL cuenta cada
+# descarte por motivo y se imprime junto al resto del estado del ciclo.
+from collections import Counter
+FUNNEL = Counter()
+
+
+def descartar(motivo, detalle="", nivel="INFO"):
+    """Registra por que no se opero esta senal y lo deja contado."""
+    FUNNEL[motivo] += 1
+    if detalle:
+        log("[FILTRO:%s] %s" % (motivo, detalle), nivel)
+    return None
+
+
+def funnel_report():
+    if not FUNNEL:
+        return "  [EMBUDO] sin descartes registrados todavia"
+    total = sum(FUNNEL.values())
+    filas = ", ".join("%s=%d (%.0f%%)" % (k, v, v * 100.0 / total)
+                      for k, v in FUNNEL.most_common(8))
+    return "  [EMBUDO] %d senales descartadas | %s" % (total, filas)
+
+
 INITIAL_BALANCE    = float(os.getenv("INITIAL_BALANCE", "10000.0"))
 MIN_CONFIDENCE     = float(os.getenv("MIN_CONFIDENCE", "0.45"))
 COOLDOWN_AFTER_LOSS = int(os.getenv("COOLDOWN_AFTER_LOSS", "60"))
@@ -1093,7 +1119,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 # Validación extra de patrón (doble filtro)
                 pattern = signal.get("pattern", "")
                 if pattern in BAD_PATTERNS:
-                    log(f"[FILTRO] Patrón peligroso saltado: {pattern}", "WARNING")
+                    descartar("patron_peligroso", f"patron {pattern}", "WARNING")
                     continue
 
                 # Validación de alineación de tendencia
@@ -1105,15 +1131,17 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 if not trend_aligned:
                     if ACCOUNT_TYPE == "REAL":
                         if signal.get("signal", "") == "PUT":
-                            log(f"[FILTRO] PUT contra-tendencia bloqueado (edge negativo): {asset}", "WARNING")
+                            descartar("put_contratendencia", asset, "WARNING")
                             continue
                         if signal.get("score", 0) < 70:
-                            log(f"[FILTRO] Contra-tendencia sin score suficiente: score={signal.get('score',0):.0f}", "WARNING")
+                            descartar("contratendencia_score",
+                                      f"score={signal.get('score',0):.0f} < 70", "WARNING")
                             continue
                     else:
                         # Practice: permitir pero con score mínimo más bajo
                         if signal.get("score", 0) < 40:
-                            log(f"[FILTRO] Contra-tendencia score muy bajo: score={signal.get('score',0):.0f}", "WARNING")
+                            descartar("contratendencia_score",
+                                      f"score={signal.get('score',0):.0f} < 40", "WARNING")
                             continue
 
                 direccion = signal.get("signal", "")
@@ -1121,6 +1149,11 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 #  La barrera real la pone _current_min_confidence(), que el bucle
                 #  de mejora IA calibra ciclo a ciclo con datos reales.)
 
+                if action != "TRADE":
+                    descartar("sin_senal", f"{asset}: action={action}")
+                elif confidence < _current_min_confidence():
+                    descartar("confianza_baja",
+                              f"{asset}: {confidence:.2f} < {_current_min_confidence():.2f}")
                 if action == "TRADE" and confidence >= _current_min_confidence():
                     # ═══════════════════════════════════════════════════════════
                     # FILTRO ULTRASEGURO para CUENTA REAL
@@ -1142,21 +1175,23 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         # setup con intervalo de Wilson) segun se vayan cableando.
                         if asset in ASSETS_BLACKLIST or asset in _assets_paused():
                             if asset in ASSETS_BLACKLIST:
-                                log(f"[REAL] {asset} está en blacklist histórica - saltando", "WARNING")
+                                descartar("blacklist", f"{asset} en blacklist historica", "WARNING")
                             else:
-                                log(f"[IA] {asset} pausado por improvement_loop - saltando", "INFO")
+                                descartar("pausado_ia", f"{asset} pausado por improvement_loop")
                             continue
 
                         if pattern not in REAL_PATTERNS_ALLOWED:
-                            log(f"[REAL] Patrón '{pattern}' no está en whitelist - saltando", "WARNING")
+                            descartar("patron_no_whitelist", f"patron {pattern}", "WARNING")
                             continue
 
                         if zone_str < REAL_ZONE_STRENGTH_MIN or zone_str > REAL_ZONE_STRENGTH_MAX:
-                            log(f"[REAL] Zona strength {zone_str:.2f} fuera del rango óptimo ({REAL_ZONE_STRENGTH_MIN}-{REAL_ZONE_STRENGTH_MAX}) - saltando", "WARNING")
+                            descartar("fuerza_zona",
+                                      f"{zone_str:.2f} fuera de {REAL_ZONE_STRENGTH_MIN}-{REAL_ZONE_STRENGTH_MAX}",
+                                      "WARNING")
                             continue
 
                         if confidence < 0.75:
-                            log(f"[REAL] Confianza {confidence:.2f} < 0.75 para cuenta REAL - saltando", "WARNING")
+                            descartar("confianza_real", f"{confidence:.2f} < 0.75", "WARNING")
                             continue
 
                         log(f"[REAL] ✅ Señal SUPER APROBADA: {asset} {signal_dir} | patrón={pattern} zona={zone_str:.2f}")
@@ -1183,18 +1218,21 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     # queremos volumen para que el bucle de mejora IA tenga datos
                     # reales que analizar y calibrar la estrategia.
                     if ACCOUNT_TYPE == "REAL" and np.random.random() < HUMAN_SKIP_PROBABILITY and state["consecutive_losses"] == 0:
-                        log(f"[ANTI-DETECCIÓN] Saltando trade válido para perfil humano")
+                        descartar("anti_deteccion", "skip aleatorio de perfil humano")
                         continue
 
                     if state["active_order"] is not None:
-                        log(f"⏳ Trade saltado - ya hay orden activa (ID: {state['active_order']})", "WARNING")
+                        descartar("orden_activa",
+                                  f"ya hay orden activa (ID: {state['active_order']})", "WARNING")
                     elif time_since < cooldown_needed:
-                        log(f"⏳ Cooldown global: faltan {int(cooldown_needed - time_since)}s", "WAIT")
+                        descartar("cooldown_global",
+                                  f"faltan {int(cooldown_needed - time_since)}s", "WAIT")
                     elif (now - last_asset_dir) < same_asset_jitter:
                         restante = int(same_asset_jitter - (now - last_asset_dir))
-                        log(f"⏳ Cooldown {asset} {signal_dir}: faltan {restante}s", "WAIT")
+                        descartar("cooldown_activo",
+                                  f"{asset} {signal_dir}: faltan {restante}s", "WAIT")
                     elif rm.is_stopped:
-                        log(f"RM activo: {rm.stop_reason}")
+                        descartar("risk_manager", rm.stop_reason)
                     else:
                         # ── AUTO-EVALUADOR: decide si este setup opera y a que
                         # tamano. Nunca bloquea un setup nuevo (EXPLORACION a
@@ -1289,6 +1327,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 # setups estan en produccion, cuales explorando, cuales ya
                 # se descartaron). Menos frecuente que el resto porque puede
                 # ser largo con muchos setups distintos.
+                print(funnel_report(), flush=True)
                 if state["cycle"] % 50 == 0:
                     try:
                         print(self_eval.report(), flush=True)

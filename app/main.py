@@ -3,7 +3,6 @@
 Runs the scanning loop, processes signals, manages risk, and records results.
 """
 import time
-import random
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -13,7 +12,7 @@ from app.data.repository import repository
 from app.data.schemas import (
     Candle, Direction, MarketRegime, TradeDecision,
     TradeResult, ExecutionState, RiskDecision, Timeframe, TradingMode as SchemaMode,
-    AccountSnapshot
+    AccountSnapshot, ResolutionSource
 )
 from app.agents.signal_agent import SignalAgent
 from app.agents.risk_manager_agent import RiskManagerAgent
@@ -158,31 +157,111 @@ class TradingBot:
                 repository.log_error("main", str(e))
             time.sleep(1)
 
+    # Cuanto esperamos evidencia real antes de dar una orden por irresoluble.
+    RESOLVE_TIMEOUT_SEC = 180
+
     def _resolve_expired_trades(self) -> list[TradeResult]:
         now = datetime.utcnow()
         resolved = []
         still_open = []
         for trade in self.broker.open_trades:
-            expiry_time = trade.timestamp + timedelta(seconds=trade.expiry)
+            expiry_time = trade.expiry_time or (
+                trade.timestamp + timedelta(seconds=trade.expiry)
+            )
             if now < expiry_time:
                 still_open.append(trade)
                 continue
-            # Trade expired - resolve it
-            if trade.execution_state in (ExecutionState.SENT, ExecutionState.PENDING):
-                won = random.random() < 0.55  # 55% win rate simulation
-                payout = trade.payout or 0.85
-                if won:
-                    profit = trade.stake * payout
-                    self.broker.balance += trade.stake + profit
-                    trade.result = profit
-                    trade.execution_state = ExecutionState.WON
-                else:
-                    trade.execution_state = ExecutionState.LOST
-                trade.payout = payout
+            if trade.execution_state not in (ExecutionState.SENT,
+                                             ExecutionState.PENDING):
+                resolved.append(trade)
+                continue
+
+            if self._resolve_with_evidence(trade, now):
+                self._settle_paper_balance(trade)
                 repository.save_trade_result(trade)
+                resolved.append(trade)
+                continue
+
+            # Sin evidencia todavia: se reintenta en el proximo ciclo.
+            if (now - expiry_time).total_seconds() < self.RESOLVE_TIMEOUT_SEC:
+                still_open.append(trade)
+                continue
+
+            trade.execution_state = ExecutionState.UNKNOWN
+            trade.resolution_source = ResolutionSource.UNRESOLVED
+            trade.resolved_at = now
+            trade.result = 0.0
+            repository.save_trade_result(trade)
+            logger.warning(
+                "Orden %s sin evidencia tras %ss: queda UNKNOWN y fuera del edge",
+                trade.broker_order_id or trade.asset, self.RESOLVE_TIMEOUT_SEC,
+            )
             resolved.append(trade)
+
         self.broker.open_trades = still_open
         return resolved
+
+    def _resolve_with_evidence(self, trade: TradeResult, now: datetime) -> bool:
+        """Resuelve la operacion SOLO contra un precio realmente observado.
+
+        Sustituye al antiguo `random.random() < 0.55`, que fabricaba el
+        resultado de cada operacion -- incluidas las ordenes reales que
+        volvian del broker en estado SENT. Ese historial sintetico quedaba
+        con resolution_source='unresolved', asi que EVIDENCE_SQL lo
+        descartaba entero y el EdgeValidator veia siempre 0 muestras: el
+        bot se autobloqueaba con datos que ademas eran ruido.
+
+        Devuelve False cuando aun no hay evidencia; nunca inventa un
+        resultado para salir del paso.
+        """
+        # 1) el broker es la fuente de verdad
+        order_id = (trade.features or {}).get("order_id")
+        if order_id is not None and hasattr(self.broker, "resolve_order"):
+            pnl = self.broker.resolve_order(order_id)
+            if pnl is not None:
+                trade.result = float(pnl)
+                trade.execution_state = (
+                    ExecutionState.WON if pnl > 0
+                    else ExecutionState.LOST if pnl < 0
+                    else ExecutionState.UNKNOWN
+                )
+                trade.resolution_source = ResolutionSource.BROKER
+                trade.resolved_at = now
+                return True
+
+        # 2) precio observado a la expiracion
+        exit_price = None
+        if hasattr(self.broker, "get_last_close"):
+            exit_price = self.broker.get_last_close(trade.asset)
+        if trade.entry_price and exit_price:
+            delta = exit_price - trade.entry_price
+            if delta == 0:
+                return False  # empate: sin informacion direccional, reintentar
+            trade.exit_price = exit_price
+            won = delta > 0 if trade.direction == Direction.CALL else delta < 0
+            payout = trade.payout or 0.85
+            trade.payout = payout
+            trade.result = trade.stake * payout if won else -trade.stake
+            trade.execution_state = (
+                ExecutionState.WON if won else ExecutionState.LOST
+            )
+            trade.resolution_source = ResolutionSource.CANDLE
+            trade.resolved_at = now
+            return True
+
+        return False
+
+    def _settle_paper_balance(self, trade: TradeResult):
+        """Devuelve el stake al ganar en operaciones de papel.
+
+        El PaperBroker descuenta el stake en buy(); las ordenes reales no
+        pasan por aqui porque su saldo lo lleva el broker.
+        """
+        if trade.broker_order_id:
+            return
+        if trade.result > 0:
+            self.broker.balance += trade.stake + trade.result
+        self.broker.equity = self.broker.balance
 
     def _scan_and_trade(self) -> Optional[dict]:
         self.last_scan_time = datetime.utcnow()
@@ -191,18 +270,20 @@ class TradingBot:
         asset = self.assets[self.current_asset_index % len(self.assets)]
         self.current_asset_index += 1
 
-        if hasattr(self.broker, 'get_candles_as_schema') and self.broker.connected:
-            candles_m15 = self.broker.get_candles_as_schema(asset, Timeframe.M15, 100)
-            candles_m5 = self.broker.get_candles_as_schema(asset, Timeframe.M5, 100)
-            candles_m1 = self.broker.get_candles_as_schema(asset, Timeframe.M1, 50)
-            if not candles_m15 or not candles_m5:
-                candles_m15 = self._get_mock_candles(100)
-                candles_m5 = self._get_mock_candles(100)
-                candles_m1 = self._get_mock_candles(50)
-        else:
-            candles_m15 = self._get_mock_candles(100)
-            candles_m5 = self._get_mock_candles(100)
-            candles_m1 = self._get_mock_candles(50)
+        # Sin velas reales NO se opera. Antes se caia a _get_mock_candles(),
+        # un paseo aleatorio gaussiano sobre el precio fijo 1.0500: el motor
+        # de senales analizaba ruido sintetico y abria operaciones sobre el.
+        if not (hasattr(self.broker, 'get_candles_as_schema')
+                and getattr(self.broker, 'connected', False)):
+            logger.warning("Sin feed del broker: no se opera este ciclo")
+            return None
+
+        candles_m15 = self.broker.get_candles_as_schema(asset, Timeframe.M15, 100)
+        candles_m5 = self.broker.get_candles_as_schema(asset, Timeframe.M5, 100)
+        candles_m1 = self.broker.get_candles_as_schema(asset, Timeframe.M1, 50)
+        if not candles_m15 or not candles_m5:
+            logger.warning("Sin velas de %s: no se opera este ciclo", asset)
+            return None
 
         result = self.signal_agent.scan(
             candles_m15, candles_m5, candles_m1,

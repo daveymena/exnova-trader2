@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from app.data.schemas import (
-    Candle, Direction, Timeframe, TradeResult, ExecutionState
+    Candle, Direction, Timeframe, TradeResult, ExecutionState, ResolutionSource
 )
 from app.services.paper_broker import PaperBroker
 
@@ -115,32 +115,19 @@ class ExnovaBroker(PaperBroker):
                             asset, amount, action, expiry_sec
                         )
                         if check:
-                            return TradeResult(
-                                timestamp=datetime.utcnow(),
-                                asset=asset, direction=direction,
-                                strategy=strategy, expiry=expiry_sec,
-                                payout=payout, stake=amount,
-                                result=0.0,
-                                execution_state=ExecutionState.SENT,
-                                market_regime=market_regime,
-                                confidence=confidence,
-                                features={"order_id": order_id, "broker": "exnova"},
+                            return self._register_sent(
+                                asset, direction, strategy, expiry_sec,
+                                payout, amount, market_regime, confidence,
+                                order_id,
                             )
                 except Exception:
                     pass
 
             check, order_id = self.api.buy(amount, asset, action, expiry_sec)
             if check:
-                return TradeResult(
-                    timestamp=datetime.utcnow(),
-                    asset=asset, direction=direction,
-                    strategy=strategy, expiry=expiry_sec,
-                    payout=0.85, stake=amount,
-                    result=0.0,
-                    execution_state=ExecutionState.SENT,
-                    market_regime=market_regime,
-                    confidence=confidence,
-                    features={"order_id": order_id, "broker": "exnova"},
+                return self._register_sent(
+                    asset, direction, strategy, expiry_sec,
+                    0.85, amount, market_regime, confidence, order_id,
                 )
             print(f"[EXNOVA] Buy rejected: {order_id}")
         except Exception as e:
@@ -149,6 +136,70 @@ class ExnovaBroker(PaperBroker):
         # Fallback to paper
         return super().buy(asset, direction, amount, expiry_sec,
                            strategy, market_regime, confidence)
+
+    def _register_sent(self, asset, direction: Direction, strategy: str,
+                       expiry_sec: int, payout: float, amount: float,
+                       market_regime, confidence: float,
+                       order_id) -> TradeResult:
+        """Registra la orden enviada junto a su evidencia de entrada.
+
+        Antes los dos `return TradeResult(...)` de buy() no pasaban por
+        open_trades, asi que ninguna orden real llegaba nunca al resolvedor:
+        se enviaban y se olvidaban. Las unicas filas que acababan en
+        trade_results venian del PaperBroker de respaldo.
+        """
+        now = datetime.utcnow()
+        trade = TradeResult(
+            timestamp=now,
+            asset=asset, direction=direction,
+            strategy=strategy, expiry=expiry_sec,
+            payout=payout, stake=amount,
+            result=0.0,
+            execution_state=ExecutionState.SENT,
+            market_regime=market_regime,
+            confidence=confidence,
+            features={"order_id": order_id, "broker": "exnova"},
+            entry_price=self.get_last_close(asset),
+            entry_time=now,
+            expiry_time=now + timedelta(seconds=expiry_sec),
+            broker_order_id=str(order_id),
+            resolution_source=ResolutionSource.UNRESOLVED,
+        )
+        self.open_trades.append(trade)
+        return trade
+
+    def get_last_close(self, asset: str) -> Optional[float]:
+        """Ultimo cierre observado (M1), o None si no hay feed."""
+        if not self.connected or not self.api:
+            return None
+        try:
+            df = self.get_candles(asset, 60, 2)
+            if df.empty or "close" not in df.columns:
+                return None
+            price = float(df["close"].iloc[-1])
+            return price if price > 0 else None
+        except Exception:
+            return None
+
+    def resolve_order(self, order_id) -> Optional[float]:
+        """PnL real reportado por el broker para una orden.
+
+        None significa "todavia no se sabe", nunca "cero": quien llama debe
+        reintentar, jamas asumir un resultado.
+        """
+        if not self.connected or not self.api or order_id is None:
+            return None
+        try:
+            data = self.api.check_win_v4(order_id)
+        except Exception as e:
+            print(f"[EXNOVA] check_win error: {e}")
+            return None
+        if isinstance(data, tuple):
+            profit = data[1] if len(data) > 1 else None
+            return float(profit) if profit is not None else None
+        if isinstance(data, (int, float)):
+            return float(data)
+        return None
 
     def get_open_assets(self, min_profit: float = 75) -> list:
         if not self.connected or not self.api:

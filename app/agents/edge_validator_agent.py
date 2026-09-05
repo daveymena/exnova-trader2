@@ -26,7 +26,14 @@ class EdgeValidatorAgent:
                  confidence: float, entry_timing_type: str = "enter_now") -> dict:
         reasons = []
         warnings = []
-        is_practice = config.mode == TradingMode.PRACTICE
+        # Fix (2026-09-05): antes solo PRACTICE evitaba la exigencia de
+        # 100 muestras historicas; si el modo resolvia a PAPER (p.ej. por
+        # una carga de .env inconsistente) la senal quedaba bloqueada para
+        # siempre, porque esas 100 muestras solo se acumulan con operaciones
+        # que ya pasaron este mismo filtro (bloqueo circular). Ahora el bypass
+        # aplica a cualquier modo que no sea dinero real; REAL mantiene la
+        # exigencia estricta de edge historico.
+        is_practice = config.mode != TradingMode.REAL
 
         if payout < self.min_payout and not is_practice:
             reasons.append(f"Payout {payout:.2f} below minimum {self.min_payout}")

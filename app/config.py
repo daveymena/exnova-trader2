@@ -3,6 +3,11 @@ import enum
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 
 class TradingMode(enum.Enum):
@@ -59,7 +64,12 @@ class Config:
     base_dir: Path = field(default_factory=lambda: Path(__file__).resolve().parent.parent)
 
     def __post_init__(self):
-        mode_str = os.getenv("TRADING_MODE") or os.getenv("ACCOUNT_TYPE", "paper").lower()
+        # El defecto se queda en "paper" a proposito: quien no configura
+        # nada no debe acabar enviando ordenes. En despliegue ACCOUNT_TYPE
+        # siempre viene puesto, asi que este valor solo cubre el descuido.
+        # El .lower() se aplica al resultado, no solo al defecto: con
+        # TRADING_MODE=PRACTICE la version anterior reventaba al arrancar.
+        mode_str = (os.getenv("TRADING_MODE") or os.getenv("ACCOUNT_TYPE", "paper")).lower()
         self.mode = TradingMode(mode_str)
         self.real_trading_enabled = os.getenv("REAL_TRADING_ENABLED", "false").lower() == "true"
 

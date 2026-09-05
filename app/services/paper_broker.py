@@ -7,7 +7,8 @@ from typing import Optional
 import random
 
 from app.data.schemas import (
-    Direction, ExecutionState, TradeResult, TradingMode, MarketRegime
+    Direction, ExecutionState, TradeResult, TradingMode, MarketRegime,
+    ResolutionSource
 )
 from app.data.repository import repository
 
@@ -55,6 +56,10 @@ class PaperBroker:
             trade.execution_state = ExecutionState.LOST
 
         trade.payout = payout
+        # Marcado explicito: el resultado es sintetico y EVIDENCE_SQL lo
+        # excluye de todo calculo de edge. Nunca debe contar como muestra.
+        trade.resolution_source = ResolutionSource.SIMULATED
+        trade.resolved_at = datetime.utcnow()
         self.equity = self.balance
         self.open_trades = [t for t in self.open_trades if t.timestamp != trade.timestamp]
 

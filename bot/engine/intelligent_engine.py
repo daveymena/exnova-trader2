@@ -450,6 +450,13 @@ class IntelligentEngine:
 
         # Rechazar zonas débiles
         if zone_strength < self.MIN_ZONE_STRENGTH:
+            # NO condicionar esta puerta a ai_score: la IA todavia no se ha
+            # ejecutado en este punto (ai_score se asigna ~70 lineas mas
+            # abajo), asi que leerlo aqui lanza UnboundLocalError. El llamador
+            # atrapa la excepcion como "Error analizando {asset}" y sigue, de
+            # modo que el fallo no se ve: el bot simplemente deja de operar
+            # todo activo con zona debil. Para suavizar esta puerta hay que
+            # mover antes el calculo de la IA, no leer la variable pronto.
             return {
                 "asset": asset,
                 "action": "WAIT",
@@ -526,17 +533,20 @@ class IntelligentEngine:
         )
 
         if ai_label in {"SKIP", "WAIT"}:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"IA bloquea: {ai_label} - {ai_narrative[:60]}",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            # SUAVIZADO: Permitir el trade si la puntuación de IA es muy alta (está convencida)
+            # a pesar de la etiqueta de skip.
+            if ai_score < 65:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"IA bloquea: {ai_label} - {ai_narrative[:60]}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                }
 
         # AI dirección debe coincidir con zona
         if ai_dir != expected_dir:
@@ -582,17 +592,20 @@ class IntelligentEngine:
         # Se aplica SIEMPRE (no solo en modo real) para que los datos recolectados
         # en práctica sean representativos de lo que pasaría en real.
         if pattern_name in BAD_PATTERNS:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"Patrón rechazado: {pattern_name} sin edge confirmado (WR<50% histórico)",
-                "confidence": 0,
-                "score": 0,
-                "pattern": pattern_name,
-                "ai_label": "SKIP",
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            # SUAVIZADO: No bloquear totalmente. Si la IA y la Zona son masivas,
+            # el patrón puede ser secundario.
+            if ai_score < 75:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"Patrón rechazado: {pattern_name} sin edge confirmado (WR<50% histórico)",
+                    "confidence": 0,
+                    "score": 0,
+                    "pattern": pattern_name,
+                    "ai_label": "SKIP",
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                }
 
         # =====================================================================
         # 4.6 VALIDACIÓN DE ALINEACIÓN DE TENDENCIA
@@ -711,18 +724,23 @@ class IntelligentEngine:
         )
         
         if not bounce["entry_viable"]:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"REBOTE {bounce['stage']}: {bounce['reason']}",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-                "bounce_stage": bounce["stage"],
-            }
+            # SUAVIZADO: Permitir entrada si el rebote es LATE pero la tendencia es masiva
+            # y la IA tiene un score muy alto.
+            if bounce["stage"] == "LATE" and ai_score >= 70:
+                pass # Permitir el trade
+            else:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"REBOTE {bounce['stage']}: {bounce['reason']}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                    "bounce_stage": bounce["stage"],
+                }
 
         # =====================================================================
         # 6. CONFIRMACIÓN 3 FASES (NO BYPASS para rebotes en etapa MIDDLE)
@@ -781,18 +799,24 @@ class IntelligentEngine:
             if self.mode == "practice":
                 smc_penalty = 0.20  # Reducir confianza 20% sin SMC en practice
             else:
-                return {
-                    "asset": asset,
-                    "action": "WAIT",
-                    "reason": f"SMC: {smc.get('reason', 'sin confirmación')}",
-                    "confidence": ai_conf,
-                    "score": ai_score,
-                    "pattern": pattern_name,
-                    "ai_label": ai_label,
-                    "zone_strength": zone_strength,
-                    "rsi": current_rsi,
-                    "smc": smc,
-                }
+                # SUAVIZADO: En modo real, si la IA es extremadamente fuerte (score >= 80),
+                # permitimos el trade aunque no haya confirmación SMC explícita,
+                # pero aplicamos una penalización fuerte de confianza.
+                if ai_score >= 80:
+                    smc_penalty = 0.40
+                else:
+                    return {
+                        "asset": asset,
+                        "action": "WAIT",
+                        "reason": f"SMC: {smc.get('reason', 'sin confirmación')}",
+                        "confidence": ai_conf,
+                        "score": ai_score,
+                        "pattern": pattern_name,
+                        "ai_label": ai_label,
+                        "zone_strength": zone_strength,
+                        "rsi": current_rsi,
+                        "smc": smc,
+                    }
 
         # Filtro de ventana/activo con edge (afinación SMC, opcional via env)
         # Solo bloquea horas/activos demonstrativa y estadísticamente perdedores.
