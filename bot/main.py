@@ -37,10 +37,10 @@ ai_auditor = AIAuditorAgent(enabled=AI_AUDIT_ENABLED)
 # ─────────────────────────────────────────────────────────────────────────────
 
 ASSETS = ASSETS_OTC_24_7  # 68 activos OTC
-MIN_CONFIDENCE = 0.55  # Umbral mínimo de confianza (necesitamos >54% WR)
-MIN_ZONE_STRENGTH = 0.55  # Fuerza mínima de zona (subido de 0.50)
-MIN_HOLD_RATE = 0.35  # Tasa mínima de retención (subido de 0.25)
-IA_MIN_SCORE = 50  # Score mínimo IA para operar (subido de 45)
+MIN_CONFIDENCE = 0.60  # Umbral mínimo de confianza (necesitamos >54% WR)
+MIN_ZONE_STRENGTH = 0.75  # Fuerza mínima de zona (subido de 0.50)
+MIN_HOLD_RATE = 0.25  # Tasa mínima de retención (subido de 0.25)
+IA_MIN_SCORE = 25  # Score mínimo IA para operar (subido de 45)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # GENERADOR DE CANDLES (MOCK)

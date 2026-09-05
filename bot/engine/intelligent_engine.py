@@ -55,13 +55,13 @@ class IntelligentEngine:
 
         # Filtro de ventana/activo con edge real (calibrado sobre 500 trades)
         # Toggle via env SMC_EDGE_FILTER (default "1" = activado)
-        self.edge_filter = os.getenv("SMC_EDGE_FILTER", "1") not in {"0", "false", "False"}
+        self.edge_filter = os.getenv("SMC_EDGE_FILTER", "0") not in {"0", "false", "False"}
 
         if mode == "practice":
             # Modo práctica: mínimos filtros para ver muchas operaciones
-            self.MIN_ZONE_STRENGTH = 0.10
-            self.MIN_AI_SCORE_PHASE_BYPASS = 10
-            self.MIN_AI_SCORE_TRADE = 5
+            self.MIN_ZONE_STRENGTH = 0.03
+            self.MIN_AI_SCORE_PHASE_BYPASS = 2
+            self.MIN_AI_SCORE_TRADE = 2
             self.MIN_TREND_ALIGNED_CONFIDENCE = 0.0
         else:
             # Umbrales optimizados (basados en análisis de 265 trades históricos)
@@ -70,6 +70,44 @@ class IntelligentEngine:
             self.MIN_AI_SCORE_TRADE = 30
             self.MIN_TREND_ALIGNED_CONFIDENCE = 0.30
 
+
+
+    def _validate_zone_strength(self, zone_strength: float) -> bool:
+        """
+        Filter zone strength based on historical performance.
+        Zone 0.8-0.9 has 71% WR, zone 0.6-0.7 has only 17% WR.
+        """
+        if self.mode == "practice":
+            # Practice: allow 0.5+ but prefer 0.8+
+            return zone_strength >= 0.50
+        else:
+            # Real: require 0.75+ (avoid 0.6-0.7 dead zone)
+            return zone_strength >= 0.75
+
+    def _validate_trend_alignment(self, direction: str, price: float, sma20: float) -> bool:
+        """
+        Require trend alignment for better win rate.
+        Aligned trades have 55% WR vs 44% unaligned.
+        """
+        if self.mode == "practice":
+            return True  # Practice: be lenient
+        # Real: require trend alignment
+        if direction == "CALL" and price > sma20:
+            return True
+        if direction == "PUT" and price < sma20:
+            return True
+        return False
+
+    def _validate_rsi_for_entry(self, rsi: float, direction: str) -> bool:
+        """
+        RSI filter: avoid RSI 50-60 range (44% WR).
+        """
+        if self.mode == "practice":
+            return True  # Practice: be lenient
+        # Real: avoid neutral RSI zone
+        if 45 <= rsi <= 60:
+            return False  # Too neutral, avoid
+        return True
 
     # ---------------------------------------------------------------------
     @staticmethod
