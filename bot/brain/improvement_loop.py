@@ -18,6 +18,9 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv("/app/.env")
 
 BOT = Path(__file__).absolute().parents[1]
 if str(BOT) not in sys.path:
@@ -37,6 +40,7 @@ OPENCODE_MODEL_FALLBACK = os.getenv("IMPROVEMENT_MODEL_FALLBACK", "mimo-v2.5-fre
 BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "30"))
 BATCH_MIN_MINUTES = int(os.getenv("IMPROVEMENT_BATCH_MIN_MINUTES", "20"))
 BATCH_MIN_SECONDS = BATCH_MIN_MINUTES * 60
+MIN_EVIDENCE = max(1, int(os.getenv("IMPROVEMENT_MIN_EVIDENCE", "200")))
 TIMEOUT_SEC = int(os.getenv("IMPROVEMENT_TIMEOUT", "90"))
 ENABLED = os.getenv("IMPROVEMENT_ENABLED", "true").lower() == "true"
 
@@ -276,6 +280,24 @@ def _apply_refinements(parsed: Dict, batch_summary: Dict) -> Dict:
             "overall_adjust": parsed.get("overall_adjust", "")}
 
 
+def _record_pending(parsed: Dict, batch_summary: Dict) -> None:
+    """Guarda una recomendación sin conectarla todavía al runner."""
+    data = ADJ.load()
+    history = list(data.get("history") or [])
+    history.append({
+        "ts": time.time(),
+        "cycle": int(data.get("cycle", 0)),
+        "batch": batch_summary,
+        "status": "PENDING_EVIDENCE",
+        "proposed": parsed.get("refinements") or [],
+        "assets_pause": parsed.get("assets_pause") or [],
+        "overall_adjust": parsed.get("overall_adjust", ""),
+        "applied": [],
+    })
+    data["history"] = history[-30:]
+    ADJ.save(data)
+
+
 def _run_cycle(last_ts: float) -> float:
     """Corre un ciclo si hay >=BATCH_N_TRADES nuevos o si paso BATCH_MIN_SEGUNDOS.
     Devuelve el nuevo last_ts (timestamp del ultimo trade analizado)."""
@@ -314,8 +336,23 @@ def _run_cycle(last_ts: float) -> float:
         return last_trade_ts  # avanzar igual para no reintentar el mismo lote
 
     try:
-        res = _apply_refinements(parsed, summary)
-        _log(f"ciclo {res['cycle']} aplicado: {res['applied']} | {res['overall_adjust']}")
+        evidence = sum(
+            1 for trade in trades
+            if str(trade.get("result", "")).upper() in {"WIN", "LOSS"}
+            and (
+                "resolution_source" not in trade
+                or trade.get("resolution_source") == "broker"
+            )
+        )
+        if evidence < MIN_EVIDENCE:
+            _record_pending(parsed, summary)
+            _log(
+                f"recomendacion guardada sin aplicar: evidencia={evidence}/"
+                f"{MIN_EVIDENCE} resultados broker"
+            )
+        else:
+            res = _apply_refinements(parsed, summary)
+            _log(f"ciclo {res['cycle']} aplicado: {res['applied']} | {res['overall_adjust']}")
     except Exception as e:
         _log(f"ERR aplicando refinamientos: {e}")
     return last_trade_ts

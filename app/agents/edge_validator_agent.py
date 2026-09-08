@@ -12,6 +12,7 @@ from app.data.schemas import (
 )
 from app.data.repository import repository
 from app.config import config, TradingMode
+from app.research.metrics import wilson_lower_bound
 
 
 class EdgeValidatorAgent:
@@ -70,10 +71,12 @@ class EdgeValidatorAgent:
         avg_payout = edge_data.get("avg_payout", payout)
 
         safety_margin_wr = break_even + self.safety_margin
-        if win_rate < safety_margin_wr:
+        conservative_wr = wilson_lower_bound(edge_data["wins"], total)
+        if conservative_wr < safety_margin_wr:
             reasons.append(
-                f"Win rate {win_rate:.4f} below safety threshold {safety_margin_wr:.4f} "
-                f"(break-even {break_even:.4f} + margin {self.safety_margin:.2f})"
+                f"Conservative win rate {conservative_wr:.4f} below safety "
+                f"threshold {safety_margin_wr:.4f} (observed {win_rate:.4f}, "
+                f"break-even {break_even:.4f} + margin {self.safety_margin:.2f})"
             )
             return self._reject(reasons, edge_data)
 
@@ -100,6 +103,7 @@ class EdgeValidatorAgent:
             "break_even_wr": break_even,
             "required_wr": safety_margin_wr,
             "current_wr": win_rate,
+            "conservative_wr": conservative_wr,
             "expectancy": expectancy,
             "profit_factor": profit_factor,
         }

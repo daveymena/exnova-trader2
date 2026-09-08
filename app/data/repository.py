@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from app.config import config
+from app.research.metrics import wilson_lower_bound
 from app.data.schemas import (
     Candle, MarketRegimeSnapshot, MultiTimeframeSnapshot,
     Signal, TradeDecision, TradeResult, AccountSnapshot,

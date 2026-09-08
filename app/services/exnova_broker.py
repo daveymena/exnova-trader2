@@ -123,19 +123,27 @@ class ExnovaBroker(PaperBroker):
                 except Exception:
                     pass
 
-            check, order_id = self.api.buy(amount, asset, action, expiry_sec)
+            # Exnova's binary `buy` API expects duration in whole minutes,
+            # while the application stores expiry in seconds.
+            expiry_minutes = max(1, round(expiry_sec / 60))
+            check, order_id = self.api.buy(
+                amount, asset, action, expiry_minutes
+            )
             if check:
                 return self._register_sent(
                     asset, direction, strategy, expiry_sec,
                     0.85, amount, market_regime, confidence, order_id,
                 )
-            print(f"[EXNOVA] Buy rejected: {order_id}")
+            print(
+                f"[EXNOVA] Buy rejected ({expiry_minutes}m): {order_id}"
+            )
         except Exception as e:
             print(f"[EXNOVA] Buy error: {e}")
 
-        # Fallback to paper
-        return super().buy(asset, direction, amount, expiry_sec,
-                           strategy, market_regime, confidence)
+        # A connected practice/real broker rejection must remain a rejection.
+        # Falling back to PaperBroker here creates fake fills, corrupts the
+        # learning dataset, and makes the caller believe an order was sent.
+        return None
 
     def _register_sent(self, asset, direction: Direction, strategy: str,
                        expiry_sec: int, payout: float, amount: float,

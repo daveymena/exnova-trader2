@@ -145,6 +145,14 @@ def _current_min_confidence():
 def _assets_paused():
     a = _adjustments()
     return set(a.get("assets_pause") or [])
+
+
+def _filter_configured_assets(assets):
+    """Aplica la whitelist de despliegue antes de cualquier otro filtro."""
+    if not ASSET_SCAN_LIST:
+        return assets
+    allowed = set(ASSET_SCAN_LIST)
+    return [asset for asset in assets if asset in allowed]
 # Diario con features REALES y control de concurrencia por activo.
 # El diario anterior guardaba rsi_at_touch=50 en 495 de 500 operaciones porque
 # se rellenaba con defaults; sin features reales no hay nada que analizar despues.
@@ -202,6 +210,14 @@ PAUSE_DURATION = int(os.getenv("PAUSE_DURATION", "120"))
 # Monto fijo por trade (stake). 0 = sizing dinámico (Kelly/tamano_rel).
 # Sobre-escribible en caliente desde el dashboard/chat via runtime_config.json.
 FIXED_STAKE        = float(os.getenv("FIXED_STAKE", "0") or 0)
+ASSET_SCAN_LIST    = tuple(
+    asset.strip() for asset in os.getenv(
+        "ASSET_SCAN_LIST", "AUDUSD-OTC,AMAZON-OTC,GOOGLE-OTC"
+    ).split(",") if asset.strip()
+)
+MAX_TRADES_PER_HOUR = int(os.getenv("MAX_TRADES_PER_HOUR", "4"))
+MAX_TRADES_PER_DAY = int(os.getenv("MAX_TRADES_PER_DAY", "12"))
+DAILY_LOSS_LIMIT = float(os.getenv("DAILY_LOSS_LIMIT", "10"))
 
 # Activo preferido, editable desde el dashboard. _apply_runtime_data() lo lee
 # como `global` y lo usa de fallback de sí mismo (data.get("asset",
@@ -594,9 +610,11 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     confidence=confidence, features=feats,
                     account_type=ACCOUNT_TYPE,
                 )
-                guard.register_open(asset)
             except Exception as e:
                 log(f"[DIARIO] No se pudo registrar la entrada: {e}", "WARNING")
+            # El límite de riesgo no puede depender de que el diario JSON
+            # esté sano: registrar la posición es una transición crítica.
+            guard.register_open(asset)
 
             time.sleep(expiration + 8)
 
@@ -631,9 +649,9 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             try:
                 if journal_rec is not None:
                     journal.close_trade(journal_rec.trade_id, result, pnl)
-                guard.register_close(asset, result, pnl)
             except Exception as e:
                 log(f"[DIARIO] No se pudo registrar el cierre: {e}", "WARNING")
+            guard.register_close(asset, result, pnl)
 
             # ── AUTO-EVALUADOR: alimentar el resultado real del setup ────────
             # DRAW no es WIN ni LOSS: no aporta informacion direccional sobre
@@ -783,12 +801,24 @@ def bot_loop(market_data, rm, engine, agent_engine):
     evaluator = TradeEvaluator()
     _eval_cfg = EvaluatorConfig()
     if ACCOUNT_TYPE == "PRACTICE":
-        _eval_cfg.min_observaciones = 80   # Aprendizaje más rápido en practice
-        _eval_cfg.crecimiento_checkpoint = 1.5  # Checkpoints más frecuentes
+        # PRACTICE permite explorar a stake mínimo, pero no declarar edge ni
+        # promover una regla con una muestra estadísticamente débil.
+        _eval_cfg.min_observaciones = 200
+        _eval_cfg.crecimiento_checkpoint = 2.0
     self_eval = get_evaluator(config=_eval_cfg)
 
     # ── LOSS PATTERN TRACKER: memoria de pérdidas que evita repetir errores ──
     loss_tracker = get_loss_tracker()
+    get_guard(GuardConfig(
+        max_concurrent_total=1,
+        min_seconds_between_trades=max(60, int(os.getenv("MIN_BETWEEN_TRADES", "180"))),
+        min_seconds_same_asset=max(180, int(os.getenv("MIN_BETWEEN_SAME_ASSET", "300"))),
+        max_consecutive_losses=max(1, int(os.getenv("MAX_CONSEC_LOSSES", "4"))),
+        cooldown_after_losses=max(300, int(os.getenv("COOLDOWN_AFTER_LOSS", "900"))),
+        max_trades_per_hour=max(1, MAX_TRADES_PER_HOUR),
+        max_trades_per_day=max(1, MAX_TRADES_PER_DAY),
+        daily_loss_limit=max(0.0, DAILY_LOSS_LIMIT),
+    ))
 
     log(f"Auth Exnova: email_configurado={bool(email)} password_configurada={bool(password)} password_len={len(password)}")
     log(f"Conectando a Exnova {ACCOUNT_TYPE}...")
@@ -817,7 +847,9 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
     # Obtener activos activos basados en horario
     activos_config = get_activos_activos()
-    activos_disponibles = activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
+    activos_disponibles = _filter_configured_assets(
+        activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
+    )
 
     print(f"\n{'='*60}")
     print(f"BOT OPERATIVO - Colombia (UTC-5)")
@@ -867,7 +899,9 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
             # Actualizar activos disponibles cada ciclo (por cambio de horario)
             activos_config = get_activos_activos()
-            activos_disponibles = activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
+            activos_disponibles = _filter_configured_assets(
+                activos_config["otc_24_7"] + activos_config["ptc_morning"] + activos_config["bo_otc"]
+            )
 
             # Reconexion
             if now - last_reconnect > 240:

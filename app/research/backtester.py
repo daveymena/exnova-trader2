@@ -3,6 +3,7 @@
 No look-ahead bias. Chronological candle processing. Entries only after
 signal confirmation. Correct expiry simulation with payout included.
 """
+from bisect import bisect_left
 from datetime import datetime, timedelta
 from typing import Optional
 import json
@@ -10,7 +11,7 @@ import statistics
 
 from app.data.schemas import (
     Candle, Direction, MarketRegime, TradeResult,
-    ExecutionState, BacktestResult, Timeframe
+    ExecutionState, BacktestResult, Timeframe, ResolutionSource
 )
 from app.config import config
 from app.agents.market_regime_agent import MarketRegimeAgent
@@ -38,6 +39,7 @@ class Backtester:
     def run(self, candles_m15: list[Candle], candles_m5: list[Candle],
             candles_m1: list[Candle], asset: str = "",
             payout: float = 0.85, stake_per_trade: float = 10.0) -> BacktestResult:
+        initial_balance = self.balance
         m15_sorted = sorted(candles_m15, key=lambda c: c.open_time)
         m5_sorted = sorted(candles_m5, key=lambda c: c.open_time)
         m1_sorted = sorted(candles_m1, key=lambda c: c.open_time)
@@ -47,8 +49,16 @@ class Backtester:
         peak_equity = self.balance
         max_dd = 0
 
-        # Process each M1 candle as a potential entry point
-        for i in range(50, len(m1_sorted)):
+        m1_times = [c.open_time for c in m1_sorted]
+        next_available_index = 50
+
+        # A signal is calculated after candle i closes, then filled at the
+        # next candle open. The result is measured at the first closed candle
+        # at or after the configured expiry. This prevents using the signal
+        # candle's close as both information and outcome.
+        for i in range(50, len(m1_sorted) - 1):
+            if i < next_available_index:
+                continue
             current_candle = m1_sorted[i]
             current_time = current_candle.open_time
 
@@ -101,11 +111,29 @@ class Backtester:
                 features=best_signal.get("features", {}),
             )
 
-            # Determine outcome based on next candle direction
-            if direction == Direction.CALL:
-                won = current_candle.is_bullish
-            else:
-                won = not current_candle.is_bullish and current_candle.close != current_candle.open
+            entry_candle = m1_sorted[i + 1]
+            expiry_time = entry_candle.open_time + timedelta(seconds=expiry_sec)
+            expiry_index = bisect_left(m1_times, expiry_time, i + 1)
+            if expiry_index >= len(m1_sorted):
+                break
+            exit_candle = m1_sorted[expiry_index]
+            entry_price = entry_candle.open
+            exit_price = exit_candle.close
+
+            if exit_price == entry_price:
+                # A tie is not a win or a loss. Do not manufacture an edge.
+                continue
+            won = (
+                exit_price > entry_price
+                if direction == Direction.CALL
+                else exit_price < entry_price
+            )
+            trade.entry_price = entry_price
+            trade.exit_price = exit_price
+            trade.entry_time = entry_candle.open_time
+            trade.expiry_time = expiry_time
+            trade.resolved_at = exit_candle.open_time
+            trade.resolution_source = ResolutionSource.CANDLE
 
             if won:
                 profit = stake_per_trade * payout_val
@@ -123,6 +151,7 @@ class Backtester:
             self.trades.append(trade)
             self.equity_curve.append(self.balance)
             repository.save_trade_result(trade)
+            next_available_index = expiry_index + 1
 
             if self.balance > peak_equity:
                 peak_equity = self.balance

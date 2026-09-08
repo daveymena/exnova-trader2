@@ -56,6 +56,7 @@ class Config:
 
     strategy_min_confidence: float = 0.65
     strategy_min_zone_strength: float = 0.40
+    asset_scan_list: list[str] = field(default_factory=list)
 
     database_path: str = "data/trading_bot.db"
     log_level: str = "INFO"
@@ -91,6 +92,11 @@ class Config:
         self.backtest_safety_margin = float(os.getenv("BACKTEST_SAFETY_MARGIN", "0.03"))
 
         self.strategy_min_confidence = float(os.getenv("STRATEGY_MIN_CONFIDENCE", "0.65"))
+        configured_assets = os.getenv("ASSET_SCAN_LIST", "")
+        self.asset_scan_list = [
+            asset.strip() for asset in configured_assets.split(",")
+            if asset.strip()
+        ]
 
         self.database_path = os.getenv("DATABASE_PATH", str(self.base_dir / "data" / "trading_bot.db"))
         self.log_level = os.getenv("LOG_LEVEL", "INFO")

@@ -4,6 +4,7 @@ Runs the scanning loop, processes signals, manages risk, and records results.
 """
 import time
 import logging
+import os
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -61,6 +62,13 @@ class TradingBot:
         self.assets = self._load_assets()
 
     def _load_assets(self) -> list[str]:
+        configured = os.getenv("ASSET_SCAN_LIST", "").strip()
+        if configured:
+            assets = [asset.strip() for asset in configured.split(",") if asset.strip()]
+            if assets:
+                logger.info("Using configured asset scan list: %s", assets)
+                return assets
+
         if hasattr(self.broker, 'get_open_assets'):
             try:
                 assets_info = self.broker.get_open_assets(min_profit=75)
@@ -144,6 +152,11 @@ class TradingBot:
                     if exec_result and exec_result.get("traded", False):
                         total_trades += 1
                         cooldown_until = now + 30  # 30s cooldown tras trade
+                    elif exec_result is not None:
+                        # A broker rejection is not a trade, but retrying the
+                        # same unavailable expiry every second can flood the
+                        # broker and obscure the real market state.
+                        cooldown_until = now + 60
 
                 cycle += 1
                 if cycle % 10 == 0:

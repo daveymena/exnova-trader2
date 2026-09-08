@@ -2,13 +2,9 @@
 set -e
 
 # EasyPanel puede crear el archivo .env sin exportarlo al proceso PID 1.
-# Cargarlo aquí garantiza que bot, monitor e improvement_loop compartan la
-# misma configuración sin copiar secretos al código fuente.
-if [ -f /app/.env ]; then
-    set -a
-    . /app/.env
-    set +a
-fi
+# Los procesos Python lo cargan con python-dotenv. No hacemos `source` aquí:
+# un comentario inline o un valor con caracteres especiales en una credencial
+# no debe impedir que arranque el contenedor.
 echo "[entrypoint] Exnova env: email=${EXNOVA_EMAIL:+set} password_len=${#EXNOVA_PASSWORD} dotenv=$( [ -f /app/.env ] && echo yes || echo no )"
 
 if [ "${RESET_STATE:-false}" = "true" ]; then
@@ -35,12 +31,24 @@ persist_link() {
     fi
     [ -e "$f" ] || ln -s "$dest" "$f"
 }
+persist_empty_link() {
+    local f="$1" dest="$2"
+    if [ ! -e "$dest" ]; then
+        printf '{}\n' > "$dest"
+    fi
+    [ -e "$f" ] || ln -s "$dest" "$f"
+}
 for f in /app/bot/brain/*.json; do
     persist_link "$f" "/app/data/brain/$(basename "$f")"
 done
 for f in /app/bot/data/*.json; do
     persist_link "$f" "/app/data/botdata/$(basename "$f")"
 done
+# Estos archivos pueden nacer después del build; deben persistir desde el
+# primer arranque para no perder el aprendizaje al redeployar EasyPanel.
+persist_empty_link /app/bot/brain/strategy_adjustments.json /app/data/brain/strategy_adjustments.json
+persist_empty_link /app/bot/data/self_evaluator.json /app/data/botdata/self_evaluator.json
+persist_empty_link /app/bot/data/loss_patterns.json /app/data/botdata/loss_patterns.json
 echo "[entrypoint] Estado persistente en /app/data/brain y /app/data/botdata (symlinks por archivo)"
 
 # 1. Inicializar SQLite (migrate) antes de arrancar nada.
