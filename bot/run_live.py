@@ -266,7 +266,44 @@ state = {
 
 BOT_HEARTBEAT_PATH = Path(os.getenv("BOT_HEARTBEAT_PATH", "/app/data/bot_heartbeat.json"))
 
+# ── Watchdog del ciclo principal ─────────────────────────────────────────────
+#
+# Medido el 18-09-2026: el latido llevaba 3 dias y medio congelado (ciclo 6359,
+# "OBSERVANDO_ZONA CADJPY-OTC") mientras el log era un muro de
+# "Websocket connected / Connection lost / need reconnect". El hilo principal
+# estaba preso en un `while ... == None` de la libreria de Exnova y el
+# entrypoint no lo reiniciaba porque el proceso seguia vivo. `bot_alive: true`
+# en el dashboard era verdad y a la vez no servia para nada.
+#
+# Mismo patron que el bot MT5 (14h ciego) y Nexus (1h36m ciego): la conexion se
+# pierde y el proceso no se rinde. La regla: si el latido no avanza en
+# WATCHDOG_STALE_SEC, el proceso se mata solo y el entrypoint lo levanta limpio.
+WATCHDOG_STALE_SEC = int(os.getenv("WATCHDOG_STALE_SEC", "600"))
+_last_heartbeat_ts = time.time()
+
+def _watchdog_loop():
+    while True:
+        time.sleep(30)
+        quieto = time.time() - _last_heartbeat_ts
+        if quieto > WATCHDOG_STALE_SEC:
+            msg = (f"[WATCHDOG] El ciclo principal lleva {int(quieto)}s sin latir "
+                   f"(ciclo {state.get('cycle', 0)}, {state.get('status', '')} {state.get('current_asset', '')}). "
+                   f"Saliendo con rc=3 para que el entrypoint reinicie el bot.")
+            print(msg, flush=True)
+            try:
+                log(msg, "ERROR")
+            except Exception:
+                pass
+            os._exit(3)
+
+def start_watchdog():
+    t = threading.Thread(target=_watchdog_loop, name="watchdog", daemon=True)
+    t.start()
+    return t
+
 def _write_bot_heartbeat():
+    global _last_heartbeat_ts
+    _last_heartbeat_ts = time.time()
     try:
         BOT_HEARTBEAT_PATH.parent.mkdir(parents=True, exist_ok=True)
         tmp = BOT_HEARTBEAT_PATH.with_suffix(".tmp")
@@ -821,6 +858,8 @@ def bot_loop(market_data, rm, engine, agent_engine):
 
     print(f"\n{'='*60}")
     print(f"BOT OPERATIVO - Colombia (UTC-5)")
+    start_watchdog()
+    print(f"[WATCHDOG] Activo: reinicio automatico si el ciclo no late en {WATCHDOG_STALE_SEC}s", flush=True)
     print(f"Hora actual: {get_current_time_colombia().strftime('%H:%M:%S')}")
     print(f"Horario mañana (PTC): {es_horario_manana()}")
     print(f"OTC 24/7: {len(activos_config['otc_24_7'])} activos")

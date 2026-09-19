@@ -108,8 +108,15 @@ class Exnova:
             self.re_subscribe_stream()
 
             # ---------for async get name: "position-changed", microserviceName
-            while global_value.balance_id == None:
-                pass
+            # Acotado: si Exnova acepta el ssid pero nunca manda el perfil
+            # (pasa cuando corta el socket justo despues de conectar), esto
+            # era un busy-wait eterno que dejaba al bot congelado.
+            _t0 = time.time()
+            while global_value.balance_id == None and time.time() - _t0 < 30:
+                time.sleep(0.05)
+            if global_value.balance_id == None:
+                logging.error('**error** connect: Exnova no envio el perfil/balance en 30s (socket cortado tras el ssid)')
+                return False, 'sin perfil/balance en 30s tras conectar'
 
             self.position_change_all(
                 "subscribeMessage", global_value.balance_id)
@@ -233,15 +240,34 @@ class Exnova:
         # type="crypto"/"forex"/"cfd"
         time.sleep(self.suspend)
         self.api.instruments = None
+        # Antes: `while instruments == None` sin salida. Con Exnova cortando el
+        # socket tras conectar, esto reconectaba para siempre y el hilo
+        # principal del bot quedo preso aqui (heartbeat congelado desde el
+        # 15-09-2026, 3 dias). Ahora se rinde tras pocos intentos, DICE por que
+        # fallo la reconexion y lanza, para que quien llama decida.
+        intentos = 0
         while self.api.instruments == None:
+            intentos += 1
+            if intentos > 4:
+                raise ConnectionError(
+                    f'get_instruments({type}): sin respuesta de Exnova tras {intentos - 1} intentos')
             try:
                 self.api.get_instruments(type)
                 start = time.time()
                 while self.api.instruments == None and time.time() - start < 10:
-                    pass
-            except:
-                logging.error('**error** api.get_instruments need reconnect')
-                self.connect()
+                    time.sleep(0.05)
+                if self.api.instruments == None:
+                    logging.error('**error** api.get_instruments sin respuesta en 10s (intento %s)', intentos)
+                    ok, motivo = self.connect()
+                    if not ok:
+                        logging.error('**error** reconexion fallida: %s', str(motivo)[:300])
+            except ConnectionError:
+                raise
+            except Exception as exc:
+                logging.error('**error** api.get_instruments need reconnect (%s)', exc)
+                ok, motivo = self.connect()
+                if not ok:
+                    logging.error('**error** reconexion fallida: %s', str(motivo)[:300])
         return self.api.instruments
 
     def instruments_input_to_ACTIVES(self, type):
@@ -392,16 +418,27 @@ class Exnova:
                     if start < time.time() < end:
                         self.OPEN_TIME[instruments_type][name]["open"] = True
 
-    def get_all_open_time(self):
+    def get_all_open_time(self, include_other=True, timeout=60):
         # all pairs openned
+        #
+        # `other` (cfd/forex/crypto) es lo que colgaba al bot: Exnova dejo de
+        # responder `get_instruments("cfd")` incluso con la conexion sana
+        # (medido 18-09-2026: 4 intentos x 10s sin respuesta) y el `join()`
+        # sin tope de aca no volvia nunca. El bot de binarias solo necesita
+        # binary/turbo/digital, asi que puede pedir `include_other=False`;
+        # y en cualquier caso los join tienen tope y los hilos son daemon.
         self.OPEN_TIME = nested_dict(3, dict)
-        binary = threading.Thread(target=self.__get_binary_open)
-        digital = threading.Thread(target=self.__get_digital_open)
-        other = threading.Thread(target=self.__get_other_open)
-
-        binary.start(), digital.start(), other.start()
-
-        binary.join(), digital.join(), other.join()
+        hilos = [threading.Thread(target=self.__get_binary_open, daemon=True),
+                 threading.Thread(target=self.__get_digital_open, daemon=True)]
+        if include_other:
+            hilos.append(threading.Thread(target=self.__get_other_open, daemon=True))
+        for h in hilos:
+            h.start()
+        limite = time.time() + timeout
+        for h in hilos:
+            h.join(max(0.0, limite - time.time()))
+            if h.is_alive():
+                logging.error('**error** get_all_open_time: %s no respondio en %ss, se sigue sin ese bloque', h._target.__name__, timeout)
         return self.OPEN_TIME
 
     # --------for binary option detail

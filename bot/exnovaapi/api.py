@@ -878,7 +878,11 @@ class ExnovaAPI(object):  # pylint: disable=too-many-instance-attributes
                 global_value.SSID = response.cookies["ssid"]
             except:
                 self.close()
-                return False, response.text
+                _txt = getattr(response, 'text', str(response))
+                _st = getattr(response, 'status_code', '?')
+                logging.getLogger(__name__).error(
+                    '**error** login HTTP sin cookie ssid (status %s): %s', _st, ' '.join(str(_txt)[:300].split()))
+                return False, _txt
             atexit.register(self.logout)
             self.send_ssid()
 
@@ -887,12 +891,13 @@ class ExnovaAPI(object):  # pylint: disable=too-many-instance-attributes
             self.session.cookies, {"ssid": global_value.SSID})
 
         self.timesync.server_timestamp = None
-        while True:
-            try:
-                if self.timesync.server_timestamp != None:
-                    break
-            except:
-                pass
+        # Acotado (antes `while True`): si el servidor cierra el socket al
+        # recibir el ssid, el timeSync no llega nunca y esto no volvia jamas.
+        _t0 = time.time()
+        while self.timesync.server_timestamp == None and time.time() - _t0 < 30:
+            time.sleep(0.05)
+        if self.timesync.server_timestamp == None:
+            return False, 'sin timeSync en 30s: Exnova cerro el socket tras el ssid'
         return True, None
 
     def connect2fa(self, sms_code):

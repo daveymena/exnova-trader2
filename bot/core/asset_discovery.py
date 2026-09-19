@@ -72,7 +72,12 @@ class AssetDiscovery:
 
     def _fetch(self) -> list[TradableAsset]:
         try:
-            open_time = self.api.get_all_open_time()
+            # Solo binarias: el bloque cfd/forex/crypto no se usa y era lo que
+            # dejaba al ciclo colgado cuando Exnova no lo contestaba.
+            try:
+                open_time = self.api.get_all_open_time(include_other=False, timeout=45)
+            except TypeError:
+                open_time = self.api.get_all_open_time()
         except Exception as e:
             logger.error("No se pudo consultar get_all_open_time(): %s", e)
             return []
