@@ -257,10 +257,12 @@ class Exnova:
                 while self.api.instruments == None and time.time() - start < 10:
                     time.sleep(0.05)
                 if self.api.instruments == None:
-                    logging.error('**error** api.get_instruments sin respuesta en 10s (intento %s)', intentos)
-                    ok, motivo = self.connect()
-                    if not ok:
-                        logging.error('**error** reconexion fallida: %s', str(motivo)[:300])
+                    # Sin respuesta con el socket vivo NO es motivo para
+                    # reconectar: `connect()` cierra y reemplaza el socket
+                    # compartido y le tumba la conexion al ciclo principal
+                    # (visto en el log del 19-09 justo despues de arrancar).
+                    # Exnova simplemente ya no contesta cfd/forex/crypto.
+                    logging.error('**error** api.get_instruments(%s) sin respuesta en 10s (intento %s)', type, intentos)
             except ConnectionError:
                 raise
             except Exception as exc:
