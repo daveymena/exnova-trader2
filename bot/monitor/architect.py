@@ -257,7 +257,7 @@ class ArchitectAI:
                     applied[k] = str(v).lower()
                 continue
             if k in {"min_confidence"}:
-                v = min(max(float(v), 0.5), 0.99)
+                v = min(max(float(v), 0.25), 0.99)
             elif k in {"cooldown_after_loss", "min_between_trades"}:
                 v = min(max(int(v), 30), 3600)
             elif k == "max_consecutive_losses":
@@ -294,7 +294,7 @@ class ArchitectAI:
                 "• 'estado' / 'análisis' → veo el rendimiento real y propongo ajustes\n"
                 "• 'aplica' → aplico la última propuesta\n"
                 "• 'stake a 5' → monto por operación (0.5-100)\n"
-                "• 'confianza a 0.7' → confianza mínima (0.5-0.99)\n"
+                "• 'confianza a 0.7' → confianza mínima (0.25-0.99)\n"
                 "• 'activo a EURUSD-OTC' → activo principal\n"
                 "• 'max pérdidas a 4' → pérdidas consecutivas máx (1-10)\n"
                 "• 'cooldown a 300' → pausa tras pérdida en segundos (30-3600)\n"
