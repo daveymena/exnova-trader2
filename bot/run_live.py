@@ -1178,11 +1178,8 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                       f"score={signal.get('score',0):.0f} < 70", "WARNING")
                             continue
                     else:
-                        # Practice: permitir contra-tendencia con score mínimo reducido
-                        if signal.get("score", 0) < 20:
-                            descartar("contratendencia_score",
-                                      f"score={signal.get('score',0):.0f} < 20", "WARNING")
-                            continue
+                        # Practice: permitir contra-tendencia sin filtro de score
+                        pass
 
                 direccion = signal.get("signal", "")
                 # (Sesgo anti-PUT +0.15 retirado: castigaba solo PUTs sin evidencia.
@@ -1506,7 +1503,7 @@ def _apply_runtime_data(data, hot=False):
     if mode in ("PAPER", "PRACTICE") and not hot:
         ACCOUNT_TYPE = "PRACTICE"
     DEFAULT_ASSET = str(data.get("asset", DEFAULT_ASSET))[:80] or DEFAULT_ASSET
-    MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.5), 0.80)
+    MIN_CONFIDENCE = min(max(float(data.get("min_confidence", MIN_CONFIDENCE)), 0.25), 0.80)
     MAX_CONSEC_LOSSES = min(max(int(data.get("max_consecutive_losses", MAX_CONSEC_LOSSES)), 1), 10)
     COOLDOWN_AFTER_LOSS = min(max(int(data.get("cooldown_after_loss", COOLDOWN_AFTER_LOSS)), 30), 3600)
     MIN_BETWEEN_TRADES = min(max(int(data.get("min_between_trades", MIN_BETWEEN_TRADES)), 30), 3600)
