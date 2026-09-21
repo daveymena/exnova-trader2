@@ -571,9 +571,9 @@ class IntelligentEngine:
         )
 
         if ai_label in {"SKIP", "WAIT"}:
-            # SUAVIZADO: Permitir el trade si la puntuación de IA es muy alta (está convencida)
-            # a pesar de la etiqueta de skip.
-            if ai_score < 65:
+            if self.mode == "practice" and ai_score >= 15:
+                pass
+            elif ai_score < 65:
                 return {
                     "asset": asset,
                     "action": "WAIT",
@@ -588,17 +588,20 @@ class IntelligentEngine:
 
         # AI dirección debe coincidir con zona
         if ai_dir != expected_dir:
-            return {
-                "asset": asset,
-                "action": "WAIT",
-                "reason": f"IA sugiere {ai_dir} pero zona dice {expected_dir}",
-                "confidence": ai_conf,
-                "score": ai_score,
-                "pattern": pattern_name,
-                "ai_label": ai_label,
-                "zone_strength": zone_strength,
-                "rsi": current_rsi,
-            }
+            if self.mode == "practice":
+                expected_dir = zone_dir
+            else:
+                return {
+                    "asset": asset,
+                    "action": "WAIT",
+                    "reason": f"IA sugiere {ai_dir} pero zona dice {expected_dir}",
+                    "confidence": ai_conf,
+                    "score": ai_score,
+                    "pattern": pattern_name,
+                    "ai_label": ai_label,
+                    "zone_strength": zone_strength,
+                    "rsi": current_rsi,
+                }
 
         # Score mínimo de IA (suavizado)
         if ai_score < self.MIN_AI_SCORE_TRADE:
@@ -630,9 +633,9 @@ class IntelligentEngine:
         # Se aplica SIEMPRE (no solo en modo real) para que los datos recolectados
         # en práctica sean representativos de lo que pasaría en real.
         if pattern_name in BAD_PATTERNS:
-            # SUAVIZADO v2: Solo bloquear si IA también desconfirma (umbral bajo)
-            # En practice: permitir para recolectar datos de todos los patrones
-            if ai_score < 45:
+            if self.mode == "practice":
+                pass
+            elif ai_score < 45:
                 return {
                     "asset": asset,
                     "action": "WAIT",
@@ -762,9 +765,9 @@ class IntelligentEngine:
         )
         
         if not bounce["entry_viable"]:
-            # SUAVIZADO: Permitir entrada si el rebote es LATE pero la tendencia es masiva
-            # y la IA tiene un score muy alto.
-            if bounce["stage"] == "LATE" and ai_score >= 70:
+            if self.mode == "practice":
+                pass
+            elif bounce["stage"] == "LATE" and ai_score >= 70:
                 pass # Permitir el trade
             else:
                 return {
