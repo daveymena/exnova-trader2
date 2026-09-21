@@ -630,9 +630,9 @@ class IntelligentEngine:
         # Se aplica SIEMPRE (no solo en modo real) para que los datos recolectados
         # en práctica sean representativos de lo que pasaría en real.
         if pattern_name in BAD_PATTERNS:
-            # SUAVIZADO: No bloquear totalmente. Si la IA y la Zona son masivas,
-            # el patrón puede ser secundario.
-            if ai_score < 75:
+            # SUAVIZADO v2: Solo bloquear si IA también desconfirma (umbral bajo)
+            # En practice: permitir para recolectar datos de todos los patrones
+            if ai_score < 45:
                 return {
                     "asset": asset,
                     "action": "WAIT",
@@ -654,7 +654,7 @@ class IntelligentEngine:
         trend_penalty = 0.0
         if not trend_aligned:
             if self.mode == "practice":
-                trend_penalty = 0.30  # Reducir confianza 30% en practice
+                trend_penalty = 0.15  # Reducir confianza 15% en practice (antes 30%)
             else:
                 return {
                     "asset": asset,

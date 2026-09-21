@@ -1155,9 +1155,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 confidence = signal.get("confidence", 0)
                 score = signal.get("score", 0)
 
-                # Validación extra de patrón (doble filtro)
+                # Validación extra de patrón (doble filtro) — SUAVIZADO para PRACTICE
+                # En PRACTICE permitimos todos los patrones para recolectar datos
                 pattern = signal.get("pattern", "")
-                if pattern in BAD_PATTERNS:
+                if pattern in BAD_PATTERNS and ACCOUNT_TYPE == "REAL":
                     descartar("patron_peligroso", f"patron {pattern}", "WARNING")
                     continue
 
@@ -1177,10 +1178,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                       f"score={signal.get('score',0):.0f} < 70", "WARNING")
                             continue
                     else:
-                        # Practice: permitir pero con score mínimo más bajo
-                        if signal.get("score", 0) < 40:
+                        # Practice: permitir contra-tendencia con score mínimo reducido
+                        if signal.get("score", 0) < 20:
                             descartar("contratendencia_score",
-                                      f"score={signal.get('score',0):.0f} < 40", "WARNING")
+                                      f"score={signal.get('score',0):.0f} < 20", "WARNING")
                             continue
 
                 direccion = signal.get("signal", "")
