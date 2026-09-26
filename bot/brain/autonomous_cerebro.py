@@ -27,6 +27,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 import logging
 
+# Importar Cerebro Básico como fallback
+try:
+    from cerebro_basico_sin_ia import CerebroBasicoSinIA
+    CEREBRO_BASICO_AVAILABLE = True
+except ImportError:
+    CEREBRO_BASICO_AVAILABLE = False
+
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("AutonomousCerebro")
 
@@ -551,6 +558,9 @@ class AutonomousCerebro:
         self.planner = Planner()
         self.speculator = Speculator()
 
+        # Fallback final: Cerebro Básico sin IA (si todo falla)
+        self.cerebro_basico = CerebroBasicoSinIA() if CEREBRO_BASICO_AVAILABLE else None
+
         # Estado
         self.trades_executed = []
         self.current_plan = None
@@ -558,6 +568,8 @@ class AutonomousCerebro:
 
         log.info(f"{'='*70}")
         log.info(f"[{self.name}] ✅ INICIALIZADO - 5 FASES LISTAS")
+        if self.cerebro_basico:
+            log.info(f"[{self.name}] ✅ FALLBACK: Cerebro Básico sin IA disponible")
         log.info(f"{'='*70}")
 
     def analyze_and_decide(self, market_context: Dict) -> Dict:
