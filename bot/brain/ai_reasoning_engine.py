@@ -167,11 +167,41 @@ Confianza inicial: {analysis.get('initial_confidence', 0.5):.2f}
 class OllamaLocalClient:
     """Cliente para Ollama (IA completamente local y gratis)"""
 
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        self.base_url = base_url
-        self.model = "gemma:2b"  # Modelo ligero gratis
-        self.available = self._check_available()
-        log.info(f"[Ollama] Inicializado (disponible={self.available})")
+    def __init__(self, base_url: str = None):
+        import os
+        # Detectar URL correcta
+        if base_url is None:
+            base_url = os.getenv('OLLAMA_URL', 'http://ollama:11434')
+
+        # Intentar URLs conocidas
+        self.urls_to_try = [
+            base_url,
+            'http://ollama:11434',
+            'http://localhost:11434',
+            'http://127.0.0.1:11434'
+        ]
+
+        self.base_url = None
+        self.model = "deepseek-v4-flash:cloud"  # Usar DeepSeek disponible
+        self.available = False
+        self._detect_url()
+        log.info(f"[Ollama] Inicializado en {self.base_url} (disponible={self.available})")
+
+    def _detect_url(self):
+        """Detecta dónde está Ollama disponible"""
+        for url in self.urls_to_try:
+            try:
+                response = requests.get(f"{url}/api/tags", timeout=2)
+                if response.status_code == 200:
+                    self.base_url = url
+                    self.available = True
+                    log.info(f"[Ollama] Encontrado en {url}")
+                    return
+            except:
+                pass
+
+        log.warning("[Ollama] No disponible en ninguna URL conocida")
+        self.available = False
 
     def _check_available(self) -> bool:
         """Verifica si Ollama está disponible localmente"""
