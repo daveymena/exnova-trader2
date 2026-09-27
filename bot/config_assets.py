@@ -157,6 +157,30 @@ ASSETS_BLACKLIST = {
     "JPM-OTC",          # -$18.79, 0% WR (2t)
     "XAUUSD-OTC",       # -$18.91, 33.3% WR (6t)
     "USDPLN-OTC",       # -$4.21, 50.0% WR (6t)
+
+    # ── FOCO MAJORS (2026-09-27): exoticos/liquidos fuera para acelerar
+    # ciclos 103 -> ~53 activos (~12min -> ~6min por vuelta). Cada zona
+    # necesita N analisis y solo suma ~1 por vuelta: con 103 activos una
+    # zona tarda ~1.5-2h en graduarse; con ~53, ~45min. Reversible: quitar
+    # de aqui para reincorporar. NO es por mal WR, es por velocidad.
+    # Forex exoticos (spreads amplios, price-action ruidosa en OTC):
+    "USDNOK-OTC", "USDSEK-OTC", "USDTRY-OTC", "USDSGD-OTC",
+    "USDHKD-OTC", "USDINR-OTC", "USDMXN-OTC", "USDBRL-OTC",
+    "USDCOP-OTC", "USDARS-OTC", "USDSAR-OTC", "USDNGN-OTC",
+    "USDIDR-OTC", "USDTHB-OTC", "EURTHB-OTC", "JPYTHB-OTC",
+    "USDVND-OTC", "USDBDT-OTC", "USDCLP-OTC", "USDBOB-OTC",
+    "USDDOP-OTC", "NOKJPY-OTC", "PENUSD-OTC", "USDXOF-OTC",
+    "USDMYR-OTC",
+    # Indices secundarios:
+    "FR40-OTC", "AUS200-OTC", "HK33-OTC", "SP35-OTC",
+    # Materias primas exoticas:
+    "COCOA-OTC", "COTTON-OTC",
+    # Cripto de baja liquidez / memecoins:
+    "BCH-OTC", "LINK-OTC", "DOT-OTC", "SHIB-OTC", "FLOKI-OTC",
+    "EOS-OTC", "ATOM-OTC", "NEAR-OTC", "LUNA-OTC",
+    # Acciones poco liquidas en OTC:
+    "BIDU-OTC", "GS-OTC", "PLTR-OTC", "SNAP-OTC", "NIKE-OTC",
+    "COKE-OTC", "MCDON-OTC", "AIG-OTC", "MORSTAN-OTC",
 }
 
 BAD_PATTERNS = {

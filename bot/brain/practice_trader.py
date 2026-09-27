@@ -19,8 +19,10 @@ VIRTUAL_BALANCE_INIT = 1000.0
 AMOUNT_PER_TRADE = 10.0
 BROKER_PAYOUT = 0.85  # 85% payout en win
 # Minimo de analisis completados antes de confiar en el win rate de una zona.
-# Con 3 muestras un 66-100% de acierto puede ser ruido puro.
-MIN_ZONE_ANALYSES = 8
+# =5 (2026-09-27, antes 8): alineado con supervised_zone_learner.py. Con 3
+# muestras un 66-100% de acierto puede ser ruido puro; el filtro Wilson
+# (lower_bound >= 0.54) del gate en vivo sigue protegiendo.
+MIN_ZONE_ANALYSES = 5
 
 
 @dataclass

@@ -33,11 +33,11 @@ SWING_WINDOW_M1 = 5
 # fueran entradas independientes triplica las muestras del mismo evento.
 EXPIRATIONS = [180]
 # Muestras independientes mínimas antes de confiar en una zona.
-# Alineado con practice_trader.py (=8): con 3 un 66-100% puede ser ruido,
-# pero exigir 20 con expiracion de 180s y 103 activos rotando deja las zonas
-# graduandose jamas (cada zona necesitaria ~4h al mismo nivel). El filtro
-# Wilson (lower_bound >= 0.54) y strength >= 0.50 siguen protegiendo.
-MIN_ZONE_ANALYSES = 8
+# =5 (2026-09-27, antes 8/20): con Wilson lower_bound >= 0.54 como guarda
+# real, n=5 solo deja pasar zonas 5/5 (LB~57%); 4/5 (LB~38%) sigue
+# bloqueada. El conteo alto solo añadia espera sin seguridad extra.
+# Alineado con practice_trader.py.
+MIN_ZONE_ANALYSES = 5
 PRACTICE_BALANCE = 1000.0       # balance inicial para modo demo
 
 
