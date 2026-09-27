@@ -1178,8 +1178,23 @@ def bot_loop(market_data, rm, engine, agent_engine):
                                       f"score={signal.get('score',0):.0f} < 70", "WARNING")
                             continue
                     else:
-                        # Practice: permitir contra-tendencia sin filtro de score
-                        pass
+                        # Practice: permitir contra-tendencia salvo reversiones
+                        # sin momentum (REGLA IA 2026-09-27, Groq qwen3.8-27b
+                        # tras 2 LOSS con trend_aligned=false y RSI neutro:
+                        # patron de reversion + RSI 45-65 + sin tendencia
+                        # alineada = ruido en OTC, ambas perdieron).
+                        _rev = ("hammer", "pin_bar", "engulfing",
+                                "shooting_star", "doji", "morning_star",
+                                "evening_star")
+                        _rsi = signal.get("rsi", signal.get("rsi_at_touch", 50))
+                        if (any(k in pattern for k in _rev)
+                                and not trend_aligned
+                                and 45 <= _rsi <= 65):
+                            descartar("reversion_sin_tendencia",
+                                      f"{asset}: patron={pattern} "
+                                      f"RSI={_rsi:.0f} sin tendencia",
+                                      "WARNING")
+                            continue
 
                 direccion = signal.get("signal", "")
                 # (Sesgo anti-PUT +0.15 retirado: castigaba solo PUTs sin evidencia.
