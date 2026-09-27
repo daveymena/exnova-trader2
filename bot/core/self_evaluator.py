@@ -47,7 +47,30 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
 
-DEFAULT_PATH = Path(__file__).resolve().parent.parent / "data" / "self_evaluator.json"
+def _default_state_path() -> Path:
+    """Ruta del estado del auto-evaluador.
+
+    En EasyPanel el unico volumen persistente es /app/data: ahi se guarda el
+    estado para que sobreviva a redeploys. Fuera de ese entorno (dev local) se
+    usa la ruta legacy junto al codigo.
+    """
+    legacy = Path(__file__).resolve().parent.parent / "data" / "self_evaluator.json"
+    data_dir = os.environ.get("EVALUATOR_DATA_DIR")
+    if not data_dir and Path("/app/data").is_dir():
+        data_dir = "/app/data"
+    if not data_dir:
+        return legacy
+    target = Path(data_dir) / "self_evaluator.json"
+    if target != legacy and not target.exists() and legacy.exists():
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(legacy, target)
+        except OSError:
+            return legacy
+    return target
+
+
+DEFAULT_PATH = _default_state_path()
 VERSION_ESTADO = 1
 
 # --- estados operativos (los tres del enunciado, sin estados ocultos) --------

@@ -16,6 +16,7 @@ Flujo real:
 """
 import json
 import os
+import shutil
 import time
 from dataclasses import asdict, dataclass, field
 from typing import Callable, Dict, List, Optional, Tuple
@@ -32,7 +33,11 @@ SWING_WINDOW_M1 = 5
 # fueran entradas independientes triplica las muestras del mismo evento.
 EXPIRATIONS = [180]
 # Muestras independientes mínimas antes de confiar en una zona.
-MIN_ZONE_ANALYSES = 20
+# Alineado con practice_trader.py (=8): con 3 un 66-100% puede ser ruido,
+# pero exigir 20 con expiracion de 180s y 103 activos rotando deja las zonas
+# graduandose jamas (cada zona necesitaria ~4h al mismo nivel). El filtro
+# Wilson (lower_bound >= 0.54) y strength >= 0.50 siguen protegiendo.
+MIN_ZONE_ANALYSES = 8
 PRACTICE_BALANCE = 1000.0       # balance inicial para modo demo
 
 
@@ -157,15 +162,40 @@ class SupervisedZoneLearner:
         get_current_price_fn: Optional[Callable] = None,
     ):
         base_dir = os.path.dirname(os.path.abspath(__file__))
-        self.persist_path = os.path.join(base_dir, "..", persist_path)
-        self.analysis_path = os.path.join(base_dir, "..", analysis_path)
-        self.pending_path = os.path.join(base_dir, "..", pending_path)
+        legacy_root = os.path.join(base_dir, "..")
+        # En EasyPanel el unico volumen persistente es /app/data: ahi se
+        # guarda el estado para que sobreviva a redeploys. Fuera de ese
+        # entorno (dev local) se usa la ruta legacy junto al codigo.
+        data_root = os.environ.get("BRAIN_DATA_DIR") or (
+            "/app/data" if os.path.isdir("/app/data") else legacy_root
+        )
+        self.persist_path = self._resolve_state_path(data_root, legacy_root, persist_path)
+        self.analysis_path = self._resolve_state_path(data_root, legacy_root, analysis_path)
+        self.pending_path = self._resolve_state_path(data_root, legacy_root, pending_path)
         self.get_current_price = get_current_price_fn
         self.zones: Dict[str, List[ObservedZone]] = {}
         self.pending: List[Dict] = []
         self.completed: List[Dict] = []
         self._loaded_ts: Dict[str, float] = {}
         self._load()
+
+    @staticmethod
+    def _resolve_state_path(data_root: str, legacy_root: str, rel_path: str) -> str:
+        """Ruta del fichero de estado en el volumen persistente.
+
+        Si el fichero nuevo no existe todavia pero si la copia legacy (p.ej.
+        primer arranque tras el cambio), se migra al volumen para no perder
+        el historial de zonas ya acumulado.
+        """
+        legacy = os.path.join(legacy_root, rel_path)
+        target = os.path.join(data_root, rel_path)
+        if target != legacy and not os.path.exists(target) and os.path.exists(legacy):
+            try:
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                shutil.copy2(legacy, target)
+            except OSError:
+                return legacy
+        return target
 
     # ═══════════════════════════════════════════════════════════════
     #  API PUBLICA
