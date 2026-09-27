@@ -1,4 +1,4 @@
-"""Bucle de mejora continua - Usa OpenCode en EasyPanel
+"""Bucle de mejora continua - Usa Groq API directamente
 Auto-analiza trades y propone mejoras inteligentes
 """
 import json
@@ -20,17 +20,18 @@ if str(BOT) not in sys.path:
 TRADES_JSON = BOT / "brain" / "trade_history.json"
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CONFIGURACIÓN OPENCODE EN EASYPANEL
+# CONFIGURACIÓN GROQ API (proveedor que funciona)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-# URLs de OpenCode en EasyPanel
-OPENCODE_URLS = [
-    os.getenv("OPENCODE_BASE_URL", "http://opencode:3000"),  # Interno EasyPanel
-    "http://opencode-clean:3000",  # Alternativo
-    "http://localhost:3000",  # Dev local
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b")
+GROQ_FALLBACK_MODELS = [
+    m.strip() for m in os.getenv(
+        "GROQ_FALLBACK_MODELS",
+        "openai/gpt-oss-120b,openai/gpt-oss-20b"
+    ).split(",") if m.strip()
 ]
-
-OPENCODE_API_KEY = os.getenv("OPENCODE_API_KEY", "")
 
 BATCH_N_TRADES = int(os.getenv("IMPROVEMENT_BATCH_TRADES", "30"))
 BATCH_MIN_MINUTES = int(os.getenv("IMPROVEMENT_BATCH_MIN_MINUTES", "20"))
@@ -48,57 +49,88 @@ def _log(msg: str) -> None:
     print(f"[improvement] {ts} {msg}", flush=True)
     log.info(msg)
 
-def _find_opencode_url() -> Optional[str]:
-    """Detecta URL disponible de OpenCode"""
-    for url in OPENCODE_URLS:
-        try:
-            response = requests.get(f"{url}/api/health", timeout=2)
-            if response.status_code == 200:
-                _log(f"OpenCode encontrado en {url}")
-                return url
-        except:
-            pass
+def _find_ai_provider() -> Optional[str]:
+    """Verifica que Groq API esté disponible"""
+    if not GROQ_API_KEY:
+        _log("ADVERTENCIA: GROQ_API_KEY no configurada")
+        return None
 
-    _log("ADVERTENCIA: OpenCode NO encontrado en ninguna URL")
+    try:
+        response = requests.get(
+            "https://api.groq.com/openai/v1/models",
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+            timeout=5
+        )
+        if response.status_code == 200:
+            _log(f"Groq API disponible (modelo: {GROQ_MODEL})")
+            return "groq"
+    except Exception as e:
+        _log(f"ADVERTENCIA: Groq API no accesible: {e}")
+
     return None
 
-def _call_opencode(opencode_url: str, prompt: str) -> Optional[Dict]:
-    """Llama a OpenCode con chat endpoint"""
-    try:
-        headers = {
-            "Content-Type": "application/json",
-        }
+def _call_ai(prompt: str) -> Optional[Dict]:
+    """Llama a Groq API con fallback de modelos"""
+    models_to_try = [GROQ_MODEL] + GROQ_FALLBACK_MODELS
 
-        # Usar endpoint de chat de OpenCode
-        response = requests.post(
-            f"{opencode_url}/api/chat",
-            json={
-                "messages": [
-                    {"role": "system", "content": SYSTEM_PROMPT},
-                    {"role": "user", "content": prompt}
-                ],
-                "model": "default"
-            },
-            headers=headers,
-            timeout=TIMEOUT_SEC
-        )
+    for model in models_to_try:
+        try:
+            response = requests.post(
+                GROQ_API_URL,
+                json={
+                    "messages": [
+                        {"role": "system", "content": SYSTEM_PROMPT},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "model": model,
+                    "max_tokens": 1000,
+                    "temperature": 0.7
+                },
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {GROQ_API_KEY}"
+                },
+                timeout=TIMEOUT_SEC
+            )
 
-        if response.status_code == 200:
-            data = response.json()
-            content = data.get('message', {}).get('content', '')
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get('choices', [])
+                if choices:
+                    content = choices[0].get('message', {}).get('content', '')
 
-            # Parse JSON response
-            try:
-                if content.startswith('{'):
-                    json_part = content[:content.rfind('}')+1]
-                    result = json.loads(json_part)
-                    return result
-            except:
-                _log(f"No JSON en respuesta: {content[:100]}")
-                return None
+                    # Parse JSON response
+                    try:
+                        if content.startswith('{'):
+                            json_part = content[:content.rfind('}')+1]
+                            result = json.loads(json_part)
+                            _log(f"Modelo {model} respondió OK")
+                            return result
+                        elif '```json' in content:
+                            # Extraer de bloque markdown
+                            start = content.find('```json') + 7
+                            end = content.find('```', start)
+                            if end > start:
+                                result = json.loads(content[start:end].strip())
+                                _log(f"Modelo {model} respondió OK (markdown)")
+                                return result
+                    except json.JSONDecodeError:
+                        _log(f"JSON inválido de {model}: {content[:100]}")
+                        continue
 
-    except Exception as e:
-        _log(f"Error llamando OpenCode: {e}")
+            elif response.status_code == 429:
+                _log(f"Rate limit en {model}, probando siguiente...")
+                time.sleep(2)
+                continue
+            else:
+                _log(f"Error {response.status_code} de {model}")
+
+        except requests.Timeout:
+            _log(f"Timeout en {model}")
+            continue
+        except Exception as e:
+            _log(f"Error llamando {model}: {e}")
+            continue
 
     return None
 
@@ -134,16 +166,16 @@ def main():
         _log("Deshabilitado (IMPROVEMENT_ENABLED=false)")
         return
 
-    opencode_url = _find_opencode_url()
-    if not opencode_url:
-        _log("OpenCode NO disponible. Esperando...")
+    provider = _find_ai_provider()
+    if not provider:
+        _log("IA NO disponible. Esperando...")
         while True:
             time.sleep(30)
-            opencode_url = _find_opencode_url()
-            if opencode_url:
+            provider = _find_ai_provider()
+            if provider:
                 break
 
-    _log(f"OpenCode detectado: {opencode_url}")
+    _log(f"Proveedor IA detectado: {provider}")
     _log("Bucle de mejora iniciado")
 
     last_run = None
@@ -179,8 +211,8 @@ Propuestas de mejora para next session:
 3. Ajustes recomendados
 Devuelve JSON con: {{recommendations: [...], confidence: 0-1}}"""
 
-            # Llamar OpenCode
-            result = _call_opencode(opencode_url, prompt)
+            # Llamar IA
+            result = _call_ai(prompt)
 
             if result:
                 _log(f"Recomendaciones: {json.dumps(result)[:200]}")
