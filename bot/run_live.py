@@ -1162,6 +1162,22 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     descartar("patron_peligroso", f"patron {pattern}", "WARNING")
                     continue
 
+                # Coherencia patron-direccion (REGLA 2026-09-29, edge medido en
+                # produccion: setups bullish operados como PUT = 13W/16L
+                # (-$5.43/dia); coherentes = 70% WR (+$6.80). Un patron alcista
+                # nunca va a PUT ni uno bajista a CALL, en ningun modo.
+                _dir = str(signal.get("signal", "")).upper()
+                _pat = str(pattern or "")
+                _bull = ("pin_bar_bullish", "hammer", "engulfing_bullish",
+                         "morning_star")
+                _bear = ("pin_bar_bearish", "shooting_star",
+                         "engulfing_bearish", "evening_star")
+                if ((_dir == "PUT" and any(b in _pat for b in _bull))
+                        or (_dir == "CALL" and any(b in _pat for b in _bear))):
+                    descartar("patron_direccion_incoherente",
+                              f"{pattern} vs {_dir}", "WARNING")
+                    continue
+
                 # Validación de alineación de tendencia
                 # Edge real medido en producción (ago-2026): operar con tendencia
                 # da ~64% WR (+$13); contra-tendencia pierde (48.6% WR, -$47) y el
