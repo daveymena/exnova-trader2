@@ -1162,7 +1162,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     descartar("patron_peligroso", f"patron {pattern}", "WARNING")
                     continue
 
-                # Coherencia patron-direccion (REGLA 2026-09-29, edge medido en
+                # Coherencia patron-direccion [REGLA 2026-09-29, edge medido en
                 # produccion: setups bullish operados como PUT = 13W/16L
                 # (-$5.43/dia); coherentes = 70% WR (+$6.80). Un patron alcista
                 # nunca va a PUT ni uno bajista a CALL, en ningun modo.
