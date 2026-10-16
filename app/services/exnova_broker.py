@@ -13,14 +13,21 @@ from app.data.schemas import (
 )
 from app.services.paper_broker import PaperBroker
 
-# Try multiple paths for exnovaapi
+# Rutas donde puede estar exnovaapi. La PRIMERA es la que funciona en este
+# repo: la libreria esta vendorizada en bot/exnovaapi. Las otras dos eran
+# rutas de la maquina de desarrollo original y no existen aqui, asi que sin
+# la ruta local el import fallaba, ExnovaAPI quedaba en None y el bot caia
+# siempre a PaperBroker aunque las credenciales fueran correctas: nunca se
+# conectaba al broker de verdad.
 _EXNOVA_PATHS = [
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                 "bot", "exnovaapi"),
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                  "Nueva carpeta (2)", "bot-reversiones-iq-new"),
     os.path.join(os.path.expanduser("~"), "Videos", "Nueva carpeta (2)", "bot-reversiones-iq-new"),
 ]
 for _p in _EXNOVA_PATHS:
-    if os.path.isdir(_p):
+    if os.path.isdir(_p) and _p not in sys.path:
         sys.path.insert(0, _p)
 
 try:
@@ -236,7 +243,7 @@ class ExnovaBroker(PaperBroker):
         self.api = None
 
     def get_candles_as_schema(self, asset: str, timeframe: Timeframe,
-                               count: int = 100) -> list[Candle]:
+                              count: int = 100) -> list[Candle]:
         tf_sec = timeframe.value
         df = self.get_candles(asset, tf_sec, count)
         if df.empty:

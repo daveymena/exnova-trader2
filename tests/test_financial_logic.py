@@ -180,3 +180,46 @@ class TestWilsonLowerBound:
         assert edge["win_rate"] == 0.5
         assert "win_rate_lower_95" in edge
         assert edge["break_even_wr"] > 0
+
+
+class TestUnidadesDeRiesgo:
+    """El comentario decia '0.5 = 0.5% of equity' pero se usaba como fraccion.
+
+    Con 0.5 interpretado como fraccion, el tope por operacion era el 50% de
+    la cuenta: $5.000 sobre $10.000. En binarias eso es ruina en una sola
+    racha. Estos tests fijan que max_position_pct sea una fraccion de verdad.
+    """
+
+    def test_max_position_pct_es_porcentaje_no_fraccion_invertida(self):
+        risk = RiskManagerAgent()
+        assert 0 < risk.max_position_pct <= 0.05, (
+            f"max_position_pct={risk.max_position_pct} debe ser un porcentaje "
+            "pequeno expresado como fraccion (0.5% = 0.005)"
+        )
+
+    def test_stake_nunca_supera_el_tope_absoluto(self):
+        risk = RiskManagerAgent()
+        risk.max_position_pct = 0.5  # incluso si alguien lo configura mal
+        result = risk.approve(
+            "EURUSD", Direction.CALL, "consensus_winning",
+            MarketRegime.TREND_UP, 0.95, 100000.0,
+        )
+        assert result["stake"] <= risk.max_stake_absolute
+
+    def test_stake_es_proporcional_a_la_cuenta(self):
+        risk = RiskManagerAgent()
+        chica = risk.approve("EURUSD", Direction.CALL, "s",
+                             MarketRegime.TREND_UP, 0.7, 1000.0)
+        grande = risk.approve("EURUSD", Direction.CALL, "s",
+                              MarketRegime.TREND_UP, 0.7, 100000.0)
+        assert chica["stake"] < grande["stake"]
+
+    def test_tope_absoluto_manda_sobre_cuentas_grandes(self):
+        """Con $1.000.000 el 0.5% serian $5.000: el tope duro debe cortar."""
+        risk = RiskManagerAgent()
+        result = risk.approve(
+            "EURUSD", Direction.CALL, "consensus_winning",
+            MarketRegime.TREND_UP, 0.95, 1000000.0,
+        )
+        assert result["stake"] == risk.max_stake_absolute
+        assert result["stake_capped_absolute"] is True

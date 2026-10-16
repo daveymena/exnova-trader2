@@ -90,6 +90,89 @@ Hoy dice, correctamente: *"NO HAY NADA QUE MEDIR TODAVÍA"*.
 
 ## Lo que FALTA, en orden de prioridad
 
+## Prueba contra el broker real: qué se encontró y qué falta
+
+Antes de poder conectar hubo que arreglar dos cosas que hacían imposible la
+conexión aunque las credenciales fueran correctas.
+
+### Bug 1 — El broker nunca encontraba la librería
+
+`ExnovaBroker` buscaba `exnovaapi` en `Nueva carpeta (2)/bot-reversiones-iq-new`
+y en `~/Videos/Nueva carpeta (2)/...`: rutas de la máquina del desarrollador
+original que **no existen en este repo**. La libreria sí está vendorizada en
+`bot/exnovaapi/`, pero nadie la miraba.
+
+Consecuencia: `ExnovaAPI = None` → `connect()` devolvía `False` → el bot caía
+**siempre** a `PaperBroker`. Ponías las credenciales correctas y el bot
+seguía operando en papel sin decirlo.
+
+Arreglado: la ruta vendorizada es la primera que se prueba.
+
+### Bug 2 — El stake por operación era el 50% de la cuenta
+
+El comentario decía `0.5 = 0.5% of equity`, pero el valor se usaba como
+fracción, donde `0.5` es el **50%**. El tope efectivo eran **$5.000 por
+operación sobre una cuenta de $10.000**.
+
+El dry run lo destapó: ejecutaba a $400 por operación (4%). Ahora
+`max_position_pct` se convierte a fracción real (0.5% = 0.005) y hay un
+**tope duro absoluto** de $50 por operación. Fijado con 4 tests.
+
+### Verificado con el dry run
+
+`scripts/dry_run_bot.py` corre el bot **completo** contra un broker que
+imita la interfaz de Exnova, incluidos los fallos reales (velas vacías,
+`buy()` que revienta por timeout):
+
+```
+Ciclos: 60, broker colgado el 30% de las veces
+  Senales generadas      : 15
+  Operaciones ejecutadas : 10
+  Operaciones resueltas  : 10
+  Rechazos por etapa     : riesgo 5
+  ERRORES                : 0
+```
+
+Y lo más importante: con 6 operaciones perdedoras reales del mismo activo, el
+`EdgeValidator` **rechaza** con
+
+```
+Win rate 0.0000 below safety threshold 0.5705
+    (break-even 0.5405 + margin 0.03)
+```
+
+El bot se auto-bloquea cuando los datos reales no apoyan la estrategia. No se
+auto-engaña.
+
+### Cómo conectar de verdad
+
+```bash
+# 1. Credenciales (PRACTICE = cuenta demo, sin dinero real)
+cat > .env << 'EOF'
+ACCOUNT_TYPE=PRACTICE
+EXNOVA_EMAIL=tu_correo_real
+EXNOVA_PASSWORD=tu_clave_real
+EOF
+
+# 2. Solo mirar el mercado, sin enviar ninguna orden
+python scripts/probar_broker_real.py --assets EURUSD-OTC,GBPUSD-OTC --velas 200
+
+# 3. Si el mercado responde, acumular histórico
+python scripts/fetch_history.py --assets EURUSD-OTC --days 180
+
+# 4. Auditar sobre velas reales
+python scripts/research_strategy_audit.py --source real --asset EURUSD-OTC
+
+# 5. Y solo entonces arrancar el bot en PRACTICE
+python -m app.main
+```
+
+`probar_broker_real.py` **no envía órdenes**: descarga velas, mide el ritmo
+al que llega el feed y audita las estrategias sobre datos reales. Es el paso
+seguro para ver qué pasa en el mercado antes de arriesgar nada.
+
+---
+
 ### Prioridad 1 — Conseguir datos reales (bloquea todo lo demás)
 
 Sin velas reales de Exnova no se puede validar nada. El script ya existe:
@@ -214,10 +297,15 @@ demuestran mejorar algo medible.
 | `scripts/consistency_report.py` | Informe de consistencia por ventana y régimen |
 | `tests/test_edge_ledger.py` | 13 tests del loop de aprendizaje |
 | `scripts/research_strategy_audit.py` | Añadido modo `--source real` |
+| `scripts/probar_broker_real.py` | Conexión a Exnova en PRACTICE, sin órdenes |
+| `scripts/dry_run_bot.py` | Bot completo contra broker simulado con fallos |
+| `app/services/exnova_broker.py` | Encontraba la librería vendorizada |
 | `app/agents/risk_manager_agent.py` | Kelly acotado desde el límite inferior |
 | `app/strategies/consensus_winning.py` | Consulta al `EdgeLedger` |
 
 ```bash
-python -m pytest tests/ -q        # 55 tests
-python scripts/consistency_report.py
+python -m pytest tests/ -q                     # 59 tests
+python scripts/consistency_report.py           # ¿es consistente?
+python scripts/dry_run_bot.py --cycles 40      # camino completo, sin broker real
+python scripts/probar_broker_real.py           # broker real en PRACTICE
 ```

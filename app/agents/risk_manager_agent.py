@@ -34,11 +34,18 @@ class RiskManagerAgent:
         self.max_consecutive_losses = 20 if practice else config.risk_max_consecutive_losses
         self.max_trades_per_day = 100 if practice else config.risk_max_trades_per_day
         self.max_trades_per_hour = 20 if practice else config.risk_max_trades_per_hour
-        self.max_position_pct = config.risk_max_position_pct  # 0.5 = 0.5% of equity
+        # OJO con las unidades. El comentario original decia "0.5 = 0.5% of
+        # equity" pero el valor se usaba como FRACCION, donde 0.5 es el 50%
+        # de la cuenta: el tope efectivo eran $5.000 por operacion sobre
+        # $10.000. Se convierte a fraccion real aqui, una vez, para que el
+        # resto del codigo trabaje siempre en fracciones de 0 a 1.
+        self.max_position_pct = config.risk_max_position_pct / 100.0
         # Fraccion de Kelly realmente aplicada. Kelly puro es inservible en
         # binarias: asume que se conoce p con certeza.
         self.kelly_fraction = float(os.getenv("RISK_KELLY_FRACTION", "0.15"))
         self.max_stake_pct = float(os.getenv("RISK_MAX_STAKE_PCT", "0.02"))
+        # Tope duro absoluto por operacion, en la moneda de la cuenta.
+        self.max_stake_absolute = float(os.getenv("RISK_MAX_STAKE_ABSOLUTE", "50"))
         self.max_open_positions = 1 if practice else config.risk_max_open_positions
         self.cooldown_after_loss = 0 if practice else config.risk_cooldown_after_loss_sec
         self.cooldown_after_trade = 0 if practice else config.risk_cooldown_after_trade_sec
@@ -118,6 +125,7 @@ class RiskManagerAgent:
                 fallback=self._compute_position_size(confidence),
             )
             stake = account_equity * min(fraction, self.max_position_pct)
+            stake = min(stake, self.max_stake_absolute)
 
         return {
             "decision": RiskDecision.APPROVED,
@@ -125,6 +133,7 @@ class RiskManagerAgent:
             "position_size_pct": 0,
             "stake": round(stake, 2),
             "stake_fraction": round(min(fraction, self.max_position_pct), 4),
+            "stake_capped_absolute": stake >= self.max_stake_absolute,
             "max_loss": round(stake * (1 + config.backtest_min_payout), 2),
             "daily_drawdown": round(daily_loss_pct, 2),
         }
