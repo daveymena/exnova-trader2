@@ -7,8 +7,16 @@ Has final veto power over every trade. Implements:
 - Maximum open positions
 - Cooldown periods
 - No martingale
+
+Dimensionado por Kelly acotado: la fraccion de equity se calcula con el
+LIMITE INFERIOR de Wilson del win rate, no con el win rate observado. Con el
+observado, 5 operaciones ganadas de 5 aconsejan apostar el 100% de la cuenta
+(Kelly puro con payout 0.85); con el limite inferior aconsejan 5%. Despues se
+aplica una fraccion pequena de Kelly (0.15) y un tope duro del 2% del equity
+por operacion: en binarias, mas que eso es ruina casi segura.
 """
 from datetime import datetime, timedelta
+import os
 from typing import Optional
 
 from app.data.schemas import (
@@ -27,6 +35,10 @@ class RiskManagerAgent:
         self.max_trades_per_day = 100 if practice else config.risk_max_trades_per_day
         self.max_trades_per_hour = 20 if practice else config.risk_max_trades_per_hour
         self.max_position_pct = config.risk_max_position_pct  # 0.5 = 0.5% of equity
+        # Fraccion de Kelly realmente aplicada. Kelly puro es inservible en
+        # binarias: asume que se conoce p con certeza.
+        self.kelly_fraction = float(os.getenv("RISK_KELLY_FRACTION", "0.15"))
+        self.max_stake_pct = float(os.getenv("RISK_MAX_STAKE_PCT", "0.02"))
         self.max_open_positions = 1 if practice else config.risk_max_open_positions
         self.cooldown_after_loss = 0 if practice else config.risk_cooldown_after_loss_sec
         self.cooldown_after_trade = 0 if practice else config.risk_cooldown_after_trade_sec
@@ -41,7 +53,8 @@ class RiskManagerAgent:
 
     def approve(self, asset: str, direction: Direction, strategy: str,
                 market_regime: MarketRegime, confidence: float,
-                account_equity: float) -> dict:
+                account_equity: float, payout: float = 0.85,
+                edge_ledger=None) -> dict:
         now = datetime.utcnow()
         reasons = []
 
@@ -94,15 +107,24 @@ class RiskManagerAgent:
                 reasons.append(f"Cooldown: {remaining:.0f}s remaining")
                 return self._reject(RiskDecision.REJECTED, "; ".join(reasons))
 
-        # Position size
+        # Position size: Kelly acotado si hay evidencia real, si no el
+        # dimensionado conservador por confianza.
         is_practice = config.mode == TradingMode.PRACTICE
-        stake = 5.0 if is_practice else account_equity * min(self._compute_position_size(confidence), self.max_position_pct)
+        if is_practice:
+            stake = 5.0
+        else:
+            fraction = self.stake_fraction(
+                strategy, direction, market_regime, payout, edge_ledger,
+                fallback=self._compute_position_size(confidence),
+            )
+            stake = account_equity * min(fraction, self.max_position_pct)
 
         return {
             "decision": RiskDecision.APPROVED,
             "reasons": [],
             "position_size_pct": 0,
             "stake": round(stake, 2),
+            "stake_fraction": round(min(fraction, self.max_position_pct), 4),
             "max_loss": round(stake * (1 + config.backtest_min_payout), 2),
             "daily_drawdown": round(daily_loss_pct, 2),
         }
@@ -138,8 +160,34 @@ class RiskManagerAgent:
         return max(0, (self._daily_start_equity - current_equity) / self._daily_start_equity * 100)
 
     def _compute_position_size(self, confidence: float) -> float:
-        base = self.max_position_pct * confidence
+        """Dimensionado conservador de respaldo (sin evidencia real).
+
+        NO es Kelly: es un porcentaje pequeno y fijo escalado por confianza.
+        Se usa solo mientras no hay muestra real que permita calcular Kelly.
+        """
+        base = self.max_position_pct * confidence * 0.1
         return min(base, self.max_position_pct)
+
+    def stake_fraction(self, strategy: str, direction: Direction,
+                       market_regime: MarketRegime, payout: float,
+                       edge_ledger=None, fallback: float = 0.0) -> float:
+        """Fraccion de equity a arriesgar, por Kelly acotado.
+
+        Con evidencia real: Kelly sobre el limite inferior de Wilson, veces
+        `kelly_fraction`. Sin evidencia: `fallback`, que ya de por si es
+        conservador. Devuelve 0.0 solo si no se puede justificar nada.
+        """
+        if edge_ledger is None:
+            return fallback
+        try:
+            fraction = edge_ledger.stake_fraction(
+                strategy, direction, market_regime, payout
+            )
+        except Exception:
+            return fallback
+        if fraction <= 0:
+            return fallback
+        return min(fraction, self.max_stake_pct)
 
     def _clean_old_trades(self, now: datetime):
         self._daily_trades = [

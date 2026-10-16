@@ -14,6 +14,12 @@ Mapa de votantes (medido, no supuesto):
     HIGH_VOLATILITY       : (nadie: se mide por debajo del break-even)
     LOW_LIQUIDITY/NEWS    : (nadie)
 
+Cuando se le pasa un `EdgeLedger`, el mapa de votantes deja de ser una
+constante: el registro mide el edge REAL de cada estrategia en cada regimen y
+su respuesta reemplaza al mapa sintetico en cuanto existe muestra suficiente.
+Asi el bot aprende de sus propias operaciones en lugar de repetir para siempre
+lo que se midio una vez sobre datos inventados.
+
 Reglas de decision:
 
     - Alineacion multi-timeframe 'conflict' -> NO OPERAR.
@@ -68,6 +74,9 @@ class ConsensusWinningStrategy:
         self.min_votes = self.config.get("min_votes", 2)
         self._conviction_needed = self.high_conviction_threshold
         self.require_mtf_agreement = self.config.get("require_mtf_agreement", True)
+        # Puente con el aprendizaje real. Sin ledger, el mapa de votantes es
+        # la constante medida sobre datos sinteticos.
+        self.edge_ledger = self.config.get("edge_ledger")
 
         self.regime_agent = MarketRegimeAgent()
         self.mtf_agent = MultiTimeframeAgent()
@@ -104,11 +113,13 @@ class ConsensusWinningStrategy:
             reasons.append(f"Regimen {regime.value}: nadie tiene edge medido ahi")
             return self._reject(reasons, features, regime)
 
-        allowed = VOTERS_BY_REGIME.get(regime, ())
+        allowed = self._voters_for(regime)
         if not allowed:
-            reasons.append(f"Regimen {regime.value} sin votantes definidos")
+            reasons.append(f"Regimen {regime.value}: nadie tiene edge medido")
             return self._reject(reasons, features, regime)
         features["voters_allowed"] = list(allowed)
+        features["voters_source"] = ("edge_ledger" if self._using_ledger(regime)
+                                     else "mapa_sintetico")
 
         # --- 2. Alineacion multi-timeframe ---
         alignment = "unknown"
@@ -235,6 +246,29 @@ class ConsensusWinningStrategy:
         }
 
     # ------------------------------------------------------------------ #
+    def _voters_for(self, regime: MarketRegime) -> tuple[str, ...]:
+        """Quien vota en este regimen: el registro real si sabe, el mapa
+        sintetico si aun no hay muestra."""
+        static = VOTERS_BY_REGIME.get(regime, ())
+        if self.edge_ledger is None:
+            return tuple(static)
+        try:
+            return tuple(self.edge_ledger.voters_for(regime, fallback=static))
+        except Exception:
+            # El registro es una mejora, no una dependencia: si falla la
+            # lectura de SQLite se sigue con lo medido en la auditoria.
+            return tuple(static)
+
+    def _using_ledger(self, regime: MarketRegime) -> bool:
+        if self.edge_ledger is None:
+            return False
+        try:
+            measured = self.edge_ledger.measure_all()
+        except Exception:
+            return False
+        return any(m.regime == regime.value and m.has_edge
+                   for m in measured.values())
+
     def _single_vote_case(self, side_votes, side, alignment, reasons):
         """Un solo voto solo pasa con alta conviccion y sin conflicto de TFs."""
         name, conf, _ = side_votes[0]

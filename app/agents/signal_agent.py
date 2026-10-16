@@ -6,6 +6,7 @@ estrategias del sistema solo en los regimenes de mercado donde la auditoria
 fallback: si el consenso no aprueba, no se opera.
 """
 from datetime import datetime
+import os
 
 from app.data.schemas import Candle, Direction, MarketRegime, EntryTiming
 from app.agents.market_regime_agent import MarketRegimeAgent
@@ -15,6 +16,7 @@ from app.agents.edge_validator_agent import EdgeValidatorAgent
 from app.agents.risk_manager_agent import RiskManagerAgent
 from app.agents.expiry_selector import ExpirySelector
 from app.strategies.consensus_winning import ConsensusWinningStrategy
+from app.research.edge_ledger import EdgeLedger
 from app.config import config, TradingMode
 
 
@@ -33,7 +35,16 @@ class SignalAgent:
         self.mtf_agent = MultiTimeframeAgent()
         self.market_regime = MarketRegimeAgent()
 
+        # El registro de edge real: mide que estrategia funciona en que
+        # regimen con operaciones REALES y reemplaza al mapa sintetico en
+        # cuanto hay muestra suficiente.
+        self.edge_ledger = EdgeLedger(
+            min_sample=int(os.getenv("EDGE_LEDGER_MIN_SAMPLE", "30")),
+            safety_margin=float(os.getenv("EDGE_LEDGER_SAFETY_MARGIN", "0.03")),
+        )
+
         self.strategy = ConsensusWinningStrategy(config={
+            "edge_ledger": self.edge_ledger,
             "min_confidence": config.strategy_min_confidence,
             "min_votes": 2,
             "high_conviction_threshold": 0.70,
@@ -94,7 +105,8 @@ class SignalAgent:
         )
 
         risk = self.risk_manager.approve(
-            asset, direction, strategy_name, regime, confidence, account_equity
+            asset, direction, strategy_name, regime, confidence, account_equity,
+            payout=0.85, edge_ledger=self.edge_ledger,
         )
 
         return {
