@@ -118,7 +118,14 @@ class RiskManagerAgent:
         # dimensionado conservador por confianza.
         is_practice = config.mode == TradingMode.PRACTICE
         if is_practice:
+            # PRACTICA: importa mas acumular operaciones que el importe. Se
+            # usa un stake fijo y pequeno, y la fraccion se deriva de el para
+            # que el resto del codigo (y los informes) la tengan disponible.
+            # Antes `fraction` no se definia en esta rama y approve() petaba
+            # con UnboundLocalError en modo PRACTICE, que es el modo en el que
+            # se supone que hay que validar todo antes de arriesgar dinero.
             stake = 5.0
+            fraction = stake / account_equity if account_equity > 0 else 0.0
         else:
             fraction = self.stake_fraction(
                 strategy, direction, market_regime, payout, edge_ledger,

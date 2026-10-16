@@ -188,7 +188,19 @@ class TestUnidadesDeRiesgo:
     Con 0.5 interpretado como fraccion, el tope por operacion era el 50% de
     la cuenta: $5.000 sobre $10.000. En binarias eso es ruina en una sola
     racha. Estos tests fijan que max_position_pct sea una fraccion de verdad.
+
+    Corren en modo PAPER a proposito: en PRACTICE el stake es fijo ($5) para
+    poder acumular operaciones, asi que ahi el dimensionado no aplica y estos
+    tests no medirian nada.
     """
+
+    def setup_method(self):
+        from app.config import TradingMode
+        self._modo_original = config.mode
+        config.mode = TradingMode.PAPER
+
+    def teardown_method(self):
+        config.mode = self._modo_original
 
     def test_max_position_pct_es_porcentaje_no_fraccion_invertida(self):
         risk = RiskManagerAgent()

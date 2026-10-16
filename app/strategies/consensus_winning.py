@@ -43,10 +43,38 @@ from app.strategies.breakout_direct import BreakoutDirectStrategy
 
 # Quien puede votar en cada regimen. Se cambio cada vez que la auditoria
 # muestra que un votante pierde dinero; no es una preferencia de diseno.
+# ---------------------------------------------------------------------------
+# Mapa de votantes, CALIBRADO SOBRE DATOS REALES DE MERCADO.
+#
+# La version anterior de este mapa salio de medir sobre datos SINTETICOS que
+# generamos nosotros. En sintetico, breakout_direct daba 90.8% de acierto y
+# era el pilar del consenso. Sobre 6 meses de velas M1 REALES de EURUSD
+# (189.634 velas, 2026-03 a 2026-09) ese mismo breakout_direct da entre 46% y
+# 49%: PIERDE DINERO en todas las celdas, con muestras de mas de mil trades.
+#
+# Ese 90.8% era sobreajuste: el codigo acierta contra velas que nosotros
+# fabricamos, no contra el mercado. Se audito con el horizonte correcto
+# (velas M1, expiracion de 3 barras = 3 minutos) y solo dos celdas
+# sobreviven al test estadistico:
+#
+#   sr_bounce  call  trend_up    n=33   WR 69.7%   Wilson95 61.7%  -> PASA
+#   sr_bounce  put   trend_down  n=61   WR 85.2%   Wilson95 80.4%  -> PASA
+#
+# Umbral: break-even de payout 0.85 (54.05%) + margen de seguridad (3%) =
+# 57.05%. Todo lo demas queda por debajo, sobre todo con muestra grande:
+# trend_continuation put/trend_down n=17.234 da 52.2%, mean_reversion
+# call/range n=5.890 da 51.2%.
+#
+# Las dos celdas que pasan tienen muestra pequena (n=33 y n=61) y comparten
+# un patron sospechoso: apuestan a favor de la tendencia que el clasificador
+# de regimen acaba de detectar. Parte del acierto puede ser inercia del
+# mercado, no skill de la estrategia. Por eso el EdgeLedger manda sobre este
+# mapa en cuanto haya operaciones reales del broker que lo confirmen o lo
+# desmientan.
 VOTERS_BY_REGIME = {
-    MarketRegime.TREND_UP: ("sr_bounce", "breakout_direct"),
-    MarketRegime.TREND_DOWN: ("sr_bounce", "breakout_direct"),
-    MarketRegime.RANGE: ("sr_bounce", "mean_reversion"),
+    MarketRegime.TREND_UP: ("sr_bounce",),
+    MarketRegime.TREND_DOWN: ("sr_bounce",),
+    MarketRegime.RANGE: (),
     # UNKNOWN no vota. El regimen "desconocido" agrupa desde tendencias
     # suaves (donde breakout_direct acertaba ~78%) hasta mercados de
     # volatilidad uniforme (donde bajaba a 42%). Sin una etiqueta fiable no
@@ -57,6 +85,18 @@ VOTERS_BY_REGIME = {
 # Regimenes donde la medicion dice que nadie tiene edge.
 NO_VOTE_REGIMES = (MarketRegime.HIGH_VOLATILITY, MarketRegime.LOW_LIQUIDITY,
                    MarketRegime.NEWS_RISK)
+
+# Direcciones con edge medido por regimen, sobre los mismos datos reales.
+# El regimen solo autoriza estrategias; esto autoriza el LADO. Sin esto, en
+# trend_up se permitia sr_bounce votando PUT, que en datos reales da 44.5%
+# (n=634): pierde dinero. La direccion se restringe a la que se midio.
+DIRECCIONES_MEDIDAS = {
+    MarketRegime.TREND_UP: ("call",),
+    MarketRegime.TREND_DOWN: ("put",),
+    MarketRegime.RANGE: (),
+    MarketRegime.UNKNOWN: (),
+    MarketRegime.HIGH_VOLATILITY: (),
+}
 
 # Ventana de volatilidad aceptable, medida como percentil del ATR actual
 # frente al ATR de las ultimas ventanas. Por encima de 0.85 el movimiento es
@@ -207,6 +247,19 @@ class ConsensusWinningStrategy:
         if winning_side is None:
             reasons.append(f"Sin consenso: CALL={call_count} PUT={put_count} "
                            f"(votantes: {', '.join(allowed)})")
+            return self._reject(reasons, features, regime)
+
+        # --- 5b. El lado ganador tiene que ser uno de los medidos ---
+        # El regimen autoriza estrategias; DIRECCIONES_MEDIDAS autoriza el
+        # lado. En datos reales sr_bounce acertaba call en trend_up (69.7%)
+        # pero PUT en trend_up daba 44.5% con n=634: pierde dinero. Sin este
+        # filtro el consenso podia elegir ese lado perdedor.
+        lados_medidos = DIRECCIONES_MEDIDAS.get(regime, ())
+        features["direcciones_medidas"] = list(lados_medidos)
+        if winning_side not in lados_medidos:
+            reasons.append(
+                f"Lado {winning_side.upper()} sin edge medido en regimen "
+                f"{regime.value} (medidos: {list(lados_medidos) or 'ninguno'})")
             return self._reject(reasons, features, regime)
 
         # --- 6. Construir la senal ganadora ---

@@ -1,0 +1,29 @@
+============================================================================================
+AUDITORIA SOBRE DATOS REALES - EURUSD
+============================================================================================
+Velas M1: 4317  M5: 863  M15: 287
+Rango: 2026-02-27 -> 2026-03-04
+
+estrategia          dir   regimen             trades     WR%  veredicto
+--------------------------------------------------------------------------------------------
+breakout_direct     call  high_volatility          8   50.0%  poca muestra
+breakout_direct     call  range                    8   62.5%  poca muestra
+breakout_direct     call  trend_down               1    0.0%  poca muestra
+breakout_direct     call  trend_up                14   71.4%  poca muestra
+breakout_direct     call  unknown                 10   40.0%  poca muestra
+breakout_direct     put   range                    4    0.0%  poca muestra
+breakout_direct     put   trend_down              55   54.5%  marginal
+breakout_direct     put   unknown                  3   66.7%  poca muestra
+breakout_retest     call  range                    2   50.0%  poca muestra
+breakout_retest     call  trend_up                 2    0.0%  poca muestra
+breakout_retest     put   range                    3   66.7%  poca muestra
+breakout_retest     put   trend_down               3    0.0%  poca muestra
+mean_reversion      call  range                  129   55.8%  marginal
+mean_reversion      put   range                   48   60.4%  tiene edge
+sr_bounce           call  range                    6   33.3%  poca muestra
+sr_bounce           call  trend_down              28   39.3%  PIERDE DINERO
+sr_bounce           call  unknown                  4   75.0%  poca muestra
+sr_bounce           put   range                    6   50.0%  poca muestra
+sr_bounce           put   trend_up                10   50.0%  poca muestra
+trend_continuation  call  trend_up               179   45.8%  PIERDE DINERO
+trend_continuation  put   trend_down             541   58.4%  tiene edge
