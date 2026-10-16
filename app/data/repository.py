@@ -1,4 +1,5 @@
 """Database repository for all persistent data."""
+import os
 import sqlite3
 import json
 from datetime import datetime
@@ -16,6 +17,29 @@ from app.data.schemas import (
 # Solo estas fuentes de resolución cuentan como evidencia estadística.
 # Las operaciones simuladas o sin resolver quedan fuera de todo cálculo de edge.
 EVIDENCE_SQL = "resolution_source IN ('broker', 'candle')"
+
+
+def wilson_lower_bound(wins: int, total: int, z: float = 1.96) -> float:
+    """Limite inferior del intervalo de Wilson al 95% para un win rate.
+
+    Se usaba en get_historical_edge() sin estar definida en ningun lado: en
+    cuanto el EdgeValidator tenia >=3 operaciones reales (modo PRACTICE) o
+    >=100 (modo REAL), la llamada reventaba con NameError, la excepcion subia
+    hasta el scan loop y el bot dejaba de operar en silencio.
+
+    El limite inferior es la medida honesta de edge: con 3 de 3 aciertos el
+    win rate observado es 100%, pero el intervalo al 95% solo baja hasta
+    43.8%. Aprobar operaciones con el win rate observado seria sobreajuste
+    a la muestra.
+    """
+    if total <= 0:
+        return 0.0
+    p = wins / total
+    denom = 1 + z * z / total
+    centre = p + z * z / (2 * total)
+    margin = z * ((p * (1 - p) / total + z * z / (4 * total * total)) ** 0.5)
+    lower = (centre - margin) / denom
+    return max(0.0, min(1.0, lower))
 
 
 def _iso(value: Optional[datetime]) -> Optional[str]:
@@ -45,6 +69,11 @@ class Repository:
         self.db_path = db_path or config.database_path
         Path(self.db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn: Optional[sqlite3.Connection] = None
+        # Backtests e investigacion generan millones de snapshots que no son
+        # operaciones reales: escribirlos llenaba la base de produccion de
+        # ruido y ademas volvia el backtest O(n^2) lento. Con esto en False
+        # las escrituras se ignoran (las lecturas siguen igual).
+        self.persistence_enabled = os.getenv("BOT_DISABLE_PERSISTENCE", "") not in ("1", "true", "True")
 
     def connect(self):
         if self._conn is None:
@@ -52,7 +81,23 @@ class Repository:
             self._conn.row_factory = sqlite3.Row
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.execute("PRAGMA foreign_keys=ON")
+            self._ensure_schema()
         return self._conn
+
+    def _ensure_schema(self):
+        """Crea las tablas si la base existe pero esta vacia.
+
+        Cualquier camino que escribiera antes de llamar a migrate() reventaba
+        con "no such table": el agente de regimen de mercado guarda un
+        snapshot en cada clasificacion, y en un arranque en frio (base nueva,
+        o tests) eso tumbaba el scan loop. Comprobar el esquema al conectar
+        hace que el repositorio se auto-repare sin cambiar el contrato.
+        """
+        cursor = self._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='candles'"
+        )
+        if cursor.fetchone() is None:
+            self.migrate()
 
     def close(self):
         if self._conn:
@@ -285,6 +330,8 @@ class Repository:
     # --- Candles ---
 
     def save_candle(self, candle: Candle):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT OR REPLACE INTO candles
@@ -332,6 +379,8 @@ class Repository:
     # --- Signals ---
 
     def save_signal(self, signal: Signal):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO signals
@@ -352,6 +401,8 @@ class Repository:
     # --- Trade Decisions ---
 
     def save_decision(self, decision: TradeDecision):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO trade_decisions
@@ -374,6 +425,8 @@ class Repository:
     # --- Trade Results ---
 
     def save_trade_result(self, result: TradeResult):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO trade_results
@@ -451,6 +504,8 @@ class Repository:
     # --- Account ---
 
     def save_account_snapshot(self, snap: AccountSnapshot):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO account_snapshots
@@ -464,6 +519,8 @@ class Repository:
         conn.commit()
 
     def save_market_regime_snapshot(self, snap: MarketRegimeSnapshot):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO market_regime_snapshots
@@ -477,6 +534,8 @@ class Repository:
         conn.commit()
 
     def save_multi_timeframe_snapshot(self, snap: MultiTimeframeSnapshot):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO multi_timeframe_snapshots
@@ -493,6 +552,8 @@ class Repository:
 
     def log_error(self, source: str, message: str, traceback: str = "",
                   level: str = "ERROR"):
+        if not self.persistence_enabled:
+            return
         conn = self.connect()
         conn.execute(
             """INSERT INTO errors (timestamp, source, level, message, traceback)

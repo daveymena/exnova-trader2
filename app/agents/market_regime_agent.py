@@ -8,13 +8,21 @@ Classifies each market state into:
 - NEWS_RISK
 - UNKNOWN
 """
-import math
-import statistics
 from datetime import datetime
 from typing import Optional
 
-from app.data.schemas import Candle, MarketRegime, MarketRegimeSnapshot, Timeframe
+from app.data.schemas import Candle, MarketRegime, MarketRegimeSnapshot
 from app.data.repository import repository
+
+
+def _mean(values):
+    """Media aritmetica sin el coste de statistics.mean.
+
+    statistics.mean convierte a Fraction para ser exacto: en caminos que se
+    ejecutan por cada vela (percentil de ATR, ADX) eso multiplicaba por 20 el
+    tiempo de backtest sin cambiar el resultado de forma util.
+    """
+    return sum(values) / len(values) if values else 0.0
 
 
 class MarketRegimeAgent:
@@ -40,15 +48,13 @@ class MarketRegimeAgent:
             )
 
         closes = [c.close for c in candles]
-        highs = [c.high for c in candles]
-        lows = [c.low for c in candles]
         sorted_candles = sorted(candles, key=lambda c: c.open_time)
 
         adx = self._compute_adx(sorted_candles)
         atr = self._compute_atr(sorted_candles)
         atr_percentile = self._compute_atr_percentile(sorted_candles)
         ema = self._compute_ema(closes)
-        ema_slope = self._compute_ema_slope(ema)
+        ema_slope = self._compute_ema_slope(closes, ema)
         price_distance_ema = (closes[-1] - ema) / ema if ema != 0 else 0
         ema_trend = "up" if ema_slope > 0 else "down"
 
@@ -116,7 +122,7 @@ class MarketRegimeAgent:
             hc = abs(candles[i].high - candles[i - 1].close)
             lc = abs(candles[i].low - candles[i - 1].close)
             tr_values.append(max(hl, hc, lc))
-        atr = statistics.mean(tr_values[-self.atr_period:]) if len(tr_values) >= self.atr_period else statistics.mean(tr_values)
+        atr = _mean(tr_values[-self.atr_period:]) if len(tr_values) >= self.atr_period else _mean(tr_values)
 
         plus_dm = []
         minus_dm = []
@@ -132,8 +138,16 @@ class MarketRegimeAgent:
             else:
                 minus_dm.append(0)
 
-        avg_plus = statistics.mean(plus_dm[-self.atr_period:]) if len(plus_dm) >= self.atr_period else statistics.mean(plus_dm) if plus_dm else 0
-        avg_minus = statistics.mean(minus_dm[-self.atr_period:]) if len(minus_dm) >= self.atr_period else statistics.mean(minus_dm) if minus_dm else 0
+        avg_plus = (
+            _mean(plus_dm[-self.atr_period:])
+            if len(plus_dm) >= self.atr_period
+            else (_mean(plus_dm) if plus_dm else 0)
+        )
+        avg_minus = (
+            _mean(minus_dm[-self.atr_period:])
+            if len(minus_dm) >= self.atr_period
+            else (_mean(minus_dm) if minus_dm else 0)
+        )
 
         if atr == 0:
             return 0.0
@@ -152,15 +166,24 @@ class MarketRegimeAgent:
             hc = abs(candles[i].high - candles[i - 1].close)
             lc = abs(candles[i].low - candles[i - 1].close)
             tr_values.append(max(hl, hc, lc))
-        return statistics.mean(tr_values[-self.atr_period:]) if len(tr_values) >= self.atr_period else statistics.mean(tr_values)
+        return _mean(tr_values[-self.atr_period:]) if len(tr_values) >= self.atr_period else _mean(tr_values)
+
+    # Cuantas ventanas de ATR se comparan para calcular el percentil.
+    # Antes se recorria TODO el historico en cada llamada, asi que clasificar
+    # N velas costaba O(N^2): un backtest largo no terminaba. Con una muestra
+    # acotada el percentil sigue midiendo "ATR actual vs ATR reciente" y el
+    # coste es lineal.
+    PERCENTILE_SAMPLE_WINDOWS = 60
 
     def _compute_atr_percentile(self, candles: list[Candle]) -> float:
         if len(candles) < self.atr_period * 2:
             return 0.5
-        atr_values = []
-        for i in range(len(candles) - self.atr_period):
-            chunk = candles[i:i + self.atr_period]
-            atr_values.append(self._compute_atr(chunk))
+        span = self.atr_period
+        first = max(0, len(candles) - span - self.PERCENTILE_SAMPLE_WINDOWS)
+        atr_values = [
+            self._compute_atr(candles[i:i + span])
+            for i in range(first, len(candles) - span)
+        ]
         if not atr_values:
             return 0.5
         current_atr = self._compute_atr(candles)
@@ -169,15 +192,32 @@ class MarketRegimeAgent:
 
     def _compute_ema(self, values: list[float]) -> float:
         if len(values) < self.ema_period:
-            return statistics.mean(values) if values else 0.0
+            return _mean(values)
         k = 2 / (self.ema_period + 1)
-        ema = statistics.mean(values[:self.ema_period])
+        ema = _mean(values[:self.ema_period])
         for v in values[self.ema_period:]:
             ema = v * k + ema * (1 - k)
         return ema
 
-    def _compute_ema_slope(self, ema: float) -> float:
-        return ema - self._compute_ema([0]) if ema != 0 else 0
+    # Cuantas barras atras se compara la EMA para medir su pendiente.
+    SLOPE_LOOKBACK = 5
+
+    def _compute_ema_slope(self, closes: list[float], ema: float) -> float:
+        """Pendiente REAL de la EMA, normalizada por precio.
+
+        La version anterior devolvia `ema - _compute_ema([0])`, es decir el
+        NIVEL de la EMA (siempre positivo con precios positivos). Con eso
+        `ema_slope < 0` era inalcanzable y el clasificador no podia devolver
+        TREND_DOWN nunca: todas las tendencias bajistas caian en UNKNOWN y
+        cualquier logica que filtrara por regimen se quedaba ciega justo en
+        la mitad del mercado.
+        """
+        if len(closes) <= self.SLOPE_LOOKBACK:
+            return 0.0
+        past = self._compute_ema(closes[:-self.SLOPE_LOOKBACK])
+        if past == 0:
+            return 0.0
+        return (ema - past) / past
 
     def _detect_candle_expansion(self, candles: list[Candle]) -> bool:
         if len(candles) < 10:
@@ -186,8 +226,8 @@ class MarketRegimeAgent:
         older_ranges = [c.range for c in candles[-10:-5]]
         if not older_ranges:
             return False
-        avg_older = statistics.mean(older_ranges)
+        avg_older = _mean(older_ranges)
         if avg_older == 0:
             return False
-        recent_avg = statistics.mean(recent_ranges)
+        recent_avg = _mean(recent_ranges)
         return (recent_avg / avg_older) > 2.0

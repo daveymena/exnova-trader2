@@ -128,3 +128,55 @@ class TestNoTradeSafety:
         result = no_trade_signal("HIGH_VOLATILITY")
         assert result["direction"] == Direction.NO_TRADE
         assert result["confidence"] == 0.0
+
+
+class TestWilsonLowerBound:
+    """wilson_lower_bound se usaba sin estar definida: el EdgeValidator
+    reventaba con NameError en cuanto habia >=3 operaciones reales y el bot
+    dejaba de operar en silencio."""
+
+    def test_funcion_existe_y_es_monotona(self):
+        from app.data.repository import wilson_lower_bound
+        assert wilson_lower_bound(3, 3) < wilson_lower_bound(30, 30)
+        assert wilson_lower_bound(30, 30) < wilson_lower_bound(100, 100)
+
+    def test_muestra_pequena_no_permite_prometer_100(self):
+        from app.data.repository import wilson_lower_bound
+        assert wilson_lower_bound(3, 3) < 0.6
+
+    def test_sin_datos_devuelve_cero(self):
+        from app.data.repository import wilson_lower_bound
+        assert wilson_lower_bound(0, 0) == 0.0
+
+    def test_get_historical_edge_no_revienta(self, tmp_path):
+        from app.data.repository import Repository
+        from app.data.schemas import (
+            TradeResult, ExecutionState, ResolutionSource,
+        )
+        from datetime import datetime, timedelta
+
+        # Base propia: el repository es un singleton sobre data/trading_bot.db
+        # y acumularia operaciones de un test a otro.
+        repo = Repository(db_path=str(tmp_path / "edge.db"))
+        repo.migrate()
+        for i in range(4):
+            trade = TradeResult(
+                timestamp=datetime.utcnow() - timedelta(minutes=i + 1),
+                asset="EURUSD", direction=Direction.CALL,
+                strategy="consensus_winning", expiry=180, payout=0.85,
+                stake=10.0, result=8.5 if i % 2 else -10.0,
+                execution_state=(ExecutionState.WON if i % 2
+                                 else ExecutionState.LOST),
+                market_regime=MarketRegime.TREND_UP,
+                resolution_source=ResolutionSource.BROKER,
+            )
+            repo.save_trade_result(trade)
+
+        edge = repo.get_historical_edge(
+            "EURUSD", "consensus_winning", Direction.CALL,
+            MarketRegime.TREND_UP, 180,
+        )
+        assert edge["total"] == 4
+        assert edge["win_rate"] == 0.5
+        assert "win_rate_lower_95" in edge
+        assert edge["break_even_wr"] > 0

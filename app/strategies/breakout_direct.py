@@ -18,6 +18,12 @@ class BreakoutDirectStrategy:
         self.min_breakout_body_pct = self.config.get("min_breakout_body_pct", 0.4)
         self.min_confidence = self.config.get("min_confidence", 0.50)
         self.lookback_candles = self.config.get("lookback_candles", 20)
+        # Ruptura real = el cierre se separa del nivel al menos 1 ATR.
+        # Medido (reports/strategy_audit.json): cuando la ruptura apenas pasa
+        # del nivel (dist/ATR ~0.4) el acierto cae al 35-48%; cuando se
+        # separa ~1.3 ATR sube al 94%. Es el filtro que separa una tendencia
+        # de un roce del nivel.
+        self.min_breakout_distance_atr = self.config.get("min_breakout_distance_atr", 1.0)
 
     def evaluate(self, candles_m15: list[Candle], candles_m5: list[Candle],
                  candles_m1: list[Candle], asset: str = "") -> dict:
@@ -66,26 +72,26 @@ class BreakoutDirectStrategy:
         return self._reject(reasons, features)
 
     def _check_breakout_candle(self, candle: Candle, level: float,
-                                breakout_up: bool, atr: float,
-                                features: dict) -> bool:
+                               breakout_up: bool, atr: float,
+                               features: dict) -> bool:
         # La vela debe tener cuerpo significativo (no solo mecha)
         if candle.body_pct < self.min_breakout_body_pct:
             return False
 
-        # Debe romper el nivel con conviccion
-        if breakout_up:
-            distance = candle.close - level
-            if distance <= 0:
-                return False
-            features["breakout_distance"] = round(distance, 4)
-            features["breakout_body_pct"] = round(candle.body_pct, 4)
-        else:
-            distance = level - candle.close
-            if distance <= 0:
-                return False
-            features["breakout_distance"] = round(distance, 4)
-            features["breakout_body_pct"] = round(candle.body_pct, 4)
+        # Debe romper el nivel con conviccion: separarse de el, no rozarlo.
+        distance = (candle.close - level) if breakout_up else (level - candle.close)
+        if distance <= 0:
+            return False
 
+        if atr > 0 and distance < self.min_breakout_distance_atr * atr:
+            features["breakout_distance"] = round(distance, 4)
+            features["breakout_distance_atr"] = round(distance / atr, 3)
+            features["breakout_body_pct"] = round(candle.body_pct, 4)
+            return False
+
+        features["breakout_distance"] = round(distance, 4)
+        features["breakout_distance_atr"] = round(distance / atr, 3)
+        features["breakout_body_pct"] = round(candle.body_pct, 4)
         return True
 
     def _approve(self, direction: Direction, rationale: str,
@@ -112,6 +118,12 @@ class BreakoutDirectStrategy:
             "features": features,
             "expiry": self.config.get("default_expiry", 180),
             "reasons": ["breakout_direct_validated"],
+            # La senal ES la vela de ruptura: se entra en su cierre, que es
+            # exactamente donde mide el backtest. El EntryTimingAgent esta
+            # disenado para rebotes (espera mecha de rechazo y vela cerrada)
+            # y rechazaba toda ruptura como "too late", asi que la ruptura
+            # declara su propio momento de entrada.
+            "skip_entry_timing": True,
         }
 
     def _find_levels(self, candles: list[Candle]) -> tuple:

@@ -63,7 +63,7 @@ class SRBounceStrategy:
         # 3. Check CALL setup (rebote desde soporte)
         if dist_to_support <= atr_m5 * self.level_distance_atr:
             features["near_level"] = "support"
-            if self._check_rejection(m1_last, m1_sorted, support, True):
+            if self._check_rejection(m1_last, m1_sorted, support, True, atr_m5):
                 return self._approve_bounce(
                     Direction.CALL, support, m1_last, m1_prev,
                     atr_m5, features, reasons
@@ -72,7 +72,7 @@ class SRBounceStrategy:
         # 4. Check PUT setup (rechazo en resistencia)
         if dist_to_resistance <= atr_m5 * self.level_distance_atr:
             features["near_level"] = "resistance"
-            if self._check_rejection(m1_last, m1_sorted, resistance, False):
+            if self._check_rejection(m1_last, m1_sorted, resistance, False, atr_m5):
                 return self._approve_bounce(
                     Direction.PUT, resistance, m1_last, m1_prev,
                     atr_m5, features, reasons
@@ -81,10 +81,28 @@ class SRBounceStrategy:
         reasons.append("No S/R bounce setup detected")
         return self._reject(reasons, features)
 
+    # Fraccion minima del rango de la vela que debe ocupar la mecha de rechazo.
+    # Sin esto la estrategia aceptaba "rebote" en cualquier vela que pasara
+    # cerca del nivel, y media eso: en tendencia alcista daba PUT en el 1.9%
+    # de los casos (ver reports/strategy_audit.json).
+    MIN_REJECTION_WICK_PCT = 0.35
+    # El cierre debe volver a separarse del nivel esta fraccion de ATR como
+    # prueba de que el rechazo tuvo efecto.
+    MIN_BOUNCE_ATR = 0.10
+
     def _check_rejection(self, last_candle: Candle, all_m1: list[Candle],
-                          level: float, is_support: bool) -> bool:
-        """Verifica si alguna vela reciente toco el nivel y ahora se aleja.
-        Busca en las ultimas 3 velas M1.
+                         level: float, is_support: bool,
+                         atr: float = 0.0) -> bool:
+        """Verifica si el precio toco el nivel y AHORA lo rechaza de verdad.
+
+        Antes bastaba con que una de las ultimas 3 velas hubiera rozado el
+        nivel y que la vela actual no fuera alcista: eso convierte cualquier
+        vela roja de una tendencia alcista en "rebote desde resistencia".
+        Ahora se exigen las tres senales de un rechazo real:
+
+        1. una vela reciente toco el nivel,
+        2. la vela de entrada tiene mecha larga hacia el nivel (rechazo),
+        3. el cierre queda separado del nivel (el precio reboto).
         """
         if len(all_m1) < 3:
             return False
@@ -92,24 +110,31 @@ class SRBounceStrategy:
         recent = all_m1[-3:]
 
         if is_support:
-            # Busca al menos 1 vela que haya tocado soporte (low <= level)
+            # 1. el nivel fue tocado
             touched = [c for c in recent if c.low <= level]
             if not touched:
                 return False
-            # La vela MAS RECIENTE debe estar alejandose del soporte (alcista o cuerpo arriba)
-            if last_candle.close <= last_candle.open:
-                if last_candle.low > level:
-                    return False  # Sigue bajando y no toco el nivel
+            # 2. mecha inferior significativa: el rechazo se ve en la vela
+            rng = last_candle.range
+            if rng <= 0 or last_candle.lower_wick < self.MIN_REJECTION_WICK_PCT * rng:
+                return False
+            # 3. el cierre se separa del soporte (rebote confirmado)
+            if atr > 0 and (last_candle.close - level) < self.MIN_BOUNCE_ATR * atr:
+                return False
+            if last_candle.close <= level:
+                return False
             return True
         else:
-            # Busca al menos 1 vela que haya tocado resistencia (high >= level)
             touched = [c for c in recent if c.high >= level]
             if not touched:
                 return False
-            # La vela MAS RECIENTE debe estar alejandose de la resistencia (bajista o cuerpo abajo)
-            if last_candle.close >= last_candle.open:
-                if last_candle.high < level:
-                    return False  # Sigue subiendo y no toco el nivel
+            rng = last_candle.range
+            if rng <= 0 or last_candle.upper_wick < self.MIN_REJECTION_WICK_PCT * rng:
+                return False
+            if atr > 0 and (level - last_candle.close) < self.MIN_BOUNCE_ATR * atr:
+                return False
+            if last_candle.close >= level:
+                return False
             return True
 
     def _approve_bounce(self, direction: Direction, level: float,
@@ -143,7 +168,10 @@ class SRBounceStrategy:
         features["entry_candle_close"] = round(m1_last.close, 4)
         confidence = min(confidence, 0.90)
 
-        level_type = "soporte" if direction == Direction.CALL else "resistencia"
+        if direction == Direction.CALL:
+            level_type = "soporte"
+        else:
+            level_type = "resistencia"
         return {
             "direction": direction,
             "strategy": "sr_bounce",
@@ -167,19 +195,19 @@ class SRBounceStrategy:
         # Find swing highs (resistance)
         swing_highs = []
         for i in range(2, len(recent) - 2):
-            if (recent[i].high > recent[i-1].high and
-                recent[i].high > recent[i-2].high and
-                recent[i].high > recent[i+1].high and
-                recent[i].high > recent[i+2].high):
+            if (recent[i].high > recent[i - 1].high and
+                    recent[i].high > recent[i - 2].high and
+                    recent[i].high > recent[i + 1].high and
+                    recent[i].high > recent[i + 2].high):
                 swing_highs.append(recent[i].high)
 
         # Find swing lows (support)
         swing_lows = []
         for i in range(2, len(recent) - 2):
-            if (recent[i].low < recent[i-1].low and
-                recent[i].low < recent[i-2].low and
-                recent[i].low < recent[i+1].low and
-                recent[i].low < recent[i+2].low):
+            if (recent[i].low < recent[i - 1].low and
+                    recent[i].low < recent[i - 2].low and
+                    recent[i].low < recent[i + 1].low and
+                    recent[i].low < recent[i + 2].low):
                 swing_lows.append(recent[i].low)
 
         if not swing_highs or not swing_lows:

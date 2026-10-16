@@ -18,6 +18,7 @@ from app.agents.multi_timeframe_agent import MultiTimeframeAgent
 from app.strategies.trend_continuation import TrendContinuationStrategy
 from app.strategies.mean_reversion import MeanReversionStrategy
 from app.strategies.breakout_retest import BreakoutRetestStrategy
+from app.strategies.consensus_winning import ConsensusWinningStrategy
 from app.data.repository import repository
 
 
@@ -30,6 +31,7 @@ class Backtester:
         self.regime_agent = MarketRegimeAgent()
         self.mtf_agent = MultiTimeframeAgent()
         self.strategies = {
+            "consensus_winning": ConsensusWinningStrategy(),
             "trend_continuation": TrendContinuationStrategy(),
             "mean_reversion": MeanReversionStrategy(),
             "breakout_retest": BreakoutRetestStrategy(),
@@ -64,7 +66,7 @@ class Backtester:
 
             snapshot = self.mtf_agent.analyze(m15_ctx, m5_ctx, m1_ctx, asset, current_time)
 
-            if snapshot.alignment != "agree":
+            if snapshot.alignment == "conflict":
                 continue
 
             best_signal = None
@@ -101,11 +103,34 @@ class Backtester:
                 features=best_signal.get("features", {}),
             )
 
-            # Determine outcome based on next candle direction
-            if direction == Direction.CALL:
-                won = current_candle.is_bullish
+            # Determinar el resultado contra la vela de la EXPIRACION, no
+            # contra la vela de entrada. Resolver con la vela de entrada
+            # media la vela que ya vimos al entrar: sesgaba el win rate al
+            # alza en cualquier estrategia que busque impulso. Se usa el
+            # cierre de la vela M1 que corresponde al vencimiento real.
+            bars_to_expiry = max(1, int(round(expiry_sec / 60)))
+            exit_index = i + bars_to_expiry
+            if exit_index < len(m1_sorted):
+                exit_candle = m1_sorted[exit_index]
+                exit_close = exit_candle.close
             else:
-                won = not current_candle.is_bullish and current_candle.close != current_candle.open
+                exit_candle = None
+                exit_close = current_candle.close
+
+            entry_close = current_candle.close
+            trade.features["entry_price"] = round(entry_close, 5)
+            trade.features["exit_price"] = round(exit_close, 5)
+            trade.features["resolution_source"] = "candle"
+
+            if exit_candle is None or exit_close == entry_close:
+                # Sin vela de expiracion todavia: la operacion no se resuelve
+                # con una suposicion, queda fuera de la muestra.
+                continue
+
+            if direction == Direction.CALL:
+                won = exit_close > entry_close
+            else:
+                won = exit_close < entry_close
 
             if won:
                 profit = stake_per_trade * payout_val
@@ -170,7 +195,7 @@ class Backtester:
             losses=losses,
             win_rate=round(win_rate, 4),
             expectancy=round(expectancy, 4),
-            net_return=round(self.balance - initial_balance, 2),
+            net_return=round(self.balance - self.initial_balance, 2),
             profit_factor=round(profit_factor, 4),
             max_drawdown=round(max_dd, 2),
             longest_losing_streak=consecutive_losses,

@@ -6,7 +6,7 @@ Records alignment status and trend direction for each timeframe.
 from datetime import datetime
 from typing import Optional
 
-from app.data.schemas import Candle, MarketRegime, MultiTimeframeSnapshot, Timeframe
+from app.data.schemas import Candle, MarketRegime, MultiTimeframeSnapshot
 from app.data.repository import repository
 from app.agents.market_regime_agent import MarketRegimeAgent
 
@@ -29,12 +29,20 @@ class MultiTimeframeAgent:
         m5_trend = self._trend_from_regime(m5_snapshot.regime)
         m1_trend = self._trend_from_regime(m1_snapshot.regime)
 
-        if m15_trend == m5_trend == m1_trend and m15_trend != "none":
-            alignment = "agree"
-        elif m15_trend == m5_trend and m15_trend != "none":
+        known = [t for t in (m15_trend, m5_trend, m1_trend) if t != "none"]
+
+        if len(known) < 2:
+            # Sin al menos dos timeframes con opinion no hay conflicto: no
+            # opinar no es contradecirse. Antes "unknown" caia en "conflict"
+            # y bloqueaba toda senal en mercados que el clasificador no sabia
+            # etiquetar (por ejemplo todas las tendencias bajistas).
+            alignment = "neutral"
+        elif len(set(known)) > 1:
+            alignment = "conflict"
+        elif m1_trend == "none":
             alignment = "partial"
         else:
-            alignment = "conflict"
+            alignment = "agree"
 
         snapshot = MultiTimeframeSnapshot(
             timestamp=timestamp,
