@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import math
 import sys
+from statistics import NormalDist
 from pathlib import Path
 
 import pandas as pd
@@ -37,8 +38,11 @@ def wilson(w: int, n: int, z: float = 1.96) -> tuple[float, float]:
 
 def load() -> dict[str, pd.DataFrame]:
     out = {}
-    for p in sorted(HISTORY_DIR.glob("*_60.parquet")):
-        df = pd.read_parquet(p).sort_index()
+    paths = {p.stem: p for p in sorted(HISTORY_DIR.glob('*_60.csv'))}
+    paths.update({p.stem: p for p in sorted(HISTORY_DIR.glob('*_60.parquet'))})
+    for p in paths.values():
+        df = (pd.read_parquet(p) if p.suffix == '.parquet' else
+              pd.read_csv(p, index_col=0, parse_dates=True)).sort_index()
         if len(df) >= 1000:
             out[p.stem[:-3]] = df
     return out
@@ -52,6 +56,8 @@ def main() -> int:
 
     breakeven = 1 / (1 + args.payout)
     expiries = [int(x) for x in args.expiries.split(",")]
+    if not 0 < args.payout <= 1 or not expiries or min(expiries) <= 0:
+        ap.error('Payout debe estar en (0, 1]; expiraciones deben ser positivas')
     data = load()
     if not data:
         print(f"No hay historico en {HISTORY_DIR}")
@@ -67,7 +73,7 @@ def main() -> int:
 
     # Bonferroni sobre el numero real de combinaciones evaluadas.
     n_tests = len(PLAYBOOK) * len(expiries) * 2
-    z_corr = 1.96 + 0.5 * math.log(max(n_tests, 1))
+    z_corr = NormalDist().inv_cdf(1 - 0.05 / (2 * n_tests))
 
     rows = []
     for strat_name, fn in PLAYBOOK.items():
@@ -84,7 +90,8 @@ def main() -> int:
                     if res.empty:
                         continue
                     split = df.index[int(len(df) * (1 - OOS_FRACTION))]
-                    ins, oos = res[res.index < split], res[res.index >= split]
+                    ins = res[(res.entry_time < split) & (res.expiry_time <= split)]
+                    oos = res[res.entry_time >= split]
                     n_in += len(ins); w_in += int(ins["win"].sum())
                     n_out += len(oos); w_out += int(oos["win"].sum())
 
@@ -113,18 +120,21 @@ def main() -> int:
     print("=" * 96)
     winners = [r for r in rows if r["edge"]]
     if winners:
-        print(f"CON EDGE DEMOSTRADO FUERA DE MUESTRA ({len(winners)}):")
+        print(f"CANDIDATOS HISTORICOS PARA VALIDAR EN DEMO ({len(winners)}):")
         for r in winners:
             print(f"  {r['strat']} | {r['market']} | {r['exp']}min | "
                   f"{100 * r['wr_out']:.1f}% (n={r['n_out']})")
     else:
-        print("NINGUNA estrategia del playbook demuestra edge, en ningun mercado.")
+        print('NINGUNA combinacion evaluada supera el criterio con muestra suficiente.')
         if rows:
             b = rows[0]
             print(f"\nLa mejor: {b['strat']} en {b['market']} a {b['exp']}min -> "
                   f"{100 * b['wr_out']:.1f}% fuera de muestra (n={b['n_out']}),")
             print(f"pero su intervalo baja a {100 * b['lo']:.1f}%, "
                   f"por debajo del {100 * breakeven:.1f}% necesario.")
+    print('Evaluacion historica con payout supuesto, sin latencia ni fills del broker. '
+          'No demuestra rentabilidad futura. Las operaciones solapadas pueden '
+          'invalidar la independencia del intervalo; confirmar por sesiones en demo.')
     return 0
 
 

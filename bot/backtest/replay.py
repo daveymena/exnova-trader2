@@ -210,11 +210,15 @@ class ReplayEngine:
         agg = df_m1.resample(rule, label="left", closed="left").agg(
             {"open": "first", "high": "max", "low": "min", "close": "last", "volume": "sum"}
         )
-        return agg.dropna()
+        counts = df_m1['close'].resample(rule, label='left', closed='left').count()
+        return agg[counts == seconds // 60].dropna()
 
     def run(self, strategy: Strategy, df_m1: pd.DataFrame, asset: str) -> StrategyResult:
         cfg = self.config
         df_m1 = df_m1.sort_index()
+        validate_m1(df_m1)
+        if not (0 < cfg.payout <= 1 and cfg.stake > 0 and 0 < cfg.oos_fraction < 1):
+            raise ValueError('Invalid payout, stake or chronological split')
         trades: list[BacktestTrade] = []
 
         if len(df_m1) < cfg.warmup_bars + 10:
@@ -237,19 +241,26 @@ class ReplayEngine:
             for tf in DERIVED_TFS:
                 frames[tf] = self.resample(window, tf)
 
-            try:
-                signal = strategy.evaluate(frames, now)
-            except Exception:
-                continue
+            signal = strategy.evaluate(frames, now)
             if signal is None:
                 continue
 
             # La entrada ocurre en la apertura de la vela i (la primera no vista).
             entry_price = float(df_m1["open"].iloc[i])
-            bars_ahead = max(1, signal.expiration_seconds // 60)
-            exit_idx = i + bars_ahead
+            if signal.direction not in ('CALL', 'PUT'):
+                raise ValueError('Invalid signal direction')
+            if signal.expiration_seconds <= 0 or signal.expiration_seconds % 60:
+                raise ValueError('M1 replay requires expiry in whole positive minutes')
+            bars_ahead = signal.expiration_seconds // 60
+            exit_idx = i + bars_ahead - 1
             if exit_idx >= len(df_m1):
                 break
+            # Never turn missing minutes into a longer contract, or use holdout
+            # outcomes to score a training entry.
+            if df_m1.index[exit_idx] != now + pd.Timedelta(minutes=bars_ahead - 1):
+                continue
+            if i < split_idx <= exit_idx:
+                continue
             exit_price = float(df_m1["close"].iloc[exit_idx])
 
             if exit_price == entry_price:
@@ -286,3 +297,19 @@ class ReplayEngine:
             all_trades.extend(self.run(strategy, df, asset).trades)
         all_trades.sort(key=lambda t: t.time)
         return StrategyResult(strategy.name, all_trades, self.config)
+
+
+def validate_m1(df: pd.DataFrame) -> None:
+    """Reject ambiguous timestamps and malformed prices before scoring signals."""
+    import numpy as np
+    if not isinstance(df.index, pd.DatetimeIndex) or df.index.hasnans:
+        raise ValueError('M1 candles require valid datetime timestamps')
+    if not df.index.is_unique or not df.index.is_monotonic_increasing:
+        raise ValueError('M1 timestamps must be unique and chronological')
+    if not (df.index == df.index.floor('min')).all():
+        raise ValueError('M1 timestamps must identify minute opens')
+    prices = df[['open', 'high', 'low', 'close']]
+    if not np.isfinite(prices.to_numpy()).all() or (prices <= 0).any().any():
+        raise ValueError('OHLC prices must be finite and positive')
+    if ((df.high < prices.max(axis=1)) | (df.low > prices.min(axis=1))).any():
+        raise ValueError('Inconsistent OHLC high/low')

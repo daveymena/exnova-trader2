@@ -217,8 +217,16 @@ def evaluate_signals(df: pd.DataFrame, sig: pd.DataFrame, expiry_min: int,
     cierra `expiry_min` velas despues. Se descartan entradas demasiado juntas
     para no contar la misma senal varias veces.
     """
+    from .replay import validate_m1
+    validate_m1(df)
+    if not isinstance(expiry_min, int) or expiry_min <= 0 or min_gap < 1:
+        raise ValueError('Expiry and gap must be positive whole minutes')
+    if not sig.index.equals(df.index):
+        raise ValueError('Signals must align exactly with candles')
+    if sig[['call', 'put']].isna().any().any() or (sig['call'] & sig['put']).any():
+        raise ValueError('Signals must be unambiguous and non-null')
     entry = df["open"].shift(-1)
-    exit_ = df["close"].shift(-(1 + expiry_min))
+    exit_ = df["close"].shift(-expiry_min)
 
     direction = pd.Series(np.where(sig["call"], "CALL",
                           np.where(sig["put"], "PUT", "")), index=df.index)
@@ -236,6 +244,8 @@ def evaluate_signals(df: pd.DataFrame, sig: pd.DataFrame, expiry_min: int,
     mask[keep] = True
 
     valid = mask & entry.notna().to_numpy() & exit_.notna().to_numpy()
+    times = df.index.to_series()
+    valid &= (times.shift(-expiry_min) - times == pd.Timedelta(minutes=expiry_min)).to_numpy()
     win = np.where(direction == "CALL", exit_ > entry, exit_ < entry)
     tie = (exit_ == entry).to_numpy()
     valid &= ~tie
@@ -243,4 +253,6 @@ def evaluate_signals(df: pd.DataFrame, sig: pd.DataFrame, expiry_min: int,
     return pd.DataFrame({
         "direction": direction[valid],
         "win": pd.Series(win, index=df.index)[valid],
+        "entry_time": times.shift(-1)[valid],
+        "expiry_time": (times.shift(-expiry_min) + pd.Timedelta(minutes=1))[valid],
     })
