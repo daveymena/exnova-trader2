@@ -170,7 +170,7 @@ class Backtester:
             losses=losses,
             win_rate=round(win_rate, 4),
             expectancy=round(expectancy, 4),
-            net_return=round(self.balance - initial_balance, 2),
+            net_return=round(self.balance - self.initial_balance, 2),
             profit_factor=round(profit_factor, 4),
             max_drawdown=round(max_dd, 2),
             longest_losing_streak=consecutive_losses,

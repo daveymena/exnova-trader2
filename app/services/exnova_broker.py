@@ -16,6 +16,8 @@ from app.services.paper_broker import PaperBroker
 # Try multiple paths for exnovaapi
 _EXNOVA_PATHS = [
     os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+                 "bot"),
+    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
                  "Nueva carpeta (2)", "bot-reversiones-iq-new"),
     os.path.join(os.path.expanduser("~"), "Videos", "Nueva carpeta (2)", "bot-reversiones-iq-new"),
 ]

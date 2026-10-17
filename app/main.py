@@ -15,6 +15,7 @@ from app.data.schemas import (
     AccountSnapshot, ResolutionSource
 )
 from app.agents.signal_agent import SignalAgent
+from app.agents.trading_agent import TradingAgent
 from app.agents.risk_manager_agent import RiskManagerAgent
 from app.agents.ai_auditor_agent import AIAuditorAgent
 from app.services.paper_broker import PaperBroker
@@ -25,19 +26,35 @@ logger = logging.getLogger(__name__)
 
 
 class TradingBot:
-    def __init__(self):
-        config.validate()
+    def __init__(self, email=None, password=None, account_type=None):
+        self.email = email if email is not None else config.exnova_email
+        self.password = password if password is not None else config.exnova_password
+        if account_type is not None:
+            try:
+                self.mode = TradingMode(account_type.lower())
+            except ValueError:
+                self.mode = config.mode
+        else:
+            self.mode = config.mode
+
+        # Validacion local (no depende del config global)
+        if self.mode in (TradingMode.PRACTICE, TradingMode.REAL):
+            if not self.email or not self.password:
+                raise RuntimeError("PRACTICE/REAL requiere email y password")
+            if self.mode == TradingMode.REAL:
+                if not (config.real_trading_enabled):
+                    raise RuntimeError("REAL requiere REAL_TRADING_ENABLED=true")
+
         repository.migrate()
 
-        self.mode = config.mode
-        self.signal_agent = SignalAgent()
+        self.signal_agent = None
         self.risk_manager = RiskManagerAgent()
         self.broker = PaperBroker()
 
         if self.mode in (TradingMode.PRACTICE, TradingMode.REAL):
             broker = ExnovaBroker(
-                email=config.exnova_email,
-                password=config.exnova_password,
+                email=self.email,
+                password=self.password,
                 account_type="PRACTICE" if self.mode == TradingMode.PRACTICE else "REAL",
             )
             if broker.connect():
@@ -48,6 +65,7 @@ class TradingBot:
         else:
             self.broker = PaperBroker()
 
+        self.signal_agent = TradingAgent(broker=self.broker, ai_provider=None)
         self.ai_auditor = AIAuditorAgent(
             enabled=True,
         )
@@ -146,6 +164,11 @@ class TradingBot:
                         cooldown_until = now + 30  # 30s cooldown tras trade
 
                 cycle += 1
+                if cycle % 50 == 0:
+                    try:
+                        self.signal_agent.self_improve()
+                    except Exception:
+                        pass
                 if cycle % 10 == 0:
                     strat_summary = " | ".join(f"{k}={v}" for k, v in sorted(signals_by_strategy.items()))
                     wr = f"{(win_count/(win_count+loss_count)*100):.0f}%" if (win_count+loss_count) > 0 else "-"
@@ -353,6 +376,10 @@ class TradingBot:
 
         if trade:
             self.risk_manager.record_trade_result(trade)
+            try:
+                self.signal_agent.record_trade(trade)
+            except Exception:
+                pass
             return {"traded": True}
 
         return {"traded": False}

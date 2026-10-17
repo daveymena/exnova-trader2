@@ -16,6 +16,10 @@ from app.agents.edge_validator_agent import EdgeValidatorAgent
 from app.agents.risk_manager_agent import RiskManagerAgent
 from app.agents.expiry_selector import ExpirySelector
 from app.strategies.sr_bounce import SRBounceStrategy
+from app.strategies.trend_continuation import TrendContinuationStrategy
+from app.strategies.mean_reversion import MeanReversionStrategy
+from app.strategies.breakout_retest import BreakoutRetestStrategy
+from app.strategies.breakout_direct import BreakoutDirectStrategy
 from app.config import config, TradingMode
 
 
@@ -30,6 +34,10 @@ class SignalAgent:
         sr_cfg = {"min_confidence": 0.40, "level_distance_atr": 2.5, "min_rejection_wick_ratio": 1.2, "default_expiry": 300} if practice else {"min_confidence": 0.65}
         self.strategies = {
             "sr_bounce": SRBounceStrategy(config=sr_cfg),
+            "trend_continuation": TrendContinuationStrategy(config={"min_confidence": 0.40 if practice else 0.65}),
+            "mean_reversion": MeanReversionStrategy(config={"min_confidence": 0.40 if practice else 0.65}),
+            "breakout_retest": BreakoutRetestStrategy(config={"min_confidence": 0.40 if practice else 0.65}),
+            "breakout_direct": BreakoutDirectStrategy(config={"min_confidence": 0.40 if practice else 0.65}),
         }
 
     def scan(self, candles_m15: list[Candle], candles_m5: list[Candle],

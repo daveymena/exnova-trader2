@@ -26,7 +26,7 @@ class Config:
     mode: TradingMode = TradingMode.PAPER
     real_trading_enabled: bool = False
 
-    broker_name: str = "iqoption"
+    broker_name: str = "exnova"
     iq_option_email: str = ""
     iq_option_password: str = ""
     exnova_email: str = ""
