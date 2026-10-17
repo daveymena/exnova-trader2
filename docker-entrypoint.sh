@@ -59,8 +59,15 @@ echo "[entrypoint] Arrancando bot de trading (bot/run_live.py) con auto-restart.
 (
     while true; do
         echo "[bot] === arranque $(date -u +%FT%TZ) ===" >> /app/data/bot.log
-        python3 -u bot/run_live.py >> /app/data/bot.log 2>&1
-        echo "[bot] === bot salio con rc=$? a las $(date -u +%FT%TZ) — reiniciando en 10s ===" >> /app/data/bot.log
+        # set -e is active in this script. Run the bot in an if condition so
+        # a non-zero exit (e.g. watchdog rc=3) is captured instead of killing
+        # this background supervisor before it can restart the process.
+        if python3 -u bot/run_live.py >> /app/data/bot.log 2>&1; then
+            BOT_RC=0
+        else
+            BOT_RC=$?
+        fi
+        echo "[bot] === bot salio con rc=${BOT_RC} a las $(date -u +%FT%TZ) — reiniciando en 10s ===" >> /app/data/bot.log
         sleep 10
     done
 ) &

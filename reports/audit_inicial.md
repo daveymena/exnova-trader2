@@ -25,3 +25,8 @@ python scripts/fetch_history.py --assets EURUSD-OTC,GBPUSD-OTC,AUDJPY-OTC,US30-O
 Luego comprimir bot/data/history y adjuntarlo a esta conversacion; nunca adjuntar .env ni datos de acceso. Si el contenedor no incluye el repositorio scripts/, descargar por separado las velas a CSV en bot/data/history.
 
 Pendiente: con velas recuperadas, ejecutar walk-forward de todas las estrategias y expiraciones con el payout real medido; separar OTC y mercados abiertos, corregir comparaciones multiples, reportar expectancy y drawdown fuera de muestra; comparar despues con forward test de practice y confirmaciones reales.
+
+Incidente observado el 17 de octubre de 2026
+El endpoint /api/health responde, pero /api/status da bot_alive=false y el heartbeat lleva mas de ocho horas sin actualizarse. El ultimo log dice que se perdio el WebSocket de Exnova; el watchdog detecto 601 s sin latido y termino run_live.py con rc=3.
+La causa de que no se recuperara esta en docker-entrypoint.sh: el entrypoint activa `set -e` y ejecutaba run_live.py como comando simple dentro del subshell del bucle. Al devolver rc=3, errexit terminaba el propio supervisor antes de escribir el registro de reinicio o volver a lanzar el bot. Corregido localmente ejecutando el proceso dentro de una condicion `if`, capturando su codigo y continuando el bucle.
+Verificado con `bash -n` y una simulacion de dos ciclos que devuelve rc=3; el bucle sobrevive. Aun no se ha desplegado: el panel rechaza el acceso y no se modifico ningun proceso remoto.
