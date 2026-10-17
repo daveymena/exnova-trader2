@@ -18,7 +18,7 @@ La mayor muestra por patron en esos ultimos 500 es pin_bar_bearish (68/117=58.1%
 El codigo live tambien convierte falta de confirmacion del broker en perdida ficticia, tanto en la ruta principal como en una ruta de operaciones virtuales. Por tanto, esos recuentos no son evidencia broker-a-broker hasta auditar la confirmacion de cada orden.
 
 Acceso al servidor
-La pagina publica del monitor responde y declara PRACTICE; el inicio de sesion de EasyPanel rechazo las dos variantes provistas. El usuario confirma que puede usar la terminal del servicio y queda pendiente subir el historico desde esa terminal. No hay cambios desplegados, no se cambiaron parametros de la cuenta, y no se emitieron ordenes desde esta sesion.
+La pagina publica del monitor responde y declara PRACTICE; el inicio de sesion de EasyPanel rechazo las dos variantes provistas. Tras subir los cambios a main, el monitor reporto un heartbeat nuevo y el log mostro que run_live.py estaba evaluando señales en PRACTICE. El ciclo consultado tenia cero operaciones nuevas. No se cambiaron parametros de la cuenta ni se emitieron ordenes desde esta sesion.
 
 Para descargar historico desde terminal EasyPanel, en el contenedor del servicio que tenga el repositorio:
 python scripts/fetch_history.py --assets EURUSD-OTC,GBPUSD-OTC,AUDJPY-OTC,US30-OTC,ATOMUSD-OTC --days 7 --timeframes 60
@@ -29,4 +29,4 @@ Pendiente: con velas recuperadas, ejecutar walk-forward de todas las estrategias
 Incidente observado el 17 de octubre de 2026
 El endpoint /api/health responde, pero /api/status da bot_alive=false y el heartbeat lleva mas de ocho horas sin actualizarse. El ultimo log dice que se perdio el WebSocket de Exnova; el watchdog detecto 601 s sin latido y termino run_live.py con rc=3.
 La causa de que no se recuperara esta en docker-entrypoint.sh: el entrypoint activa `set -e` y ejecutaba run_live.py como comando simple dentro del subshell del bucle. Al devolver rc=3, errexit terminaba el propio supervisor antes de escribir el registro de reinicio o volver a lanzar el bot. Corregido localmente ejecutando el proceso dentro de una condicion `if`, capturando su codigo y continuando el bucle.
-Verificado con `bash -n` y una simulacion de dos ciclos que devuelve rc=3; el bucle sobrevive. Aun no se ha desplegado: el panel rechaza el acceso y no se modifico ningun proceso remoto.
+Verificado con `bash -n` y una simulacion de dos ciclos que devuelve rc=3; el bucle sobrevive. Subido a main en a5a72b41d3c4ee2043a6f085d58736c785a0db97. Despues del push, el heartbeat avanzo al ciclo 30 y el registro mostro actividad del bot en PRACTICE; el monitor reporto bot_alive=true.
