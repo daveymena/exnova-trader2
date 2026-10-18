@@ -658,8 +658,12 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     else:
                         log(f"DRAW | {asset} {direction}")
                 else:
-                    pnl, result = -amount * 0.5, "LOSS"
-                    log("Sin confirmacion, asumiendo LOSS")
+                    # Sin confirmacion del broker NO es una perdida: contarla
+                    # como LOSS sesgaba el WR a la baja y alimentaba al
+                    # evaluador con pérdidas inventadas. Se registra como
+                    # DRAW (no cuenta como W/L ni como observacion).
+                    pnl, result = 0.0, "DRAW"
+                    log("Sin confirmacion del broker: resultado no contado (DRAW)", "WARNING")
             except Exception as e:
                 log(f"Error verificando resultado: {e}")
                 pnl, result = 0.0, "DRAW"
@@ -1004,10 +1008,9 @@ def bot_loop(market_data, rm, engine, agent_engine):
                             log(f"[DEMO] {icon} {result} {demo['direction']} {demo['asset']} "
                                 f"${pnl:+.2f} | balance demo: ${state['demo_balance']:.2f}", "INFO")
                         else:
-                            log(f"[DEMO] Sin confirmacion de orden {demo['id']}, asumiendo LOSS", "WARNING")
-                            state["demo_losses"] += 1
-                            state["demo_pnl"] -= demo["amount"]
-                            state["demo_balance"] -= demo["amount"]
+                            # Sin confirmacion no hay resultado: no se cuenta
+                            # como perdida (antes restaba el monto del balance).
+                            log(f"[DEMO] Sin confirmacion de orden {demo['id']}: no contado", "WARNING")
                     except Exception as e:
                         log(f"[DEMO] Error verificando orden: {e}", "WARNING")
                     state["demo_order"] = None
