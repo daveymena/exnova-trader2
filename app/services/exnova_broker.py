@@ -9,34 +9,56 @@ from datetime import datetime, timedelta
 import pandas as pd
 
 from app.data.schemas import (
+    DataSource,
     Candle, Direction, Timeframe, TradeResult, ExecutionState, ResolutionSource
 )
 from app.services.paper_broker import PaperBroker
 
-# Try multiple paths for exnovaapi
-_EXNOVA_PATHS = [
-    os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-                 "Nueva carpeta (2)", "bot-reversiones-iq-new"),
-    os.path.join(os.path.expanduser("~"), "Videos", "Nueva carpeta (2)", "bot-reversiones-iq-new"),
-]
-for _p in _EXNOVA_PATHS:
-    if os.path.isdir(_p):
-        sys.path.insert(0, _p)
+# La API esta VENDIDA EN ESTE REPO (bot/exnovaapi/). Antes se buscaba en dos
+# carpetas personales con nombre en espanol ("Nueva carpeta (2)"), que en
+# cualquier otra maquina no existen -> ExnovaAPI quedaba en None -> connect()
+# devolvia False -> el 100% de las ordenes caia al PaperBroker mientras el log
+# imprimia "[EXNOVA] Conectando...". Se veia operando y no tocaba el broker.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_VENDORED = os.path.join(_REPO_ROOT, "bot")
+if os.path.isdir(os.path.join(_VENDORED, "exnovaapi")) and _VENDORED not in sys.path:
+    sys.path.insert(0, _VENDORED)
 
+#: Motivo por el que la API no esta disponible. No se traga: se reporta.
+EXNOVA_IMPORT_ERROR: str = ""
 try:
     from exnovaapi.stable_api import Exnova as ExnovaAPI
-except ImportError:
+except ImportError as _exc:
     ExnovaAPI = None
+    # Ojo: aqui cae tambien "No module named 'websocket'". La API vendida
+    # necesita websocket-client, y sin el el import falla aunque la carpeta
+    # exista. Antes eso se convertia en None en silencio.
+    EXNOVA_IMPORT_ERROR = f"{type(_exc).__name__}: {_exc}"
 
 
 class ExnovaBroker(PaperBroker):
-    def __init__(self, email: str, password: str, account_type: str = "PRACTICE"):
+    def __init__(self, email: str, password: str, account_type: str = "PRACTICE",
+                 allow_paper_fallback: bool = False):
         super().__init__()
         self.email = email
         self.password = password
         self.account_type = account_type
         self.api = None
         self.connected = False
+        # SIN CONECTAR NO HAY EVIDENCIA. Hereda data_source=SIMULATOR de
+        # PaperBroker y eso es lo correcto mientras no haya conexion: un trade
+        # simulado nunca pasa is_evidence().
+        #
+        # EL BUG GRAVE ERA EL CONTRARIO DEL QUE PARECIA. ExnovaBroker nunca
+        # marcaba nada como BROKER, ni siquiera conectado de verdad: toda orden
+        # --real o de respaldo-- salia como SIMULATOR. O sea que los datos de la
+        # cuenta practice del broker, que son JUSTO la unica fuente capaz de
+        # producir evidencia en vivo, se tiraban a la basura. El forward test que
+        # se quiere hacer era imposible por construccion, y sin ningun error en
+        # pantalla. Mismo patron que el settle() que no propagaba data_source en
+        # el camino CSV: la evidencia se perdia en silencio.
+        self.allow_paper_fallback = allow_paper_fallback
+        self.paper_fallbacks = 0
 
     def connect(self, max_retries: int = 3) -> bool:
         if ExnovaAPI is None:
@@ -100,9 +122,38 @@ class ExnovaBroker(PaperBroker):
 
     def buy(self, asset, direction: Direction, amount: float,
             expiry_sec: int, strategy: str, market_regime, confidence: float):
-        if not self.connected or not self.api:
-            return super().buy(asset, direction, amount, expiry_sec,
-                               strategy, market_regime, confidence)
+        # La procedencia se fija en cada orden, no en connect(): es el unico
+        # punto donde se sabe con certeza si esta orden va al broker o no. De
+        # aqui sale el data_source que settle() propaga al TradeResult, y por
+        # tanto decide is_evidence().
+        if self.connected and self.api is not None:
+            self.data_source = DataSource.BROKER
+        else:
+            self.data_source = DataSource.SIMULATOR
+            self.paper_fallbacks += 1
+            if not self.allow_paper_fallback:
+                # Negarse en vez de degradar. En modo practice el peligro no es
+                # perder dinero: es CREER que se probo contra el broker cuando se
+                # probo contra una simulacion local. Un respaldo silencioso hace
+                # exactamente eso, y ademas produce una corrida que "se ve bien"
+                # sin haber tocado el mercado.
+                raise RuntimeError(
+                    "ExnovaBroker no esta conectado y allow_paper_fallback=False. "
+                    f"Motivo del import: {EXNOVA_IMPORT_ERROR or '(sin error de import)'}. "
+                    "Revise credenciales, que websocket-client este instalado y que "
+                    "bot/exnovaapi/ exista. Para experimentar sin broker use "
+                    "PaperBroker directamente, no este conector: al menos entonces "
+                    "queda claro que nada de esto es evidencia."
+                )
+            print(f"[EXNOVA] AVISO: sin conexion -> orden {asset} {direction.value} "
+                  f"cae a PaperBroker y NO cuenta como evidencia "
+                  f"(respaldo #{self.paper_fallbacks})")
+            return super().buy(asset, direction, amount, expiry_sec, meta={
+                "strategy": strategy, "market_regime": market_regime,
+                "confidence": confidence,
+                # Nunca BROKER: esta orden no toco el broker.
+                "data_source": DataSource.SIMULATOR,
+            })
 
         action = direction.value.upper()
         try:
@@ -120,8 +171,12 @@ class ExnovaBroker(PaperBroker):
                                 payout, amount, market_regime, confidence,
                                 order_id,
                             )
-                except Exception:
-                    pass
+                except Exception as _exc:
+                    # `except: pass` a secas escondia por que una orden digital no
+                    # salia y la degradaba al camino binario normal sin decirlo.
+                    print(f"[EXNOVA] buy_digital_spot no disponible para {asset} "
+                          f"{expiry_sec}s ({type(_exc).__name__}: {_exc}); "
+                          f"se intenta el camino binario")
 
             check, order_id = self.api.buy(amount, asset, action, expiry_sec)
             if check:
@@ -133,9 +188,26 @@ class ExnovaBroker(PaperBroker):
         except Exception as e:
             print(f"[EXNOVA] Buy error: {e}")
 
-        # Fallback to paper
-        return super().buy(asset, direction, amount, expiry_sec,
-                           strategy, market_regime, confidence)
+        # La orden NO llego al broker. Se degrada a paper SOLO si se pidio
+        # explicitamente, y el trade queda marcado SIMULATOR para que jamas
+        # cuente como evidencia: mezclar ordenes reales con simuladas en la misma
+        # estadistica es la forma mas rapida de "probar" un edge que no existe.
+        self.data_source = DataSource.SIMULATOR
+        self.paper_fallbacks += 1
+        if not self.allow_paper_fallback:
+            raise RuntimeError(
+                f"[EXNOVA] la orden {asset} {direction.value} {expiry_sec}s no se "
+                f"pudo enviar al broker y allow_paper_fallback=False. No se degrada "
+                f"a simulacion en silencio: eso fabricaria evidencia falsa."
+            )
+        print(f"[EXNOVA] AVISO: orden {asset} no enviada -> PaperBroker, NO es "
+              f"evidencia (respaldo #{self.paper_fallbacks})")
+        return super().buy(asset, direction, amount, expiry_sec, meta={
+                "strategy": strategy, "market_regime": market_regime,
+                "confidence": confidence,
+                # Nunca BROKER: esta orden no toco el broker.
+                "data_source": DataSource.SIMULATOR,
+            })
 
     def _register_sent(self, asset, direction: Direction, strategy: str,
                        expiry_sec: int, payout: float, amount: float,
