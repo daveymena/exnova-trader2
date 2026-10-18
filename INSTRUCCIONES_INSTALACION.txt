@@ -1,0 +1,116 @@
+INSTALACION Y ARRANQUE — exnova-trader2 (nucleo app/)
+======================================================
+
+QUE ES ESTO
+-----------
+Sistema de trading de opciones binarias en modo PRACTICE (cuenta demo del
+broker), con supervision estadistica y un bucle de aprendizaje que diagnostica
+cada perdida y evita repetir la misma entrada.
+
+NO OPERA CON DINERO REAL. account_type esta fijo en "PRACTICE" dentro del
+codigo (app/run_practice.py) y no se puede cambiar por parametro ni por variable
+de entorno: hace falta editar el fichero. Es deliberado.
+
+Requiere Python 3.11+.
+
+
+PASO 1 — DEPENDENCIAS
+---------------------
+    pip install -r requirements.txt
+    pip install websocket-client        # IMPRESCINDIBLE para el conector
+
+Sin websocket-client la API vendida en bot/exnovaapi/ no carga y el conector se
+niega a arrancar (dice exactamente eso).
+
+NO hace falta `pip install exnovaapi`: ya viene vendida en bot/exnovaapi/.
+Si ves el mensaje "[EXNOVA] exnovaapi no instalado", es engañoso — lo que falta
+es websocket-client.
+
+Opcionales, solo si vas a usar el supervisor LLM o el dashboard:
+    pip install openai rich fastapi uvicorn
+
+
+PASO 2 — CREDENCIALES
+---------------------
+Por variable de entorno, NUNCA por argumento de linea de comandos (quedan en el
+historial del shell y en la lista de procesos):
+
+    export EXNOVA_EMAIL="tu@correo.com"
+    export EXNOVA_PASSWORD="..."
+
+O crea un fichero .env en la raiz (ya esta en .gitignore, no se commitea):
+
+    EXNOVA_EMAIL=tu@correo.com
+    EXNOVA_PASSWORD=...
+
+
+PASO 3 — ARRANCAR EN PRACTICE CONTRA EL BROKER
+----------------------------------------------
+    python -m app.run_practice --assets EURUSD-OTC --cycles 500 --interval 5
+
+Opciones:
+    --assets        activos separados por coma (defecto EURUSD-OTC)
+    --cycles        cuantos ciclos ejecutar (defecto 500)
+    --interval      segundos entre ciclos (defecto 5)
+    --learn-every   cada cuantos ciclos reaprende la memoria de fallos (500)
+    --payout        payout por defecto si el broker no lo reporta (0.85)
+    -v              log detallado
+
+Si el broker no conecta, el proceso SALE CON ERROR y dice la causa real.
+NO se degrada a simulacion local: una corrida que simula mientras parece operar
+contra el broker no produce evidencia, produce confianza equivocada.
+
+
+PASO 4 — VERIFICAR ANTES DE CONFIAR EN NADA
+-------------------------------------------
+    python -m pytest tests/ -q          # deben pasar 92
+
+Backtest de control (el mercado nulo DEBE perder dinero; si gana, algo mide mal):
+    python -m app.run_backtest          # o scripts/run_backtest.py
+
+
+QUE VAS A VER AL FINAL DE LA CORRIDA
+------------------------------------
+    setups con edge PROBADO sobre datos reales: 0
+
+ESE CERO ES EL RESULTADO ESPERADO Y CORRECTO durante mucho tiempo. El umbral son
+200 observaciones con la cota inferior de Wilson por encima del break-even, mas
+Benjamini-Hochberg. Con unas horas de corrida no se llega.
+
+No es que falle: es que esta midiendo de verdad en vez de decirte lo que quieres
+oir, que es exactamente lo que hacia el backtester anterior.
+
+Mientras ese numero sea cero, DINERO REAL NO. Es el unico requisito que separa
+esto de las ~500 operaciones que el bot anterior perdio ascendiendo reglas
+ajustadas con n=1, 6, 7 y 9.
+
+
+QUE HAY DENTRO
+--------------
+app/stats/core.py               Wilson, Benjamini-Hochberg, break-even, Kelly
+app/data/feed.py                feeds causales (sin look-ahead): Simulado, Replay, Broker
+app/data/market_sim.py          simulador de microestructura OTC (NO es evidencia)
+app/data/repository.py          SQLite + migraciones + tabla trade_forensics
+app/core/engine.py              TradingEngine: el motor real
+app/agents/                     riesgo, edge, senal, timing, expiracion, regime, MTF
+app/strategies/                 estrategias + registro con validacion de parametros
+app/research/setup_evaluator.py gate estadistico: que setup merece operar
+app/research/backtester.py      walk-forward train/test sin contaminar
+app/research/loss_forensics.py  MAE/MFE: POR QUE se perdio cada operacion
+app/research/failure_memory.py  no repetir la misma entrada equivocada
+app/services/improvement_engine.py  propuestas de mejora con freno estadistico
+app/services/exnova_broker.py   conector al broker (cuenta practice)
+app/run_practice.py             ARRANQUE: python -m app.run_practice
+bot/exnovaapi/                  API del broker, vendida
+
+INVESTIGACION_Y_ARQUITECTURA.md  documento completo: investigacion, los 15
+                                 defectos encontrados, verificacion ejecutada y
+                                 la seccion 5 "lo que NO esta hecho".
+
+
+LO QUE QUEDA PENDIENTE (documentado en la seccion 5)
+----------------------------------------------------
+* app/main.py NO esta recableado al TradingEngine: ejecutarlo hoy correria el
+  camino viejo, sin gates ni forense ni memoria de fallos. Usa app/run_practice.py.
+* Ningun setup tiene edge probado sobre datos reales. Todo lo medido hasta ahora
+  viene del simulador, que falla is_evidence() por diseno.
