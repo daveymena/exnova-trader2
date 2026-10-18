@@ -170,6 +170,28 @@ tocaron.
   Un test que reproduce la interpretación equivocada no detecta el bug: lo
   blinda. Se reescribió para afirmar la cota correcta (`equity * pct / 100`) y se
   añadió una guarda explícita de regresión.
+- **`benjamini_hochberg` desempacado como si devolviera dos listas.** Devuelve
+  una lista de dicts con `index`/`p`/`q`/`rejected`. Dos sitios hacían
+  `q_values, rejected = benjamini_hochberg(...)`, que lanza
+  `ValueError: too many values to unpack`. Uno estaba en `ImprovementEngine.gate()`:
+  **el gate reventaba en cuanto había alguna propuesta con p-valor**, justo el
+  único caso en que el gate tiene trabajo que hacer. Un filtro que revienta al
+  activarse es peor que no tener filtro — o se cae el ciclo, o alguien lo envuelve
+  en un `try` y lo deja pasar.
+- **Un diagnóstico invertido en el forense de pérdidas.** La primera versión
+  exigía MFE ≥ 0.50 ATR **dentro** de la ventana antes de mirar el recorrido
+  **posterior**. Con eso, una operación que se movió 0.45 ATR a favor y perdió por
+  poco — pero que habría recorrido 3.05 ATR a favor con más tiempo — caía al
+  fallback y se diagnosticaba como `DIRECCION_EQUIVOCADA`, cuyo hint dice
+  literalmente *"NO tocar la expiración"*. El diagnóstico mandaba a endurecer el
+  filtro de tendencia justo cuando la tendencia era correcta, y prohibía el único
+  cambio que lo arreglaba. **Un diagnóstico invertido es peor que no tener
+  diagnóstico**, porque se actúa sobre él con confianza. Corregido evaluando el
+  recorrido posterior primero. En la misma revisión se movió la comprobación de
+  "ventana plana" a después de la de "ganadora": iba antes y diagnosticaba una
+  victoria en rango estrecho como `SIN_MOVIMIENTO`, contaminando el digest con un
+  modo de fallo que en realidad era una ganancia. Detectado ejecutando 8
+  escenarios con respuesta conocida (6/8 → **8/8** tras corregir).
 
 ---
 
@@ -308,9 +330,115 @@ casi nunca llegaban a evaluarse. **No se puede medir lo que nunca se selecciona.
 Ese fue el motivo directo de reescribir `signal_agent` para evaluar todas y
 rankear, y de añadir la evaluación sombra.
 
----
+### 3.6 Una pérdida es una lección: el bucle de aprendizaje
 
-## 4. Verificación ejecutada
+Faltaba la pieza que cierra el ciclo. El sistema sabía **si** un setup pierde
+(`SetupEvaluator`, con rigor estadístico) pero no **por qué** — y sin el porqué
+repite la misma entrada indefinidamente.
+
+**El hueco concreto: no había MAE/MFE en todo el repo.** MAE (recorrido máximo en
+contra) y MFE (recorrido máximo a favor) son el análisis de excursión estándar, y
+son lo único que distingue dos pérdidas con el mismo win rate:
+
+| | MFE | MAE | Después de expirar | Diagnóstico | Se arregla con |
+|---|---|---|---|---|---|
+| A | 0.05 ATR | 2.55 ATR | 0.00 | dirección equivocada | endurecer filtro de tendencia |
+| B | 0.45 ATR | 0.25 ATR | **3.05 ATR** | **expiración corta** | **alargar expiración** |
+| C | 1.25 ATR | 1.05 ATR | 0.00 | reversión | acortar expiración / timing |
+
+Tratarlas igual porque comparten win rate es "mejorar" el sistema en la dirección
+equivocada. Al caso B, alargarle la expiración es justo lo que funciona;
+endurecerle el filtro de tendencia lo empeora.
+
+Las excursiones se normalizan **en unidades de ATR**, no en pips: 15 pips es ruido
+en un activo volátil y tendencia en otro, y sin normalizar los modos de fallo se
+mezclarían entre activos.
+
+**Taxonomía** (`app/research/loss_forensics.py`): `DIRECCION_EQUIVOCADA`,
+`EXPIRACION_CORTA`, `REVERSION`, `ENTRADA_TARDIA`, `SIN_MOVIMIENTO`,
+`VOLATILIDAD_EXTREMA`, `INSUFICIENTE`, `NO_ES_FALLO`. Cada modo tiene un
+`actionable_hint` **determinista** que dice qué familia de parámetros lo aborda.
+El diagnóstico no depende de que un modelo adivine qué tocar.
+
+Verificado sobre 8 escenarios con respuesta conocida: **8/8 clasificaciones
+correctas**. Dos fallos iniciales revelaron un bug real de orden en mi propia
+lógica, descrito en §2.3.
+
+**La memoria de fallos** (`app/research/failure_memory.py`) es lo que evita
+repetir la entrada. Convierte el diagnóstico en una condición comprobable ANTES
+de entrar. Una condición solo se convierte en veto si cumple **las cuatro**:
+
+1. Muestra mínima propia (30 observaciones).
+2. Su cota **inferior** de Wilson para la tasa de pérdida supera la tasa
+   incondicional del setup. "Perdió el 70 %" no significa nada si el setup pierde
+   el 70 % en general.
+3. Sobrevive a Benjamini-Hochberg (se prueban ~8 condiciones por feature).
+4. Es **observable en el instante de entrada**. Nada de MAE/MFE: eso es
+   diagnóstico post-hoc y consultarlo al decidir sería look-ahead.
+
+Y los vetos se **desactivan solos** cuando la muestra deja de sostenerlos. Una
+memoria que solo acumula prohibiciones acaba sin operar nada.
+
+**Por qué las cuatro y no menos.** Aprender filtros de las pérdidas es la forma
+más rápida de reconstruir el bug que hundió las ~500 operaciones anteriores. Si el
+sistema ve 6 pérdidas con RSI > 68 y deduce "no entrar con RSI > 68", no ha
+aprendido nada: el Wilson al 95 % para 6/6 es **[62 %, 100 %]**, compatible con
+casi todo. Probado explícitamente: **6/6 pérdidas (100 %) NO genera veto.**
+
+**Verificación ejecutada del bucle completo:**
+
+```
+observaciones precargadas: 160
+vetos activados: ['atr_m5 >= 0.00202634', 'atr_m5 >= 0.00322093']
+consult(atr_m5=0.0030) -> veto: True
+   atr_m5 >= 0.00202634: perdio 68/79 (86.1%, cota inferior 76.8%)
+                         contra 61.3% incondicional del setup
+consult(atr_m5=0.0008) -> veto: False
+
+=== dentro del motor, 700 ciclos ===
+vetoes_applied: 40
+etapas de rechazo: edge 235, no_signal 161, risk 137, timing 127,
+                   failure_memory 25
+```
+
+Y en una corrida real de 900 ciclos sobre mercado simulado, el sistema descubrió
+solo algo que vale la pena mirar:
+
+```
+EURUSD-OTC|sr_bounce|call|unknown|180:  n=324  perdidas=202  tasa=62.4%
+    VETO atr_m5 >= 0.0022   n=35   tasa=94.3%  cota_inf=81.4%   (base 62.4%)
+    VETO atr_m5 >= 0.0018   n=90   tasa=76.7%  cota_inf=66.9%
+    VETO atr_m5 >= 0.0015   n=207  tasa=73.4%  cota_inf=67.0%
+```
+
+**`sr_bounce` pierde el 94.3 % de las veces cuando la volatilidad M5 es alta**,
+contra un 62.4 % incondicional, con cota inferior de Wilson en 81.4 %. Es coherente
+con que dispare en el 48.7 % de los minutos (§3.5): no detecta un rechazo en un
+nivel, detecta movimiento. La memoria también desactivó 3 vetos que la muestra
+dejó de sostener.
+
+**Qué hace el sistema con lo aprendido — dos salidas, no una:**
+
+- **Veto inmediato**: la entrada se bloquea con el motivo y los números escritos.
+  No vuelve a cometerse.
+- **Propuesta al motor de mejora**: el veto es un parche local sobre UN setup; la
+  causa raíz suele ser un parámetro de la estrategia. Eso lo arregla
+  `ImprovementEngine` con su sandbox, walk-forward y rollback. El veto protege
+  mientras tanto; no sustituye al arreglo.
+
+El `digest()` que se le pasa al supervisor de IA no es una lista cruda de
+pérdidas: es dónde está el fallo recurrente y con cuánta evidencia, separando
+explícitamente `modos_solidos` de `modos_anecdoticos` (umbral n≥10). Un modo visto
+2 veces se reporta como anécdota, no como conclusión.
+
+**Separación estricta que conviene tener clara:** el recorrido *posterior* a la
+expiración (`post_expiry_mfe_atr`) es la prueba más fuerte de que la expiración se
+quedó corta, y es **solo diagnóstico post-hoc**. Las condiciones que se consultan
+antes de entrar viven en la memoria de fallos y son exclusivamente features
+observables en el instante de entrada. Mezclarlas sería reintroducir el look-ahead
+que se acaba de eliminar.
+
+
 
 Nada de esto se da por bueno sin ejecutarlo.
 

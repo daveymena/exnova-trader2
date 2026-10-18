@@ -320,6 +320,32 @@ class Repository:
                 ON improvement_proposals(status, created_at);
 
             -- Backtests persistidos, con in-sample y out-of-sample SEPARADOS.
+            CREATE TABLE IF NOT EXISTS trade_forensics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                trade_id INTEGER,
+                analysed_at TEXT,
+                asset TEXT,
+                strategy TEXT,
+                direction TEXT,
+                setup_slug TEXT,
+                expiry INTEGER,
+                won INTEGER,
+                failure_mode TEXT NOT NULL,
+                tags TEXT,
+                excursions TEXT,
+                rule TEXT,
+                actionable_hint TEXT,
+                diagnosis_confidence TEXT,
+                features_at_entry TEXT,
+                is_evidence INTEGER DEFAULT 0,
+                data_source TEXT DEFAULT 'unknown'
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_forensics_setup_mode
+                ON trade_forensics(setup_slug, failure_mode);
+            CREATE INDEX IF NOT EXISTS idx_forensics_mode
+                ON trade_forensics(failure_mode, analysed_at);
+
             CREATE TABLE IF NOT EXISTS backtest_runs (
                 id TEXT PRIMARY KEY,
                 created_at TEXT NOT NULL,
@@ -851,6 +877,74 @@ class Repository:
         return [self._row_to_setup(r) for r in conn.execute(sql, params).fetchall()]
 
     # ── Propuestas de mejora ──────────────────────────────────────────────
+
+    # ── Forense de perdidas ───────────────────────────────────────────────
+
+    def save_forensic_report(self, report) -> int:
+        """Guarda el diagnostico de una operacion. Devuelve el id."""
+        conn = self.connect()
+        cursor = conn.execute(
+            """INSERT INTO trade_forensics
+               (trade_id, analysed_at, asset, strategy, direction, setup_slug,
+                expiry, won, failure_mode, tags, excursions, rule,
+                actionable_hint, diagnosis_confidence, features_at_entry,
+                is_evidence, data_source)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (report.trade_id,
+             report.analysed_at.isoformat() if report.analysed_at else None,
+             report.asset, report.strategy, report.direction, report.setup_slug,
+             report.expiry, None if report.won is None else int(report.won),
+             report.mode.value, json.dumps(report.tags, default=str),
+             json.dumps(report.excursions, default=str), report.rule,
+             report.actionable_hint, report.confidence_in_diagnosis,
+             json.dumps(report.features_at_entry, default=str),
+             int(bool(report.is_evidence)), report.data_source),
+        )
+        conn.commit()
+        return int(cursor.lastrowid or 0)
+
+    def list_forensics(self, setup_slug: Optional[str] = None,
+                       failure_mode: Optional[str] = None,
+                       losses_only: bool = True,
+                       limit: int = 500) -> list[dict]:
+        """Diagnosticos guardados, para el digest y el supervisor de IA."""
+        conn = self.connect()
+        where, params = [], []
+        if setup_slug:
+            where.append("setup_slug=?"); params.append(setup_slug)
+        if failure_mode:
+            where.append("failure_mode=?"); params.append(failure_mode)
+        if losses_only:
+            where.append("won=0")
+        sql = "SELECT * FROM trade_forensics"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(sql, params).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            for key in ("tags", "excursions", "features_at_entry"):
+                try:
+                    d[key] = json.loads(d.get(key) or "{}" if key == "excursions"
+                                        else d.get(key) or "[]")
+                except json.JSONDecodeError:
+                    d[key] = {} if key == "excursions" else []
+            out.append(d)
+        return out
+
+    def forensic_mode_counts(self, min_n: int = 1) -> dict:
+        """Cuantas perdidas por modo de fallo. Lo que responde 'donde duele'."""
+        conn = self.connect()
+        rows = conn.execute(
+            """SELECT failure_mode, COUNT(*) AS n,
+                      SUM(CASE WHEN is_evidence=1 THEN 1 ELSE 0 END) AS evidencia
+               FROM trade_forensics WHERE won=0
+               GROUP BY failure_mode ORDER BY n DESC""").fetchall()
+        return {r["failure_mode"]: {"n": int(r["n"]), "evidencia": int(r["evidencia"] or 0),
+                                    "solido": int(r["n"]) >= min_n}
+                for r in rows if int(r["n"]) >= 1}
 
     def save_proposal(self, prop: ImprovementProposal):
         conn = self.connect()

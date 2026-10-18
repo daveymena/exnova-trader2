@@ -740,10 +740,17 @@ class ImprovementEngine:
             return list(validations)
 
         ps = [v.p_value for v in accepted]
-        q_values, rejected = benjamini_hochberg(ps, self.cfg.fdr)
-        for v, q, ok in zip(accepted, q_values, rejected):
+        # `benjamini_hochberg` devuelve una lista de dicts con index/p/q/rejected.
+        # Aqui se desempacaba como si fueran dos listas, asi que el gate lanzaba
+        # ValueError en cuanto habia alguna propuesta con p-valor -- justo el
+        # unico caso en el que el gate tiene trabajo que hacer. Un filtro que
+        # revienta al activarse es peor que no tener filtro: o se cae el ciclo, o
+        # alguien lo envuelve en un try y lo deja pasar.
+        bh = benjamini_hochberg(ps, self.cfg.fdr)
+        for v, row in zip(accepted, bh):
+            q = row.get("q")
             v.q_value = q
-            if not ok:
+            if not row.get("rejected"):
                 v.accepted = False
                 v.reason += (
                     f" | NO sobrevive a Benjamini-Hochberg (p={v.p_value:.4f}, "

@@ -157,7 +157,10 @@ class TradingEngine:
                  repo: Optional[Repository] = None,
                  assets: Optional[Sequence[str]] = None,
                  persist: bool = True,
-                 equity_start: Optional[float] = None):
+                 equity_start: Optional[float] = None,
+                 forensics=None,
+                 failure_memory=None,
+                 learn_every_cycles: int = 500):
         self.feed = feed
         self.broker = broker
         self.repo = repo or default_repository
@@ -165,6 +168,26 @@ class TradingEngine:
         self.signal_agent = signal_agent or SignalAgent()
         self.risk_manager = risk_manager or RiskManagerAgent()
         self.setup_evaluator = setup_evaluator or SetupEvaluator(repository=self.repo)
+        # APRENDER DE LAS PERDIDAS. `forensics` diagnostica POR QUE se perdio
+        # (MAE/MFE + recorrido posterior) y `failure_memory` convierte ese
+        # diagnostico en un veto comprobable ANTES de volver a entrar. Sin ellos
+        # el motor sabe que un setup pierde, pero no que entrada lo causa, y
+        # repite la misma entrada indefinidamente.
+        #
+        # Se crean perezosamente para que un motor sin ellos (tests, scripts) no
+        # cargue nada: son opcionales, no obligatorios.
+        self.forensics = forensics
+        self.failure_memory = failure_memory
+        if self.forensics is None:
+            from app.research.loss_forensics import LossForensics
+            self.forensics = LossForensics()
+        if self.failure_memory is None:
+            from app.research.failure_memory import FailureMemory
+            self.failure_memory = FailureMemory()
+        self.learn_every_cycles = max(50, int(learn_every_cycles))
+        self._last_learn_cycle = 0
+        self.forensic_reports = 0
+        self.vetoes_applied = 0
         self.assets = list(assets) if assets else feed.assets()
         self.stats = EngineStats()
         self.running = False
@@ -256,6 +279,30 @@ class TradingEngine:
         self._roll_daily(now)
         report.resolved = self.resolve_due_trades(now)
         report.shadows_resolved = len(self.resolve_due_shadows(now))
+
+        # APRENDIZAJE PERIODICO, no por operacion. Recalcular cuantiles y
+        # Benjamini-Hochberg en cada cierre seria caro y, peor, invitaria a mirar
+        # la estadistica demasiado a menudo: con suficientes miradas, cualquier
+        # condicion acaba pareciendo significativa. Es la misma razon por la que
+        # `SetupEvaluator` decide solo en checkpoints geometricos.
+        if (self.stats.cycles - self._last_learn_cycle) >= self.learn_every_cycles:
+            self._last_learn_cycle = self.stats.cycles
+            try:
+                learned = self.failure_memory.learn()
+                activados = learned.get("activated") or []
+                desactivados = learned.get("deactivated") or []
+                if activados or desactivados:
+                    logger.warning(
+                        "memoria de fallos: %d vetos activados, %d desactivados",
+                        len(activados), len(desactivados))
+                    for a in activados:
+                        logger.warning("  NUEVO VETO %s :: %s (n=%s, tasa %s, "
+                                       "base %s, q=%s)",
+                                       a["slug"], a["condition"], a["n"],
+                                       a.get("loss_rate"), a.get("baseline_loss_rate"),
+                                       a.get("q_value"))
+            except Exception as exc:                          # noqa: BLE001
+                logger.warning("failure_memory.learn fallo: %s", exc)
 
         # Sin feed no se opera. Ni simulado, ni "de mientras": sin mercado
         # observado no hay nada que analizar.
@@ -392,6 +439,32 @@ class TradingEngine:
             decision.risk_reason = reason
             self._save_decision(decision)
             return ("edge", reason)
+
+        # ── MEMORIA DE FALLOS: no repetir la misma entrada ─────────────────
+        # Va despues del gate de edge y antes del de riesgo: el edge dice si el
+        # setup merece la pena en general, la memoria dice si ESTA entrada
+        # concreta tiene las condiciones que historicamente precedieron a una
+        # perdida. El riesgo va al final porque es el que fija el tamano.
+        #
+        # Solo se usan condiciones observables en el instante de entrada. Nada de
+        # MAE/MFE ni de recorrido posterior: eso es diagnostico post-hoc y
+        # consultarlo al decidir seria look-ahead.
+        entry_features = signal.get("features") or {}
+        try:
+            memory = self.failure_memory.consult(key.slug, entry_features)
+        except Exception as exc:                              # noqa: BLE001
+            logger.warning("failure_memory.consult fallo: %s", exc)
+            memory = {"vetoed": False, "reasons": []}
+        if memory.get("vetoed"):
+            self.vetoes_applied += 1
+            reason = f"Memoria de fallos: {'; '.join(memory.get('reasons', []))}"
+            decision.risk_reason = reason
+            decision.edge_details = {**(decision.edge_details or {}),
+                                     "failure_memory": memory}
+            self._save_decision(decision)
+            logger.info("entrada vetada por memoria de fallos en %s/%s: %s",
+                        strategy, asset, memory.get("conditions"))
+            return ("failure_memory", reason)
 
         if risk is None or risk.get("decision") != RiskDecision.APPROVED:
             decision.risk_decision = (risk or {}).get("decision", RiskDecision.REJECTED)
@@ -585,6 +658,13 @@ class TradingEngine:
         self._shadow_open = still_open
         if resolved:
             self.setup_evaluator.ingest(resolved)
+            # Las sombras tambien alimentan la memoria de fallos, y son la mayor
+            # parte de la muestra. Es legitimo aqui por la misma razon que en el
+            # evaluador: el resultado de una binaria lo determina el mercado, no
+            # el haber puesto dinero. Lo que una sombra NO mide es el riesgo de
+            # ejecucion, y por eso la memoria produce VETOS (evitar una entrada)
+            # y no cambios de tamano.
+            self._learn_from(resolved)
         return resolved
 
     # ── resolucion contra evidencia ───────────────────────────────────────
@@ -632,7 +712,50 @@ class TradingEngine:
         self.risk_manager.set_open_positions(len(still_open))
         if resolved:
             self.setup_evaluator.ingest(resolved)
+            # Cada operacion cerrada se diagnostica Y alimenta la memoria. Es lo
+            # que convierte una perdida en informacion util: el evaluador ya
+            # actualizo el win rate del setup, y ahora el forense dice que fallo
+            # y la memoria aprende que condicion de entrada lo precedio.
+            self._learn_from(resolved)
         return resolved
+
+    def _learn_from(self, trades: Sequence[TradeResult]) -> None:
+        """Forense + memoria de fallos sobre operaciones ya cerradas.
+
+        Nunca lanza: el aprendizaje es un añadido, y un fallo aqui no puede
+        costar una operacion ni detener el motor.
+        """
+        try:
+            self.failure_memory.observe(trades)
+        except Exception as exc:                              # noqa: BLE001
+            logger.warning("failure_memory.observe fallo: %s", exc)
+
+        for trade in trades:
+            if trade.execution_state not in (ExecutionState.WON, ExecutionState.LOST):
+                continue
+            try:
+                entry = trade.entry_time or trade.timestamp
+                expiry = trade.expiry_time or (
+                    entry + timedelta(seconds=trade.expiry or 0))
+                # Ventana de analisis: la operacion mas la ventana siguiente (que
+                # es la que revela si la expiracion se quedo corta) mas margen
+                # para el ATR de referencia.
+                minutes = int((expiry - entry).total_seconds() // 60) * 2 + 40
+                candles = self.feed.candles(trade.asset, Timeframe.M1, max(60, minutes))
+                report = self.forensics.analyse(trade, candles)
+            except Exception as exc:                          # noqa: BLE001
+                logger.warning("forense fallo en %s: %s", trade.asset, exc)
+                continue
+            self.forensic_reports += 1
+            if self.persist:
+                try:
+                    self.repo.save_forensic_report(report)
+                except Exception as exc:                      # noqa: BLE001
+                    logger.warning("no se pudo guardar el forense: %s", exc)
+            if report.mode.value not in ("no_es_fallo", "insuficiente"):
+                logger.info("forense %s %s: %s | %s",
+                            trade.asset, trade.direction.value,
+                            report.mode.value, report.rule)
 
     def _resolve_one(self, trade: TradeResult, now: datetime) -> Optional[bool]:
         """Devuelve True/False si gano, None si AUN no hay evidencia.
@@ -740,6 +863,14 @@ class TradingEngine:
             "open_positions": len(self.broker.open_trades),
             "open_shadows": len(self._shadow_open),
             "shadow_observations": self.shadow_observations,
+            # Que el aprendizaje sea visible. Un motor que diagnostica y veta en
+            # silencio no se puede auditar, y la auditoria es lo unico que
+            # distingue esto de una caja negra que un dia empieza a rechazar
+            # entradas sin que nadie sepa por que.
+            "forensic_reports": self.forensic_reports,
+            "vetoes_applied": self.vetoes_applied,
+            "failure_memory": self.failure_memory.report(limit=10)
+            if self.failure_memory is not None else {},
             "assets": list(self.assets),
             "risk_state": self.risk_manager.state(),
         })
