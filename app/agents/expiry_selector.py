@@ -1,58 +1,129 @@
-"""Expiry selector agent.
+# -*- coding: utf-8 -*-
+"""Selector de expiracion.
 
-Tests and chooses the best expiry for each combination of asset, strategy,
-direction, market regime, and volatility band.
+DOS CORRECCIONES
+----------------
+1. ROTURA POR CLAVES. Leía `edge.get("total", 0)` y `edge.get("win_rate", 0)`,
+   pero `get_historical_edge()` devolvia `n` y `win_rate=None` cuando no hay
+   muestra. Con `.get(..., 0)` sobre un `None` presente en el dict, `total`
+   valia siempre 0 y `expectancy` nunca se comparaba bien: el selector no
+   elegia nada, devolvia el defecto y lo justificaba como "mejor expectancy".
+
+2. ELEGIA POR EXPECTANCY PUNTUAL. `max(valid, key=expectancy)` sobre buckets
+   con 3 muestras es exactamente el sesgo que el resto del proyecto intenta
+   eliminar: el bucket con mejor media muestral es, con muestra pequena, el que
+   tuvo mas suerte. Ahora se ordena por `expectancy_lower` (la cota inferior de
+   Wilson proyectada al payoff), que es la unica cifra que la muestra sostiene.
+
+3. Los candidatos ya no dependen del modo de trading. Antes eran
+   `[300, 180]` en practice y `[60, 120, 180, 300]` en el resto: dos sistemas
+   distintos midiendo cosas distintas. Los candidatos los declara la estrategia
+   (`Strategy.expiries`) y son los mismos siempre.
+
+ARRANQUE EN FRIO
+----------------
+Si ninguna expiracion tiene muestra, no se finge elegir la mejor: se devuelve
+la del medio del rango declarado y se marca `reason="arranque en frio"`. Elegir
+"la de mejor expectancy" con cero datos es inventarse una decision.
 """
-from typing import Optional
-import statistics
+from __future__ import annotations
 
-from app.data.schemas import Direction, MarketRegime, TradeResult
-from app.data.repository import repository
+import logging
+from typing import Optional, Sequence
+
+from app.data.repository import repository as default_repository
+from app.data.schemas import Direction, MarketRegime
+from app.stats.core import breakeven_winrate
+
+logger = logging.getLogger(__name__)
 
 
 class ExpirySelector:
-    def __init__(self, candidate_expiries: Optional[list[int]] = None):
-        from app.config import config, TradingMode
-        defaults = [300, 180] if config.mode in (TradingMode.PRACTICE, TradingMode.REAL) else [60, 120, 180, 300]
-        self.candidate_expiries = candidate_expiries or defaults
+    """Elige la expiracion con mejor expectancy CON COTA INFERIOR."""
+
+    #: Muestra minima para que una expiracion cuente como "validada".
+    MIN_SAMPLES_FOR_CHOICE = 30
+
+    def __init__(self, candidate_expiries: Optional[Sequence[int]] = None,
+                 repository=None, persist: bool = True,
+                 default_payout: float = 0.85):
+        self.repo = repository or default_repository
+        self.persist = persist
+        self.default_payout = default_payout
+        self.candidate_expiries = list(candidate_expiries) if candidate_expiries \
+            else [60, 180, 300]
 
     def select(self, asset: str, strategy: str, direction: Direction,
                market_regime: MarketRegime, confidence: float,
-               payout: float) -> dict:
-        results = []
-        for expiry in self.candidate_expiries:
-            edge = repository.get_historical_edge(
-                asset, strategy, direction, market_regime, expiry
-            )
-            total = edge.get("total", 0)
-            expectancy = edge.get("expectancy", 0)
+               payout: Optional[float] = None,
+               candidates_expiries: Optional[Sequence[int]] = None) -> dict:
+        """Devuelve `{selected_expiry, payout, candidates, reason, ...}`."""
+        candidates = list(candidates_expiries or self.candidate_expiries)
+        if not candidates:
+            candidates = [180]
+        effective_payout = payout if payout and payout > 0 else self.default_payout
+        break_even = breakeven_winrate(effective_payout)
 
-            results.append({
+        rows = []
+        for expiry in candidates:
+            try:
+                edge = self.repo.get_historical_edge(
+                    asset, strategy, direction, market_regime, expiry,
+                    payout=effective_payout)
+            except Exception as exc:                          # noqa: BLE001
+                logger.warning("get_historical_edge fallo para %ss: %s", expiry, exc)
+                edge = {"n": 0, "expectancy": None, "expectancy_lower": None,
+                        "win_rate": None, "win_rate_lower": None}
+            rows.append({
                 "expiry": expiry,
-                "samples": total,
-                "expectancy": expectancy,
-                "win_rate": edge.get("win_rate", 0),
-                "profit_factor": edge.get("profit_factor", 0),
+                "samples": int(edge.get("n") or 0),
+                "win_rate": edge.get("win_rate"),
+                "win_rate_lower": edge.get("win_rate_lower"),
+                "expectancy": edge.get("expectancy"),
+                # La cota inferior de la expectancy: es lo que se compara.
+                "expectancy_lower": edge.get("expectancy_lower"),
+                "profit_factor": edge.get("profit_factor"),
+                "break_even_wr": round(break_even, 4) if break_even else None,
             })
 
-        valid = [r for r in results if r["samples"] >= 30 and r["expectancy"] > 0]
+        validated = [r for r in rows
+                     if r["samples"] >= self.MIN_SAMPLES_FOR_CHOICE
+                     and r["expectancy_lower"] is not None]
 
-        if not valid:
-            valid = [r for r in results if r["expectancy"] > 0]
-
-        if not valid:
+        if not validated:
+            # Arranque en frio: sin muestra no hay "mejor expiracion". Se toma
+            # la del medio del rango declarado, que es la eleccion con menos
+            # supuesto implicito (ni la mas rapida, que es puro ruido, ni la mas
+            # lenta, que expone a mas recorrido adverso).
+            ordered = sorted(candidates)
+            chosen = ordered[len(ordered) // 2]
             return {
-                "selected_expiry": self.candidate_expiries[0],
-                "candidates": results,
-                "reason": "No historically validated expiry, using default",
+                "selected_expiry": chosen,
+                "payout": effective_payout,
+                "candidates": rows,
+                "reason": (f"arranque en frio: ninguna expiracion tiene "
+                           f"{self.MIN_SAMPLES_FOR_CHOICE}+ muestras; se usa {chosen}s "
+                           f"(centro del rango declarado)"),
+                "cold_start": True,
+                "validated": [],
             }
 
-        best = max(valid, key=lambda r: r["expectancy"])
-
+        # Ordenar por cota INFERIOR de expectancy, no por la puntual.
+        best = max(validated, key=lambda r: r["expectancy_lower"])
+        positive = [r for r in validated if r["expectancy_lower"] > 0]
         return {
             "selected_expiry": best["expiry"],
-            "candidates": results,
-            "reason": f"Best expectancy {best['expectancy']:.4f} at {best['expiry']}s",
+            "payout": effective_payout,
+            "candidates": rows,
+            "reason": (
+                f"expectancy_lower {best['expectancy_lower']:.4f} a {best['expiry']}s "
+                f"con n={best['samples']} (break-even WR {break_even:.2%})"
+                if best["expectancy_lower"] is not None else
+                f"mejor candidata {best['expiry']}s con n={best['samples']}"
+            ),
+            "cold_start": False,
+            "validated": positive,
             "best_expectancy": best["expectancy"],
+            "best_expectancy_lower": best["expectancy_lower"],
             "best_win_rate": best["win_rate"],
         }

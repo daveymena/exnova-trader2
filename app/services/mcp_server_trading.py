@@ -23,6 +23,50 @@ if str(_APP_DIR) not in sys.path:
     sys.path.insert(0, str(_APP_DIR))
 
 from app.data.repository import repository  # noqa: E402
+from app.data.schemas import ImprovementProposal  # noqa: E402
+
+_ENGINE = None
+_ENGINE_TRIED = False
+
+
+def _improvement_engine():
+    """Motor de mejora con feed de validacion, o None si no hay historico.
+
+    Devolver None es una decision, no un fallo: sin historico real no se puede
+    validar nada, y un cambio sin validar NO se aplica. Es exactamente lo que
+    faltaba en la version anterior de `trading_apply_change`, que fusionaba los
+    valores propuestos en `data/ai_overrides.json` sin ninguna comprobacion.
+
+    Se configura con `IMPROVEMENT_FEED_DIR` apuntando a una carpeta de CSV
+    historicos (uno por activo, ver `app/data/csv_loader.py`).
+    """
+    global _ENGINE, _ENGINE_TRIED
+    if _ENGINE_TRIED:
+        return _ENGINE
+    _ENGINE_TRIED = True
+    feed_dir = os.getenv("IMPROVEMENT_FEED_DIR", "").strip()
+    if not feed_dir or not Path(feed_dir).is_dir():
+        return None
+    try:
+        from app.data.feed import ReplayFeed
+        from app.research.backtester import Backtester
+        from app.services.improvement_engine import ImprovementEngine, ImprovementConfig
+        from app.strategies.registry import StrategyRegistry
+
+        def feed_factory():
+            return ReplayFeed.from_csv(feed_dir, default_payout=0.85)
+
+        registry = StrategyRegistry()
+        _ENGINE = ImprovementEngine(
+            registry=registry,
+            config=ImprovementConfig.from_app_config(),
+            backtester_factory=lambda: Backtester(payout=0.85, cycle_seconds=60),
+            feed_factory=feed_factory,
+        )
+    except Exception as exc:                              # noqa: BLE001
+        sys.stderr.write(f"[{SERVER_NAME}] motor de mejora no disponible: {exc}\n")
+        _ENGINE = None
+    return _ENGINE
 
 
 PROTOCOL_VERSION = "2024-11-05"
@@ -133,26 +177,92 @@ def _apply_change(rec_id: int) -> dict[str, Any]:
                                                  f"invalid json: {e}")
         return {"error": f"invalid proposed_config_change JSON: {e}"}
 
-    # Por seguridad: nunca aplicar cambios que afecten cuenta REAL.
-    if str(change).lower().find("real") >= 0 and \
-       str(change).lower().find("practice") < 0:
-        repository.update_recommendation_status(rec_id, "rejected",
-                                                "change touches REAL mode")
-        return {"error": "Change touches REAL mode; rejected for safety."}
+    # ── BLOQUEO DURO: nada que toque dinero real ────────────────────────────
+    # Se mantiene el filtro de texto como defensa en profundidad, pero YA NO ES
+    # la unica proteccion. La version anterior de esta funcion decidia todo con
+    #     str(change).lower().find("real") >= 0
+    # que se esquiva con cualquier sinonimo, y ademas no comprobaba NADA sobre
+    # el merito estadistico del cambio. Punto 9 de la auditoria interna.
+    blob = json.dumps(change, ensure_ascii=False).lower()
+    for prohibido in ("money_mode", "trading_mode", "real_money", "live_account",
+                      "\"real\"", "is_real", "account_type"):
+        if prohibido in blob:
+            repository.update_recommendation_status(
+                rec_id, "rejected", f"toca configuracion de dinero real ({prohibido})")
+            repository.audit_log(rec["cycle_id"], rec["agent"], "change_blocked",
+                                f"rec_id={rec_id} bloqueado por {prohibido}")
+            return {"error": (f"El cambio toca {prohibido}. El modo de dinero no "
+                              f"es ajustable por el agente, en ningun caso y por "
+                              f"ninguna via. Ver AGENTS.md.")}
 
-    # Fusionar en overrides json.
-    overrides = _load_overrides()
     target = change.get("target", "general")
-    overrides[target] = {**overrides.get(target, {}), **change.get("values", {})}
-    _save_overrides(overrides)
+    values = change.get("values", {}) or {}
+
+    # ── GATE ESTADISTICO OBLIGATORIO ───────────────────────────────────────
+    # Un cambio solo se aplica si sobrevive a: sandbox de parametros,
+    # walk-forward out-of-sample, y correccion por testeo multiple. Sin eso no
+    # hay "mejora continua": hay deriva con buena prosa.
+    engine = _improvement_engine()
+    if engine is None:
+        repository.update_recommendation_status(
+            rec_id, "pending", "sin motor de validacion configurado")
+        repository.audit_log(rec["cycle_id"], rec["agent"], "change_not_applied",
+                             f"rec_id={rec_id} sin feed de validacion")
+        return {"error": (
+            "No se puede aplicar: no hay motor de mejora con feed de validacion "
+            "configurado. Un cambio sin validar no se aplica, aunque la "
+            "recomendacion este bien argumentada. Configura "
+            "IMPROVEMENT_FEED_DIR con historico CSV real.")}
+
+    strategy = target.split(":", 1)[1] if ":" in target else target
+    proposal = ImprovementProposal(
+        id=f"mcp-{rec_id}",
+        origin=str(rec.get("agent") or "llm"),
+        action="tune_param",
+        target=f"strategy:{strategy}",
+        payload=dict(values),
+        rationale=str(rec.get("recommendation", "")),
+        evidence={"recommendation_id": rec_id,
+                  "cited": str(rec.get("evidence", ""))[:2000]},
+        status="proposed",
+    )
+
+    validation = engine.validate(proposal)
+    gated = engine.gate([validation])[0]
+    if not gated.accepted:
+        repository.update_recommendation_status(rec_id, "rejected", gated.reason)
+        repository.audit_log(rec["cycle_id"], rec["agent"], "change_rejected_by_gate",
+                             f"rec_id={rec_id} base={gated.basis} :: {gated.reason[:400]}")
+        return {"recommendation_id": rec_id, "status": "rejected_by_gate",
+                "basis": gated.basis, "p_value": gated.p_value,
+                "q_value": gated.q_value, "reason": gated.reason}
+
+    outcome = engine.apply(proposal, gated)
+    if not outcome.get("applied"):
+        repository.update_recommendation_status(
+            rec_id, "rejected", str(outcome.get("reason", "")))
+        repository.audit_log(rec["cycle_id"], rec["agent"], "change_not_applied",
+                             f"rec_id={rec_id} :: {outcome.get('reason','')[:400]}")
+        return {"recommendation_id": rec_id, "status": "not_applied",
+                "reason": outcome.get("reason", "")}
 
     repository.update_recommendation_status(rec_id, "applied")
-    repository.audit_log(rec["cycle_id"], rec["agent"], "change_applied",
-                        f"rec_id={rec_id} target={target}")
+    repository.audit_log(
+        rec["cycle_id"], rec["agent"], "change_applied",
+        f"rec_id={rec_id} target={target} base={gated.basis} "
+        f"p={gated.p_value} q={gated.q_value} version={outcome.get('version')}")
     return {"recommendation_id": rec_id, "status": "applied",
             "target": target,
-            "applied_values": change.get("values", {}),
-            "overrides_path": str(OVERRIDES_PATH)}
+            "applied_values": outcome.get("params", {}),
+            "clamped_out_of_sandbox": outcome.get("clamped", []),
+            "param_store_version": outcome.get("version"),
+            "basis": gated.basis,
+            "p_value": gated.p_value,
+            "q_value": gated.q_value,
+            "validation_reason": gated.reason,
+            "note": ("Aplicado tras pasar sandbox, walk-forward out-of-sample y "
+                     "correccion de Benjamini-Hochberg. Versionado y reversible "
+                     "con trading_rollback_change.")}
 
 
 def _reject_change(rec_id: int, reason: str) -> dict[str, Any]:

@@ -5,6 +5,15 @@
 python-dotenv>=1.0.0
 requests>=2.31.0
 websocket-client==1.8.0
+# FALTABA y es obligatorio: `app/settings/defaults.yaml` se carga con PyYAML en
+# `app/config.py`. Sin esta linea una instalacion limpia no arranca.
+pyyaml>=6.0
+
+# ─── Nucleo estadistico y de backtesting ──────────────────────────────────────
+# Sin dependencias externas a proposito. `app/stats/core.py` implementa Wilson,
+# p-valores binomiales, Benjamini-Hochberg y Bonferroni en Python puro: son las
+# piezas de las que depende que el sistema diga "no operar", y no pueden fallar
+# porque falte una libreria.
 
 # ─── Data & Analysis ──────────────────────────────────────────────────────────
 pandas>=2.0.0
@@ -12,6 +21,11 @@ numpy>=1.24.0
 ta>=0.11.0
 
 # ─── UI & Output ──────────────────────────────────────────────────────────────
+# OPCIONAL. El nucleo (motor, estadistica, backtester, gates) no los importa en
+# cabecera de modulo: si faltan, se degrada y sigue funcionando. `openai` estaba
+# importado en cabecera en `app/services/ai_provider.py` y eso hacia que 7 tests
+# de `tests/` fallaran en la fase de COLECCION por ModuleNotFoundError, aunque no
+# tuvieran nada que ver con la IA. Ahora el import es perezoso.
 rich>=13.0.0
 
 # ─── Monitor HTTP (dashboard + API) ───────────────────────────────────────────

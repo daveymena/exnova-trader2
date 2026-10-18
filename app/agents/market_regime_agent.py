@@ -20,12 +20,18 @@ from app.data.repository import repository
 class MarketRegimeAgent:
     def __init__(self, adx_period: int = 14, atr_period: int = 14,
                  ema_period: int = 20, trend_adx_threshold: float = 25.0,
-                 high_vol_atr_percentile: float = 0.80):
+                 high_vol_atr_percentile: float = 0.80, persist: bool = True):
         self.adx_period = adx_period
         self.atr_period = atr_period
         self.ema_period = ema_period
         self.trend_adx_threshold = trend_adx_threshold
         self.high_vol_atr_percentile = high_vol_atr_percentile
+        # `persist=False` en backtest. Este agente escribia una fila por llamada
+        # sin preguntar: un backtest de un mes (43.200 minutos x 3
+        # temporalidades) volcaba ~130k filas en `market_regime_snapshots`,
+        # mezclando datos sinteticos con el historico real de vivo y volviendo
+        # la corrida orders-of-magnitude mas lenta por I/O de SQLite.
+        self.persist = persist
 
     def classify(self, candles: list[Candle], asset: str = "",
                  timestamp: Optional[datetime] = None) -> MarketRegimeSnapshot:
@@ -78,7 +84,8 @@ class MarketRegimeAgent:
             }
         )
 
-        repository.save_market_regime_snapshot(snapshot)
+        if self.persist:
+            repository.save_market_regime_snapshot(snapshot)
         return snapshot
 
     def _determine_regime(self, adx: float, atr_percentile: float,

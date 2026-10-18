@@ -32,7 +32,19 @@ class EntryTimingAgent:
             return self._result(EntryTiming.NO_TRADE, "No M1 candles available", features)
 
         # Check candle confirmation
-        candle_age = (datetime.utcnow() - m1_last.open_time).total_seconds()
+        #
+        # BUG CORREGIDO: esto usaba `datetime.utcnow()` y NO el
+        # `signal_timestamp` que la funcion recibe y ya habia normalizado dos
+        # lineas mas arriba. En vivo la diferencia era pequena y pasaba
+        # desapercibida; en un backtest con reloj virtual la vela tenia meses de
+        # "antiguedad" y `age_ratio` salia de 41.000.000%, asi que el agente
+        # devolvia TOO_LATE siempre. El backtest entero quedaba sin timing
+        # valido y no se operaba nada -- un fallo silencioso que se parecia a
+        # "el sistema es muy selectivo".
+        #
+        # Regla general: ningun componente de decision puede consultar el reloj
+        # de pared. El unico reloj es el del feed.
+        candle_age = (signal_timestamp - m1_last.open_time).total_seconds()
         candle_duration = m1_last.timeframe.value if hasattr(m1_last.timeframe, 'value') else 60
         age_ratio = candle_age / candle_duration if candle_duration > 0 else 1
 
@@ -40,15 +52,30 @@ class EntryTimingAgent:
         features["candle_duration_sec"] = candle_duration
         features["age_ratio"] = round(age_ratio, 4)
 
-        # TOO_LATE: candle is almost closed
-        if age_ratio > self.max_candle_age_ratio:
-            reasons.append(f"Candle {age_ratio*100:.0f}% complete - too late")
+        # SEMANTICA CORREGIDA. "Demasiado tarde" significa: la vela que leo esta
+        # EN FORMACION y ya casi cerro, asi que entrar ahora es entrar sobre una
+        # forma que puede deshacerse en los ultimos segundos.
+        #
+        # La version anterior marcaba TOO_LATE para cualquier age_ratio por
+        # encima del maximo, INCLUIDO age_ratio >= 1.0. Con un feed causal -- que
+        # solo entrega velas CERRADAS -- y un ciclo alineado al minuto, la ultima
+        # vela tiene SIEMPRE exactamente el 100% de edad. Resultado: TOO_LATE en
+        # cada ciclo y cero operaciones, lo que se parecia a "el sistema es muy
+        # selectivo" pero era un fallo de semantica.
+        #
+        # Una vela que ACABA de cerrar no es "tarde": es el mejor momento. La
+        # senal se genero con velas cerradas y el precio de entrada es el actual.
+        if 1.0 > age_ratio > self.max_candle_age_ratio:
+            reasons.append(f"Vela en formacion al {age_ratio*100:.0f}% - demasiado tarde")
             return self._result(EntryTiming.TOO_LATE, "; ".join(reasons), features)
 
-        # WAIT_CONFIRMATION: candle not yet closed
+        # WAIT_CONFIRMATION: la vela en formacion aun no tiene recorrido suficiente
         if age_ratio < self.min_age_ratio:
-            reasons.append(f"Candle only {age_ratio*100:.0f}% complete, waiting for close")
+            reasons.append(f"Vela solo al {age_ratio*100:.0f}%, esperando confirmacion")
             return self._result(EntryTiming.WAIT_CONFIRMATION, "; ".join(reasons), features)
+
+        if age_ratio >= 1.0:
+            features["at_candle_boundary"] = True
 
         # Check minimum body movement (evitar entradas en velas sin movimiento)
         if self.min_body_pct > 0 and m1_last.body > 0:

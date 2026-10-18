@@ -12,8 +12,10 @@ from app.agents.market_regime_agent import MarketRegimeAgent
 
 
 class MultiTimeframeAgent:
-    def __init__(self):
-        self.regime_agent = MarketRegimeAgent()
+    def __init__(self, persist: bool = True):
+        # Ver `MarketRegimeAgent.persist`: en backtest no se escribe nada.
+        self.persist = persist
+        self.regime_agent = MarketRegimeAgent(persist=persist)
 
     def analyze(self, candles_m15: list[Candle], candles_m5: list[Candle],
                 candles_m1: list[Candle], asset: str = "",
@@ -48,7 +50,8 @@ class MultiTimeframeAgent:
             m1_trend=m1_trend,
         )
 
-        repository.save_multi_timeframe_snapshot(snapshot)
+        if self.persist:
+            repository.save_multi_timeframe_snapshot(snapshot)
         return snapshot
 
     def _trend_from_regime(self, regime: MarketRegime) -> str:

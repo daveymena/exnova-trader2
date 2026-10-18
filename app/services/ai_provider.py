@@ -4,14 +4,51 @@ Uses OpenAI-compatible API format for all providers.
 Supports: OpenCode Zen, NVIDIA NIM, OpenRouter, GitHub Models, Ollama.
 All providers have usable free tiers.
 """
+from __future__ import annotations
+
 import os
 import time
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, Callable
-from openai import OpenAI
+from typing import TYPE_CHECKING, Optional, Callable
+
+# IMPORT PEREZOSO, a proposito.
+#
+# `from openai import OpenAI` en la cabecera hacia que CUALQUIER import de este
+# modulo reventara con ModuleNotFoundError si `openai` no estaba instalado. Y
+# como `app/main.py` -> `ai_auditor_agent.py` -> `ai_provider.py`, eso rompia la
+# CADENA ENTERA: 7 tests de `tests/` fallaban en la fase de COLECCION, sin
+# llegar a ejecutarse, aunque no tuvieran nada que ver con la IA. Un sistema de
+# trading no puede dejar de arrancar porque falte una dependencia opcional del
+# supervisor.
+#
+# Con `from __future__ import annotations` la anotacion `dict[str, OpenAI]` se
+# vuelve texto diferido y no necesita la clase en tiempo de import. La clase
+# solo se importa al crear un cliente de verdad, y si falta se degrada con un
+# mensaje claro en lugar de tumbar el proceso.
+if TYPE_CHECKING:
+    from openai import OpenAI
 
 logger = logging.getLogger(__name__)
+
+
+def _make_client(base_url: str, api_key: str, timeout: float):
+    """Crea un cliente OpenAI-compatible, o None si la libreria no esta."""
+    try:
+        from openai import OpenAI
+    except ImportError:
+        logger.warning(
+            "la libreria 'openai' no esta instalada: el supervisor por IA queda "
+            "inactivo. El trading, el motor de estadistica y los gates siguen "
+            "funcionando (no dependen de ella). Instalar con: "
+            "pip install openai"
+        )
+        return None
+    try:
+        return OpenAI(base_url=base_url, api_key=api_key, timeout=timeout)
+    except Exception as exc:                              # noqa: BLE001
+        logger.warning("no se pudo crear el cliente para %s: %s", base_url, exc)
+        return None
 
 
 @dataclass
@@ -195,11 +232,16 @@ class AIProviderRegistry:
         for p in providers:
             self.providers[p.name] = p
             self.status[p.name] = ProviderStatus(name=p.name)
-            self.clients[p.name] = OpenAI(
-                base_url=p.base_url,
-                api_key=p.api_key,
-                timeout=p.timeout,
-            )
+            client = _make_client(p.base_url, p.api_key, p.timeout)
+            if client is None:
+                # Se marca no-sano para que `get_available_providers()` no lo
+                # ofrezca y `chat()` no intente usarlo. El registro sigue
+                # construido: los demas proveedores y el resto del sistema
+                # funcionan igual.
+                self.status[p.name].healthy = False
+                self.status[p.name].consecutive_failures = 1
+                continue
+            self.clients[p.name] = client
 
     def get_available_providers(self) -> list[str]:
         now = time.time()
@@ -235,7 +277,13 @@ class AIProviderRegistry:
             return None
 
         try:
-            client = self.clients[name]
+            client = self.clients.get(name)
+            if client is None:
+                # Proveedor registrado pero sin cliente (falta `openai`, o la
+                # construccion fallo). Se devuelve None y el bucle de `chat()`
+                # prueba el siguiente proveedor: degradar, no reventar.
+                logger.debug("sin cliente para el proveedor %s", name)
+                return None
             model_id = model or provider.default_model
 
             response = client.chat.completions.create(

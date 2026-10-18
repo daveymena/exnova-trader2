@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 import pytest
 
 from app.data.schemas import (
-    Direction, ExecutionState, MarketRegime, ResolutionSource, TradeResult,
+    DataSource, Direction, ExecutionState, MarketRegime, ResolutionSource,
+    TradeResult,
 )
 
 
@@ -140,22 +141,64 @@ class TestResolucionPorPrecio:
 
 
 class TestEvidenciaYEdge:
-    def test_solo_broker_y_vela_cuentan_como_evidencia(self):
-        for src, esperado in [
-            (ResolutionSource.BROKER, True),
-            (ResolutionSource.CANDLE, True),
-            (ResolutionSource.SIMULATED, False),
-            (ResolutionSource.UNRESOLVED, False),
-        ]:
-            trade = _expired_trade(execution_state=ExecutionState.WON,
-                                   resolution_source=src)
-            assert trade.is_evidence is esperado, src
+    """Evidencia = resolucion observada Y precio subyacente real.
 
-    def test_el_paper_broker_se_marca_como_simulado(self):
-        """Un resultado de papel jamas puede alimentar al EdgeValidator."""
+    AMPLIADO A PROPÓSITO. La version anterior de esta clase solo comprobaba
+    `resolution_source` y daba por hecho que BROKER/CANDLE bastaba. Pero
+    `TradeResult.is_evidence` exige DOS condiciones independientes (ver
+    `app/data/schemas.py`), y el caso que se colaba era justo el que el test no
+    miraba: un PaperBroker alimentado por el simulador produce trades resueltos
+    contra vela -- condicion 1 cumplida -- cuyo precio es ruido sintetico. Con
+    el test antiguo eso era "evidencia" y el EdgeValidator habria aprendido edge
+    de una fuente inventada.
+
+    Se cubren las dos dimensiones en cruz, no una sola.
+    """
+
+    @pytest.mark.parametrize("resolution, data, esperado", [
+        # resolucion observada + precio real -> evidencia
+        (ResolutionSource.BROKER, DataSource.BROKER, True),
+        (ResolutionSource.CANDLE, DataSource.BROKER, True),
+        (ResolutionSource.CANDLE, DataSource.CSV, True),
+        (ResolutionSource.BROKER, DataSource.CSV, True),
+        # precio sintetico -> NUNCA evidencia, aunque la resolucion sea real.
+        # Este es el caso que el test antiguo no cubria.
+        (ResolutionSource.BROKER, DataSource.SIMULATOR, False),
+        (ResolutionSource.CANDLE, DataSource.SIMULATOR, False),
+        # procedencia desconocida -> no se puede afirmar que el precio sea real
+        (ResolutionSource.BROKER, DataSource.UNKNOWN, False),
+        (ResolutionSource.CANDLE, DataSource.UNKNOWN, False),
+        # resolucion no observada -> nunca evidencia, venga el precio de donde venga
+        (ResolutionSource.SIMULATED, DataSource.BROKER, False),
+        (ResolutionSource.SIMULATED, DataSource.CSV, False),
+        (ResolutionSource.UNRESOLVED, DataSource.CSV, False),
+        (ResolutionSource.UNRESOLVED, DataSource.UNKNOWN, False),
+    ])
+    def test_evidencia_exige_las_dos_dimensiones(self, resolution, data, esperado):
+        trade = _expired_trade(execution_state=ExecutionState.WON,
+                               resolution_source=resolution, data_source=data)
+        assert trade.is_evidence is esperado, f"{resolution.value}/{data.value}"
+
+    def test_el_paper_broker_sobre_simulador_no_es_evidencia(self):
+        """El caso por defecto: paper + simulador no alimenta al EdgeValidator."""
         from app.services.paper_broker import PaperBroker
-        broker = PaperBroker()
+        broker = PaperBroker()  # data_source por defecto = SIMULATOR
         trade = _expired_trade()
-        broker.resolve_trade(trade, won=True, payout=0.85)
-        assert trade.resolution_source is ResolutionSource.SIMULATED
+        broker.settle(trade, won=True, payout=0.85)
+        assert trade.data_source is DataSource.SIMULATOR
         assert trade.is_evidence is False
+
+    def test_el_paper_broker_sobre_historico_real_si_es_evidencia(self):
+        """Paper sobre replay CSV mide de verdad: el precio es observado.
+
+        Es la diferencia entre "trading de papel inutil" y "forward test":
+        el resultado no depende de que haya dinero, depende de que el PRECIO
+        sea real.
+        """
+        from app.services.paper_broker import PaperBroker
+        broker = PaperBroker(data_source=DataSource.CSV)
+        trade = _expired_trade()
+        broker.settle(trade, won=True, payout=0.85,
+                      resolution_source=ResolutionSource.CANDLE)
+        assert trade.is_evidence is True
+        assert trade.result == pytest.approx(trade.stake * 0.85)

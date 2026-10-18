@@ -10,12 +10,26 @@ from app.data.schemas import (
     Candle, MarketRegimeSnapshot, MultiTimeframeSnapshot,
     Signal, TradeDecision, TradeResult, AccountSnapshot,
     Timeframe, MarketRegime, Direction, RiskDecision, ExecutionState,
-    TradingMode, EntryTiming, BacktestResult, ResolutionSource
+    TradingMode, EntryTiming, BacktestResult, ResolutionSource, DataSource,
+    SetupKey, SetupRecord, SetupState, SetupVerdict,
+    ImprovementProposal, BacktestRun,
+)
+from app.stats.core import (
+    wilson_lower_bound, wilson_interval, summarize_binomial, breakeven_winrate,
 )
 
 # Solo estas fuentes de resolución cuentan como evidencia estadística.
 # Las operaciones simuladas o sin resolver quedan fuera de todo cálculo de edge.
-EVIDENCE_SQL = "resolution_source IN ('broker', 'candle')"
+#
+# CORRECCION: la version anterior solo miraba `resolution_source`. Con un
+# PaperBroker alimentado por el simulador de microestructura, toda operacion
+# acababa con resolution_source='candle' (resuelta contra un precio observado)
+# sobre un precio SINTETICO. Pasaba el filtro y el EdgeValidator aprendia edge
+# de ruido. Ahora se exigen las dos cosas: resolucion real Y precio real.
+EVIDENCE_SQL = (
+    "resolution_source IN ('broker', 'candle') "
+    "AND COALESCE(data_source, 'unknown') IN ('broker', 'csv')"
+)
 
 
 def _iso(value: Optional[datetime]) -> Optional[str]:
@@ -52,6 +66,12 @@ class Repository:
             self._conn.row_factory = sqlite3.Row
             self._conn.execute("PRAGMA journal_mode=WAL")
             self._conn.execute("PRAGMA foreign_keys=ON")
+            # Migracion perezosa: `migrate()` es idempotente (CREATE TABLE IF
+            # NOT EXISTS) y `__init__` ya creo el directorio. Sin esto, cualquier
+            # consumidor que olvidara llamar a migrate() -- el EdgeValidator, el
+            # SetupEvaluator, un script suelto -- reventaba con
+            # "no such table: trade_results" en lugar de funcionar.
+            self.migrate()
         return self._conn
 
     def close(self):
@@ -76,6 +96,7 @@ class Repository:
                 volume REAL,
                 source TEXT DEFAULT 'unknown',
                 quality TEXT DEFAULT 'normal',
+                data_source TEXT DEFAULT 'unknown',
                 UNIQUE(asset, timeframe, open_time)
             );
 
@@ -166,7 +187,8 @@ class Repository:
                 expiry_time TEXT,
                 resolved_at TEXT,
                 broker_order_id TEXT,
-                resolution_source TEXT DEFAULT 'unresolved'
+                resolution_source TEXT DEFAULT 'unresolved',
+                data_source TEXT DEFAULT 'unknown'
             );
 
             CREATE INDEX IF NOT EXISTS idx_trade_results_edge
@@ -243,6 +265,76 @@ class Repository:
                 duration_sec REAL,
                 created_at TEXT NOT NULL DEFAULT (datetime('now'))
             );
+
+            -- Ciclo de vida de cada setup (asset|strategy|direction|regime|expiry).
+            -- Es la unidad que se mide y se opera; ver SetupState en schemas.py.
+            CREATE TABLE IF NOT EXISTS setups (
+                slug TEXT PRIMARY KEY,
+                asset TEXT NOT NULL,
+                strategy TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                market_regime TEXT NOT NULL,
+                expiry INTEGER NOT NULL,
+                state TEXT NOT NULL DEFAULT 'exploracion',
+                verdict TEXT NOT NULL DEFAULT 'insuficiente',
+                n INTEGER NOT NULL DEFAULT 0,
+                n_traded INTEGER NOT NULL DEFAULT 0,
+                wins INTEGER NOT NULL DEFAULT 0,
+                win_rate REAL,
+                win_rate_lower REAL,
+                win_rate_upper REAL,
+                avg_payout REAL,
+                break_even REAL,
+                expectancy REAL,
+                expectancy_lower REAL,
+                looks INTEGER NOT NULL DEFAULT 0,
+                next_checkpoint INTEGER NOT NULL DEFAULT 0,
+                reopened INTEGER NOT NULL DEFAULT 0,
+                variants INTEGER NOT NULL DEFAULT 0,
+                stake_multiplier REAL NOT NULL DEFAULT 0.25,
+                params TEXT DEFAULT '{}',
+                updated_at TEXT
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_setups_state ON setups(state, strategy);
+
+            -- Propuestas de mejora. El LLM propone aqui; nadie aplica desde aqui.
+            CREATE TABLE IF NOT EXISTS improvement_proposals (
+                id TEXT PRIMARY KEY,
+                origin TEXT NOT NULL,
+                target TEXT NOT NULL,
+                action TEXT NOT NULL,
+                payload TEXT DEFAULT '{}',
+                rationale TEXT,
+                evidence TEXT DEFAULT '{}',
+                status TEXT NOT NULL DEFAULT 'proposed',
+                created_at TEXT,
+                decided_at TEXT,
+                rejection_reason TEXT,
+                baseline_metric REAL,
+                candidate_metric REAL,
+                improvement REAL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_proposals_status
+                ON improvement_proposals(status, created_at);
+
+            -- Backtests persistidos, con in-sample y out-of-sample SEPARADOS.
+            CREATE TABLE IF NOT EXISTS backtest_runs (
+                id TEXT PRIMARY KEY,
+                created_at TEXT NOT NULL,
+                label TEXT,
+                data_source TEXT,
+                asset TEXT,
+                strategy TEXT,
+                candles_used INTEGER,
+                params TEXT DEFAULT '{}',
+                in_sample TEXT DEFAULT '{}',
+                out_of_sample TEXT DEFAULT '{}',
+                walk_forward TEXT DEFAULT '{}',
+                verdict TEXT,
+                honest_note TEXT
+            );
         """)
         conn.commit()
         self._migrate_trade_results_columns(conn)
@@ -263,10 +355,28 @@ class Repository:
             "resolved_at": "TEXT",
             "broker_order_id": "TEXT",
             "resolution_source": "TEXT DEFAULT 'unresolved'",
+            # Proveniencia del PRECIO. Sin ella un resultado resuelto contra el
+            # simulador se cuela en el calculo de edge como si fuera real.
+            "data_source": "TEXT DEFAULT 'unknown'",
         }
+        candle_cols = {r[1] for r in conn.execute("PRAGMA table_info(candles)")}
+        if "data_source" not in candle_cols:
+            conn.execute(
+                "ALTER TABLE candles ADD COLUMN data_source TEXT DEFAULT 'unknown'"
+            )
         added = [name for name in new_columns if name not in existing]
         for name in added:
             conn.execute(f"ALTER TABLE trade_results ADD COLUMN {name} {new_columns[name]}")
+
+        if "data_source" in added:
+            # El historico previo a esta columna no registra de donde vino el
+            # precio. Se marca 'unknown', que NO pasa EVIDENCE_SQL: ante la
+            # duda, fuera de la estadistica. Marcarlo 'broker' o 'csv' seria
+            # regalar evidencia a filas que nadie puede justificar.
+            conn.execute(
+                "UPDATE trade_results SET data_source='unknown' "
+                "WHERE data_source IS NULL OR data_source=''"
+            )
 
         if "resolution_source" in added:
             # Cuarentena del histórico sintético heredado.
@@ -288,11 +398,13 @@ class Repository:
         conn = self.connect()
         conn.execute(
             """INSERT OR REPLACE INTO candles
-               (asset, timeframe, open_time, open, high, low, close, volume, source, quality)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               (asset, timeframe, open_time, open, high, low, close, volume,
+                source, quality, data_source)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (candle.asset, candle.timeframe.value, candle.open_time.isoformat(),
              candle.open, candle.high, candle.low, candle.close,
-             candle.volume, candle.source, candle.quality.value)
+             candle.volume, candle.source, candle.quality.value,
+             candle.data_source.value)
         )
         conn.commit()
 
@@ -301,11 +413,12 @@ class Repository:
         for c in candles:
             conn.execute(
                 """INSERT OR REPLACE INTO candles
-                   (asset, timeframe, open_time, open, high, low, close, volume, source, quality)
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                   (asset, timeframe, open_time, open, high, low, close, volume,
+                    source, quality, data_source)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                 (c.asset, c.timeframe.value, c.open_time.isoformat(),
                  c.open, c.high, c.low, c.close,
-                 c.volume, c.source, c.quality.value)
+                 c.volume, c.source, c.quality.value, c.data_source.value)
             )
         conn.commit()
 
@@ -325,7 +438,8 @@ class Repository:
                 timeframe=Timeframe(int(r["timeframe"])),
                 open_time=datetime.fromisoformat(r["open_time"]),
                 open=r["open"], high=r["high"], low=r["low"], close=r["close"],
-                volume=r.get("volume"), source=r.get("source", "unknown")
+                volume=r.get("volume"), source=r.get("source", "unknown"),
+                data_source=DataSource(_col(r, "data_source", "unknown")),
             ))
         return result
 
@@ -344,7 +458,7 @@ class Repository:
              signal.market_regime.value if signal.market_regime else None,
              signal.entry_timing.value if signal.entry_timing else None,
              signal.expiry, signal.payout, signal.rationale,
-             signal.invalidation, json.dumps(signal.features),
+             signal.invalidation, json.dumps(signal.features, default=str),
              signal.opportunity_score)
         )
         conn.commit()
@@ -366,7 +480,13 @@ class Repository:
              decision.entry_timing.value if decision.entry_timing else None,
              decision.expiry, decision.payout, decision.risk_decision.value,
              decision.risk_reason, int(decision.edge_approved),
-             json.dumps(decision.edge_details or {}),
+             # `default=str` a proposito: los detalles de edge llevan enums
+            # (SetupState, MarketRegime) y datetimes. Sin esto una decision
+            # cualquiera lanzaba TypeError dentro de `save_decision`, la
+            # excepcion subia hasta `engine.step()` y TUMBABA EL MOTOR ENTERO
+            # en el ciclo siguiente. Persistir no puede ser una causa de fallo
+            # del trading: si el JSON no sale, se degrada a texto, no se cae.
+            json.dumps(decision.edge_details or {}, default=str),
              decision.ai_audit, decision.execution_state.value)
         )
         conn.commit()
@@ -380,8 +500,8 @@ class Repository:
                (timestamp, asset, direction, strategy, expiry, payout, stake,
                 result, execution_state, market_regime, confidence, entry_timing,
                 features, error, entry_price, exit_price, entry_time, expiry_time,
-                resolved_at, broker_order_id, resolution_source)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                resolved_at, broker_order_id, resolution_source, data_source)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (result.timestamp.isoformat(), result.asset,
              result.direction.value, result.strategy,
              result.expiry, result.payout, result.stake,
@@ -393,7 +513,8 @@ class Repository:
              result.entry_price, result.exit_price,
              _iso(result.entry_time), _iso(result.expiry_time),
              _iso(result.resolved_at), result.broker_order_id,
-             result.resolution_source.value if result.resolution_source else "unresolved")
+             result.resolution_source.value if result.resolution_source else "unresolved",
+             result.data_source.value if result.data_source else "unknown")
         )
         conn.commit()
 
@@ -445,6 +566,7 @@ class Repository:
                 resolved_at=_parse_dt(_col(r, "resolved_at")),
                 broker_order_id=_col(r, "broker_order_id"),
                 resolution_source=ResolutionSource(_col(r, "resolution_source", "unresolved")),
+                data_source=DataSource(_col(r, "data_source", "unknown")),
             ))
         return result
 
@@ -472,7 +594,7 @@ class Repository:
                VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
             (snap.timestamp.isoformat(), snap.asset, snap.regime.value,
              snap.adx, snap.atr_percentile, snap.ema_slope,
-             snap.price_distance_ema, json.dumps(snap.features))
+             snap.price_distance_ema, json.dumps(snap.features, default=str))
         )
         conn.commit()
 
@@ -558,12 +680,31 @@ class Repository:
         }
 
     def get_historical_edge(self, asset: str, strategy: str, direction: Direction,
-                            market_regime: MarketRegime, expiry: int) -> dict:
-        """Edge histórico calculado SOLO sobre evidencia real.
+                            market_regime: MarketRegime, expiry: int,
+                            payout: Optional[float] = None) -> dict:
+        """Edge historico de un setup, calculado SOLO sobre evidencia real.
 
-        Devuelve tanto el win rate puntual como su cota inferior de Wilson al 95%.
-        El gate de ejecución debe usar la cota inferior: con muestras pequeñas el
-        win rate puntual sobreestima sistemáticamente el edge.
+        Devuelve el resumen binomial completo (ver `app.stats.summarize_binomial`):
+        win rate puntual Y su intervalo de Wilson, expectancy puntual Y su cota
+        inferior, profit factor, p-valor contra el break-even y los dos flags
+        `edge_proven` / `no_edge_proven`.
+
+        DOS BUGS CORREGIDOS AQUI:
+
+        1. NameError. La version anterior terminaba llamando a
+           `wilson_lower_bound()`, funcion que no existia en ningun archivo de
+           `app/`. Es decir: `get_historical_edge()` se rompia exactamente
+           cuando ya habia muestra que consultar. Ahora se importa de
+           `app.stats.core`.
+
+        2. Se devolvia el win rate PUNTUAL como cifra principal y el
+           `EdgeValidatorAgent` decidia con el. Un 66.7% sobre n=9 tiene IC de
+           Wilson [35%, 88%]: no dice nada. `edge_proven` exige que la cota
+           INFERIOR supere el break-even, no que lo supere la media muestral.
+
+        Con n=0 se devuelve win_rate=None, no 0.0. "Sin muestra" no es
+        "0% de edge"; confundirlos lleva a operar setups de los que no se sabe
+        nada, o a retirarlos por no tener datos.
         """
         conn = self.connect()
         rows = conn.execute(
@@ -576,36 +717,212 @@ class Repository:
         ).fetchall()
 
         total = len(rows)
-        if total == 0:
-            return {"total": 0, "win_rate": 0, "win_rate_lower_95": 0, "expectancy": 0}
-
-        wins = sum(1 for r in rows if r["result"] > 0)
-        losses = total - wins
-        win_rate = wins / total
+        wins = sum(1 for r in rows if (r["result"] or 0) > 0)
         payouts = [r["payout"] for r in rows if r["payout"]]
-        avg_payout = sum(payouts) / len(payouts) if payouts else None
+        avg_payout = (sum(payouts) / len(payouts)) if payouts else None
+        effective_payout = avg_payout if avg_payout else (payout or 0.0)
 
-        if not avg_payout:
-            return {"total": total, "win_rate": win_rate,
-                    "win_rate_lower_95": 0, "expectancy": 0}
+        summary = summarize_binomial(wins, total, effective_payout)
+        summary["avg_payout"] = round(avg_payout, 4) if avg_payout else None
+        summary["payout_source"] = "observed" if avg_payout else "assumed"
+        if summary["win_rate"] is not None:
+            summary["win_rate"] = round(summary["win_rate"], 4)
+        for k in ("win_rate_lower", "win_rate_upper", "expectancy",
+                  "expectancy_lower", "break_even"):
+            if summary.get(k) is not None:
+                summary[k] = round(summary[k], 4)
+        if summary.get("profit_factor") not in (None, float("inf")):
+            summary["profit_factor"] = round(summary["profit_factor"], 4)
+        return summary
 
-        wr_lower = wilson_lower_bound(wins, total)
-        expectancy = win_rate * avg_payout - (1 - win_rate)
-        expectancy_lower = wr_lower * avg_payout - (1 - wr_lower)
-        profit_factor = (wins * avg_payout) / losses if losses > 0 else float("inf")
+    def get_edge_buckets(self, strategy: Optional[str] = None,
+                         min_n: int = 1) -> list[dict]:
+        """Todos los buckets de setup con muestra >= min_n, para el motor de mejora.
 
-        return {
-            "total": total,
-            "wins": wins,
-            "losses": losses,
-            "win_rate": round(win_rate, 4),
-            "win_rate_lower_95": round(wr_lower, 4),
-            "expectancy": round(expectancy, 4),
-            "expectancy_lower_95": round(expectancy_lower, 4),
-            "profit_factor": round(profit_factor, 4),
-            "avg_payout": round(avg_payout, 4),
-            "break_even_wr": round(1 / (1 + avg_payout), 4) if avg_payout > 0 else 0,
-        }
+        Es la consulta que alimenta el analisis de comparaciones multiples:
+        sin ver TODA la familia a la vez no se puede aplicar Benjamini-Hochberg,
+        y sin BH el motor asciende al mejor de 40 ruidos.
+        """
+        conn = self.connect()
+        params: list = []
+        sql = (f"""SELECT asset, strategy, direction, market_regime, expiry,
+                          COUNT(*) AS n,
+                          SUM(CASE WHEN result > 0 THEN 1 ELSE 0 END) AS wins,
+                          AVG(payout) AS avg_payout
+                   FROM trade_results
+                   WHERE execution_state IN ('won','lost') AND {EVIDENCE_SQL}""")
+        if strategy:
+            sql += " AND strategy=?"
+            params.append(strategy)
+        sql += """ GROUP BY asset, strategy, direction, market_regime, expiry
+                   HAVING n >= ? ORDER BY n DESC"""
+        params.append(min_n)
+        out = []
+        for r in conn.execute(sql, params).fetchall():
+            payout = r["avg_payout"] or 0.85
+            summ = summarize_binomial(r["wins"] or 0, r["n"], payout)
+            summ.update({
+                "asset": r["asset"], "strategy": r["strategy"],
+                "direction": r["direction"], "market_regime": r["market_regime"],
+                "expiry": r["expiry"],
+                "slug": f"{r['asset']}|{r['strategy']}|{r['direction']}|"
+                        f"{r['market_regime']}|{r['expiry']}",
+            })
+            out.append(summ)
+        return out
+
+    # ── Ciclo de vida de setups ───────────────────────────────────────────
+
+    def upsert_setup(self, rec: SetupRecord, params: Optional[dict] = None):
+        conn = self.connect()
+        conn.execute(
+            """INSERT INTO setups
+               (slug, asset, strategy, direction, market_regime, expiry, state,
+                verdict, n, n_traded, wins, win_rate, win_rate_lower, win_rate_upper,
+                avg_payout, break_even, expectancy, expectancy_lower, looks,
+                next_checkpoint, reopened, variants, stake_multiplier, params,
+                updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(slug) DO UPDATE SET
+                 state=excluded.state, verdict=excluded.verdict, n=excluded.n,
+                 n_traded=excluded.n_traded,
+                 wins=excluded.wins, win_rate=excluded.win_rate,
+                 win_rate_lower=excluded.win_rate_lower,
+                 win_rate_upper=excluded.win_rate_upper,
+                 avg_payout=excluded.avg_payout, break_even=excluded.break_even,
+                 expectancy=excluded.expectancy,
+                 expectancy_lower=excluded.expectancy_lower,
+                 looks=excluded.looks, next_checkpoint=excluded.next_checkpoint,
+                 reopened=excluded.reopened, variants=excluded.variants,
+                 stake_multiplier=excluded.stake_multiplier,
+                 params=excluded.params, updated_at=excluded.updated_at""",
+            (rec.key.slug, rec.key.asset, rec.key.strategy,
+             rec.key.direction.value, rec.key.market_regime.value, rec.key.expiry,
+             rec.state.value, rec.verdict.value, rec.n, rec.n_traded, rec.wins,
+             rec.win_rate, rec.win_rate_lower, rec.win_rate_upper,
+             rec.avg_payout, rec.break_even, rec.expectancy, rec.expectancy_lower,
+             rec.looks, rec.next_checkpoint, rec.reopened, rec.variants,
+             rec.stake_multiplier, json.dumps(params or {}, default=str),
+             _iso(rec.updated_at))
+        )
+        conn.commit()
+
+    def _row_to_setup(self, r) -> SetupRecord:
+        return SetupRecord(
+            key=SetupKey(r["asset"], r["strategy"], Direction(r["direction"]),
+                         MarketRegime(r["market_regime"]), r["expiry"]),
+            state=SetupState(r["state"]),
+            verdict=SetupVerdict(r["verdict"]),
+            n=r["n"] or 0, n_traded=_col(r, "n_traded", 0) or 0, wins=r["wins"] or 0,
+            win_rate=_col(r, "win_rate"),
+            win_rate_lower=_col(r, "win_rate_lower"),
+            win_rate_upper=_col(r, "win_rate_upper"),
+            avg_payout=_col(r, "avg_payout", 0.85),
+            break_even=_col(r, "break_even"),
+            expectancy=_col(r, "expectancy"),
+            expectancy_lower=_col(r, "expectancy_lower"),
+            looks=r["looks"] or 0,
+            next_checkpoint=r["next_checkpoint"] or 0,
+            reopened=r["reopened"] or 0,
+            variants=r["variants"] or 0,
+            stake_multiplier=_col(r, "stake_multiplier", 1.0),
+            updated_at=_parse_dt(_col(r, "updated_at")),
+        )
+
+    def get_setup(self, key: SetupKey) -> Optional[SetupRecord]:
+        conn = self.connect()
+        r = conn.execute("SELECT * FROM setups WHERE slug=?", (key.slug,)).fetchone()
+        return self._row_to_setup(r) if r else None
+
+    def list_setups(self, state: Optional[SetupState] = None,
+                    strategy: Optional[str] = None,
+                    limit: int = 500) -> list[SetupRecord]:
+        conn = self.connect()
+        where, params = [], []
+        if state:
+            where.append("state=?"); params.append(state.value)
+        if strategy:
+            where.append("strategy=?"); params.append(strategy)
+        sql = "SELECT * FROM setups"
+        if where:
+            sql += " WHERE " + " AND ".join(where)
+        sql += " ORDER BY n DESC LIMIT ?"
+        params.append(limit)
+        return [self._row_to_setup(r) for r in conn.execute(sql, params).fetchall()]
+
+    # ── Propuestas de mejora ──────────────────────────────────────────────
+
+    def save_proposal(self, prop: ImprovementProposal):
+        conn = self.connect()
+        conn.execute(
+            """INSERT INTO improvement_proposals
+               (id, origin, target, action, payload, rationale, evidence, status,
+                created_at, decided_at, rejection_reason, baseline_metric,
+                candidate_metric, improvement)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET
+                 status=excluded.status, decided_at=excluded.decided_at,
+                 rejection_reason=excluded.rejection_reason,
+                 baseline_metric=excluded.baseline_metric,
+                 candidate_metric=excluded.candidate_metric,
+                 improvement=excluded.improvement,
+                 evidence=excluded.evidence""",
+            (prop.id, prop.origin, prop.target, prop.action,
+             json.dumps(prop.payload, default=str), prop.rationale,
+             json.dumps(prop.evidence, default=str), prop.status,
+             _iso(prop.created_at), _iso(prop.decided_at), prop.rejection_reason,
+             prop.baseline_metric, prop.candidate_metric, prop.improvement)
+        )
+        conn.commit()
+
+    def list_proposals(self, status: Optional[str] = None,
+                       limit: int = 200) -> list[dict]:
+        conn = self.connect()
+        sql = "SELECT * FROM improvement_proposals"
+        params: list = []
+        if status:
+            sql += " WHERE status=?"
+            params.append(status)
+        sql += " ORDER BY created_at DESC LIMIT ?"
+        params.append(limit)
+        out = []
+        for r in conn.execute(sql, params).fetchall():
+            d = dict(r)
+            d["payload"] = json.loads(d.get("payload") or "{}")
+            d["evidence"] = json.loads(d.get("evidence") or "{}")
+            out.append(d)
+        return out
+
+    # ── Backtests persistidos ─────────────────────────────────────────────
+
+    def save_backtest_run(self, run: BacktestRun):
+        conn = self.connect()
+        conn.execute(
+            """INSERT OR REPLACE INTO backtest_runs
+               (id, created_at, label, data_source, asset, strategy, candles_used,
+                params, in_sample, out_of_sample, walk_forward, verdict, honest_note)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (run.id, run.created_at.isoformat(), run.label, run.data_source.value,
+             run.asset, run.strategy, run.candles_used,
+             json.dumps(run.params, default=str),
+             json.dumps(run.in_sample, default=str),
+             json.dumps(run.out_of_sample, default=str),
+             json.dumps(run.walk_forward, default=str),
+             run.verdict, run.honest_note)
+        )
+        conn.commit()
+
+    def list_backtest_runs(self, limit: int = 50) -> list[dict]:
+        conn = self.connect()
+        out = []
+        for r in conn.execute(
+            "SELECT * FROM backtest_runs ORDER BY created_at DESC LIMIT ?", (limit,)
+        ).fetchall():
+            d = dict(r)
+            for k in ("params", "in_sample", "out_of_sample", "walk_forward"):
+                d[k] = json.loads(d.get(k) or "{}")
+            out.append(d)
+        return out
 
     # ── IA aprendizaje supervisado ────────────────────────────────────────
 
