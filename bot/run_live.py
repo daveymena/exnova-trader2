@@ -166,14 +166,36 @@ from core.self_evaluator import get_evaluator, EvaluatorConfig
 # descarte por motivo y se imprime junto al resto del estado del ciclo.
 from collections import Counter
 FUNNEL = Counter()
+# Mismo embudo partido por direccion (CALL/PUT): permite ver que filtro corta
+# un lado mas que el otro. Clave: (direccion, "evaluadas"|"ejecutadas"|motivo).
+DIR_FUNNEL = Counter()
+_SENAL_ACTUAL = {"dir": "-"}
 
 
 def descartar(motivo, detalle="", nivel="INFO"):
     """Registra por que no se opero esta senal y lo deja contado."""
     FUNNEL[motivo] += 1
+    DIR_FUNNEL[(_SENAL_ACTUAL["dir"], motivo)] += 1
     if detalle:
         log("[FILTRO:%s] %s" % (motivo, detalle), nivel)
     return None
+
+
+def funnel_direccion_report():
+    if not DIR_FUNNEL:
+        return "  [EMBUDO-DIR] sin senales por direccion todavia"
+    partes = []
+    for lado in ("CALL", "PUT"):
+        tot = sum(v for (d, _), v in DIR_FUNNEL.items() if d == lado and _ == "evaluadas")
+        if not tot and not any(d == lado for d, _ in DIR_FUNNEL):
+            continue
+        cortes = [(m, v) for (d, m), v in DIR_FUNNEL.items()
+                  if d == lado and m not in ("evaluadas", "ejecutadas")]
+        cortes.sort(key=lambda x: -x[1])
+        ejec = DIR_FUNNEL.get((lado, "ejecutadas"), 0)
+        cort = ", ".join("%s=%d" % mv for mv in cortes[:5]) or "-"
+        partes.append("%s: evaluadas=%d ejecutadas=%d | %s" % (lado, tot, ejec, cort))
+    return "  [EMBUDO-DIR] " + " || ".join(partes)
 
 
 def funnel_report():
@@ -1152,6 +1174,10 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 log(f"Error analizando {asset}: {str(e)[:50]}")
                 continue
 
+            # Direccion de la senal en curso: descartar() la cuenta por lado.
+            _SENAL_ACTUAL["dir"] = str((signal or {}).get("signal", "") or "-").upper()
+            DIR_FUNNEL[(_SENAL_ACTUAL["dir"], "evaluadas")] += 1
+
             if signal:
                 state["last_signal"] = signal
                 action = signal.get("action", "WAIT")
@@ -1372,6 +1398,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                         if amount > 0:
                             executed = execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, agent_engine, zone_learner, setup, self_eval, df_m15, df_m5, df_m1)
                             if executed:
+                                DIR_FUNNEL[(_SENAL_ACTUAL["dir"], "ejecutadas")] += 1
                                 day_trades += 1
                                 state["last_trade_by_asset"][asset_dir_key] = time.time()
                                 state["last_trade_by_asset"][f"{asset}_*"] = time.time()
@@ -1399,6 +1426,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                 # se descartaron). Menos frecuente que el resto porque puede
                 # ser largo con muchos setups distintos.
                 print(funnel_report(), flush=True)
+                print(funnel_direccion_report(), flush=True)
                 if state["cycle"] % 50 == 0:
                     try:
                         print(self_eval.report(), flush=True)
