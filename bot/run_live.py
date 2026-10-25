@@ -149,6 +149,7 @@ def _assets_paused():
 # El diario anterior guardaba rsi_at_touch=50 en 495 de 500 operaciones porque
 # se rellenaba con defaults; sin features reales no hay nada que analizar despues.
 from core.trade_journal import get_journal, features_from_candles
+from core.trade_diagnostics import diagnose_price_path
 from core.position_guard import get_guard, GuardConfig
 # Motor de auto-evaluacion: decide, por setup y con evidencia real (Wilson +
 # minimo 200 observaciones, corregido por comparaciones multiples), si se
@@ -487,6 +488,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
 
     action_str = "call" if direction == "CALL" else "put"
     duration = max(1, min(5, expiration // 60))
+    contract_expiration_seconds = duration * 60
     exp_min = signal.get("expiration_minutes", duration)
 
     log(f"[ANALISIS LOCAL] Propuesta técnica: {asset} {direction} ${amount:.2f} | {pattern} | zona={zone_str:.2f} | conf={confidence*100:.0f}% | {exp_min}min")
@@ -630,6 +632,8 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
     try:
         check, order_id = market_data.buy(asset, amount, action_str, duration)
         if check:
+            order_accepted_at = time.time()
+            entry_price = current_price if current_price > 0 else None
             log(f"Orden abierta: {direction} ${amount:.2f} exp={duration}min")
             state["active_order"] = order_id
 
@@ -649,7 +653,7 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
                     asset=asset, direction=direction,
                     strategy=signal.get("strategy", "intelligent_engine"),
                     setup=setup,
-                    amount=amount, expiration_seconds=expiration,
+                    amount=amount, expiration_seconds=contract_expiration_seconds,
                     confidence=confidence, features=feats,
                     account_type=ACCOUNT_TYPE,
                 )
@@ -657,43 +661,72 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             except Exception as e:
                 log(f"[DIARIO] No se pudo registrar la entrada: {e}", "WARNING")
 
-            time.sleep(expiration + 8)
+            if journal_rec is not None:
+                journal_rec.entry_time = order_accepted_at
+                journal_rec.entry_price = entry_price
+                journal_rec.extra["entry_price_source"] = "last_m1_close_proxy"
+            time.sleep(contract_expiration_seconds + 8)
 
-            result, pnl = "DRAW", 0.0
+            result, pnl = "UNRESOLVED", 0.0
             try:
                 result_data = market_data.api.check_win_v4(order_id)
                 if result_data is not None:
                     if isinstance(result_data, tuple):
-                        _, profit = result_data
-                        profit = float(profit) if profit is not None else 0.0
+                        _, raw_profit = result_data
                     elif isinstance(result_data, (int, float)):
-                        profit = float(result_data)
+                        raw_profit = result_data
                     else:
-                        profit = 0.0
+                        raw_profit = None
 
-                    if profit > 0:
+                    try:
+                        profit = float(raw_profit)
+                        if not np.isfinite(profit):
+                            profit = None
+                    except (TypeError, ValueError):
+                        profit = None
+
+                    if profit is None:
+                        log("Resultado del broker sin PnL utilizable; queda UNRESOLVED", "WARNING")
+                    elif profit > 0:
                         pnl, result = profit, "WIN"
                         log(f"WIN +${profit:.2f} | {asset} {direction} | patron={pattern} zona={zone_str:.2f}")
                     elif profit < 0:
                         pnl, result = -amount, "LOSS"
                         log(f"LOSS -${amount:.2f} | {asset} {direction} | patron={pattern} zona={zone_str:.2f}")
                     else:
+                        pnl, result = 0.0, "DRAW"
                         log(f"DRAW | {asset} {direction}")
                 else:
-                    # Sin confirmacion del broker NO es una perdida: contarla
-                    # como LOSS sesgaba el WR a la baja y alimentaba al
-                    # evaluador con pérdidas inventadas. Se registra como
-                    # DRAW (no cuenta como W/L ni como observacion).
-                    pnl, result = 0.0, "DRAW"
-                    log("Sin confirmacion del broker: resultado no contado (DRAW)", "WARNING")
+                    log("Sin confirmacion del broker; resultado UNRESOLVED", "WARNING")
             except Exception as e:
                 log(f"Error verificando resultado: {e}")
-                pnl, result = 0.0, "DRAW"
+                pnl, result = 0.0, "UNRESOLVED"
+
+            # Capturar la trayectoria con horas de vela; el resultado del broker
+            # conserva autoridad y las velas solo describen el contexto temporal.
+            df_after = None
+            try:
+                df_after = market_data.get_candles(asset, 60, 20)
+            except Exception:
+                pass
+            chart_frame = df_after
+            try:
+                if df_m1 is not None and not df_m1.empty:
+                    chart_frame = pd.concat([df_m1, df_after]) if df_after is not None and not df_after.empty else df_m1.copy()
+                    chart_frame = chart_frame.sort_index()
+                    chart_frame = chart_frame.loc[~chart_frame.index.duplicated(keep="last")]
+            except Exception:
+                chart_frame = df_after
+            path_diag = diagnose_price_path(chart_frame, entry_time=order_accepted_at,
+                entry_price=entry_price, direction=direction,
+                expiry_seconds=contract_expiration_seconds, broker_result=result,
+                observed_at=time.time())
 
             # ── DIARIO: cerrar la operación con su resultado ─────────────────
             try:
                 if journal_rec is not None:
-                    journal.close_trade(journal_rec.trade_id, result, pnl)
+                    journal.close_trade(journal_rec.trade_id, result, pnl,
+                        post_trade_diagnostic=path_diag)
                 guard.register_close(asset, result, pnl)
             except Exception as e:
                 log(f"[DIARIO] No se pudo registrar el cierre: {e}", "WARNING")
@@ -732,47 +765,47 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             state["balance"] = max(0, state["balance"] + pnl)
             rm.update_balance(state["balance"], {"profit": pnl})
 
-            learning_mode = get_learning_mode()
-            learning_mode.record_trade()
+            if result in ("WIN", "LOSS", "DRAW"):
+                learning_mode = get_learning_mode()
+                learning_mode.record_trade()
 
             # Registrar resultado en AgentTradingEngine para aprendizaje continuo
             try:
-                trade_to_learn = {
-                    'asset': asset,
-                    'direction': direction,
-                    'amount': amount,
-                    'result': result,  # 'WIN', 'LOSS', 'DRAW'
-                    'pnl': pnl,
-                    'pattern': pattern or "none",
-                    'zone_strength': zone_str,
-                    'rsi_at_touch': trade_params['rsi'],
-                    'trend_aligned': signal.get("trend_aligned", False),
-                    'confidence': confidence,
-                    'score': signal.get("score", 0),
-                    'macro_trend': signal.get("macro_trend"),
-                    'retracement_stage': signal.get("retracement_stage"),
-                }
-                log(f"[AI] Registrando resultado en Agente IA para autocrítica y aprendizaje...")
-                agent_engine.record_trade_result(trade_to_learn)
+                if result in ("WIN", "LOSS", "DRAW"):
+                    trade_to_learn = {
+                        'asset': asset,
+                        'direction': direction,
+                        'amount': amount,
+                        'result': result,
+                        'pnl': pnl,
+                        'pattern': pattern or "none",
+                        'zone_strength': zone_str,
+                        'rsi_at_touch': trade_params['rsi'],
+                        'trend_aligned': signal.get("trend_aligned", False),
+                        'confidence': confidence,
+                        'score': signal.get("score", 0),
+                        'macro_trend': signal.get("macro_trend"),
+                        'retracement_stage': signal.get("retracement_stage"),
+                    }
+                    log("[AI] Registrando resultado confirmado en Agente IA...")
+                    agent_engine.record_trade_result(trade_to_learn)
             except Exception as e:
                 log(f"Error registrando resultado en Agente IA: {e}", "ERROR")
 
             # Post-trade analysis
             df_after = None
-            try:
-                df_after = market_data.get_candles(asset, 60, 20)
-            except:
-                pass
-
             trade_record = {
                 "asset": asset, "direction": direction, "amount": amount,
                 "confidence": confidence, "result": result, "pnl": pnl,
                 "pattern": pattern, "order_id": str(order_id),
                 "entry_price": current_price,
-                "expiration_minutes": signal.get("expiration_minutes", duration),
+                "expiration_minutes": duration,
+                "price_path": path_diag,
             }
-            diagnosis = evaluator.evaluate(trade_record, context, conditions, df_m1_after=df_after)
-            learner.learn_from_trade(conditions, result, diagnosis)
+            diagnosis = evaluator.evaluate(trade_record, context, conditions,
+                df_m1_after=df_after, trade_path_diagnostic=path_diag)
+            if result in ("WIN", "LOSS", "DRAW"):
+                learner.learn_from_trade(conditions, result, diagnosis)
             state["last_diagnosis"] = evaluator.format_for_display(diagnosis)
 
             # El IntelligentEngine no expone el nivel real de la zona. No
@@ -803,8 +836,9 @@ def execute_trade(market_data, rm, signal, amount, learner, memory, evaluator, a
             # desconectada del resultado de cada operacion.
             reacted = (result == "WIN" and direction == "CALL" and zone_type_derivado == "support") or \
                       (result == "WIN" and direction == "PUT" and zone_type_derivado == "resistance")
-            memory.add_or_update_zone(asset, current_price, zone_type_derivado, reacted)
-            memory.save()
+            if result in ("WIN", "LOSS", "DRAW"):
+                memory.add_or_update_zone(asset, current_price, zone_type_derivado, reacted)
+                memory.save()
 
             state["status"] = "ANALIZANDO"
             state["active_order"] = None
@@ -1030,9 +1064,7 @@ def bot_loop(market_data, rm, engine, agent_engine):
                             log(f"[DEMO] {icon} {result} {demo['direction']} {demo['asset']} "
                                 f"${pnl:+.2f} | balance demo: ${state['demo_balance']:.2f}", "INFO")
                         else:
-                            # Sin confirmacion no hay resultado: no se cuenta
-                            # como perdida (antes restaba el monto del balance).
-                            log(f"[DEMO] Sin confirmacion de orden {demo['id']}: no contado", "WARNING")
+                            log(f"[DEMO] Orden {demo['id']} sin resultado confirmado; se excluye de métricas y aprendizaje", "WARNING")
                     except Exception as e:
                         log(f"[DEMO] Error verificando orden: {e}", "WARNING")
                     state["demo_order"] = None
@@ -1088,6 +1120,12 @@ def bot_loop(market_data, rm, engine, agent_engine):
                     if df_m1.empty:
                         log(f"Sin velas M1 para {asset} (API vacía)", "WARN")
                     continue
+                try:
+                    enriched = get_journal().update_pending_diagnostics(asset, df_m1, time.time())
+                    if enriched:
+                        log(f"[TRAYECTORIA] {asset}: {enriched} diagnóstico(s) actualizado(s) con velas posteriores")
+                except Exception as diag_error:
+                    log(f"[TRAYECTORIA] No se pudo actualizar histórico de {asset}: {diag_error}", "WARNING")
                 df_m5 = market_data.get_candles(asset, "5m", 100)
                 if df_m5.empty or len(df_m5) < 20:
                     if df_m5.empty:

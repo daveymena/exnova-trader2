@@ -15,7 +15,8 @@ class TradeEvaluator:
 
     def evaluate(self, trade_record: Dict, context_at_entry: Dict,
                   conditions_at_entry: Dict[str, bool],
-                  df_m1_after: Optional[pd.DataFrame] = None) -> Dict:
+                  df_m1_after: Optional[pd.DataFrame] = None,
+                  trade_path_diagnostic: Optional[Dict] = None) -> Dict:
 
         result    = trade_record.get("result", "UNKNOWN")
         direction = trade_record.get("direction", "CALL")
@@ -34,7 +35,13 @@ class TradeEvaluator:
             "what_worked":      [],
             "what_failed":      [],
             "premature_entry":  False,
+            "price_path":       trade_path_diagnostic,
         }
+
+        if result not in {"WIN", "LOSS", "TIE"}:
+            diag["primary_cause"] = "unresolved_broker_result"
+            diag["lessons"] = ["Resultado sin confirmación del bróker; no atribuir causas ni entrenar la estrategia con esta operación."]
+            return diag
 
         if result == "WIN":
             return self._evaluate_win(diag, context_at_entry, conditions_at_entry)
@@ -87,48 +94,51 @@ class TradeEvaluator:
 
         # ── DIAGNÓSTICO 1: Entrada prematura ─────────────────────────────────
         # El precio eventualmente fue en la dirección correcta, pero después de expirar
-        premature = False
-        if df_after is not None and len(df_after) >= 3 and entry_px > 0:
-            premature = self._detect_premature_entry(df_after, entry_px, direction, exp_min)
-
-        if premature:
-            diag["premature_entry"] = True
-            causes.append("premature_entry")
-            failed.append("ENTRADA PREMATURA — El precio fue en la dirección correcta DESPUÉS de la expiración")
-            failed.append(f"El análisis era correcto pero la vela de señal aún no había cerrado completamente")
-            lessons.append("✓ FIX APLICADO: Solo entrar cuando la vela de señal esté 100% cerrada (df.iloc[-2])")
-            lessons.append("Aumentar expiración o esperar confirmación de vela siguiente antes de entrar")
+        path_class = (diag.get("price_path") or {}).get("timing_class")
+        if path_class == "late_recovery_after_expiry":
+            causes.append("late_recovery_after_expiry")
+            failed.append("Exnova confirmó pérdida; una vela posterior al vencimiento cerró a favor de la dirección.")
+            lessons.append("Probar otras expiraciones en replay fuera de muestra. El movimiento tardío no cambia el resultado de este contrato.")
+            diag["late_recovery"] = True
+        elif path_class == "favorable_move_then_reversal":
+            causes.append("favorable_move_then_reversal")
+            failed.append("El precio tuvo recorrido favorable durante el contrato, pero volvió al lado perdedor al vencer.")
+            lessons.append("Revisar la secuencia y la expiración; una excursión favorable intracontrato no garantiza que el cierre gane.")
+        elif path_class == "no_favorable_move_before_expiry":
+            causes.append("no_favorable_move_before_expiry")
+            failed.append("Las velas completas observadas durante el contrato no registraron recorrido favorable.")
+            lessons.append("Revisar dirección, régimen y calidad de entrada; las velas pueden no cubrir los segundos parciales del contrato.")
 
         # ── DIAGNÓSTICO 2: Zona débil ─────────────────────────────────────────
-        zs = zone_ctx.get("zone_strength", 0)
-        if zs < 0.50:
+        zs = zone_ctx.get("zone_strength")
+        if isinstance(zs, (int, float)) and zs < 0.50:
             causes.append("zone_too_weak")
             failed.append(f"Zona débil (strength={zs:.2f}) — no tenía suficiente historia de reacciones")
             lessons.append("Exigir zona con strength ≥0.55 y al menos 3 toques confirmados")
 
         # ── DIAGNÓSTICO 3: Sin rechazo visible ───────────────────────────────
-        if not conds.get("rejection_visible"):
+        if conds.get("rejection_visible") is False:
             causes.append("no_rejection_wick")
             failed.append("Sin mecha de rechazo visible en la zona — el precio tocó pero no rebotó con fuerza")
             lessons.append("Esperar que la mecha de rechazo sea ≥30% del rango de la vela antes de entrar")
 
         # ── DIAGNÓSTICO 4: Contra tendencia ──────────────────────────────────
-        if not zone_ctx.get("trend_aligned", True):
+        if zone_ctx.get("trend_aligned") is False:
             causes.append("counter_trend")
             failed.append(f"Operación contra la tendencia dominante ({trend})")
             lessons.append("Evitar trades contra tendencia — si se hace, necesitar zona muy fuerte (≥0.80)")
 
         # ── DIAGNÓSTICO 5: RSI no extremo ────────────────────────────────────
         rsi_dist = abs(rsi - 50)
-        if direction == "CALL" and rsi > 50:
+        if isinstance(rsi, (int, float)) and direction == "CALL" and rsi > 50:
             causes.append("rsi_not_extreme")
             failed.append(f"CALL con RSI={rsi:.1f} — sin sobreventa real (necesita RSI < 40)")
-        elif direction == "PUT" and rsi < 50:
+        elif isinstance(rsi, (int, float)) and direction == "PUT" and rsi < 50:
             causes.append("rsi_not_extreme")
             failed.append(f"PUT con RSI={rsi:.1f} — sin sobrecompra real (necesita RSI > 60)")
 
         # ── DIAGNÓSTICO 6: MTF no alineado ───────────────────────────────────
-        if not conds.get("mtf_aligned"):
+        if conds.get("mtf_aligned") is False:
             causes.append("mtf_not_aligned")
             failed.append("M1/M5/M15 no alineados — timeframes en conflicto")
             lessons.append("Confirmar que al menos 2 de 3 timeframes apuntan en la misma dirección")
@@ -141,7 +151,8 @@ class TradeEvaluator:
 
         # Prioridad de causa primaria
         priority = [
-            "premature_entry", "no_rejection_wick", "zone_too_weak",
+            "late_recovery_after_expiry", "favorable_move_then_reversal",
+            "no_favorable_move_before_expiry", "no_rejection_wick", "zone_too_weak",
             "counter_trend", "bad_market_phase", "rsi_not_extreme",
             "mtf_not_aligned",
         ]
@@ -186,8 +197,8 @@ class TradeEvaluator:
     def format_for_display(self, diag: Dict) -> List[str]:
         lines = []
         result = diag.get("result", "?")
-        icon   = "✔" if result == "WIN" else "✘"
-        color  = "green" if result == "WIN" else "red"
+        icon   = "✔" if result == "WIN" else ("✘" if result == "LOSS" else "?")
+        color  = "green" if result == "WIN" else ("red" if result == "LOSS" else "yellow")
 
         lines.append(f"[{color}]{icon} {diag['asset']} {diag['direction']} → {result}[/{color}]")
 
@@ -197,6 +208,9 @@ class TradeEvaluator:
         primary = diag.get("primary_cause", "")
         cause_labels = {
             "premature_entry":   "Vela no cerrada al entrar",
+            "late_recovery_after_expiry": "Movimiento favorable después del vencimiento",
+            "favorable_move_then_reversal": "Recorrido favorable y reversión antes del vencimiento",
+            "no_favorable_move_before_expiry": "Sin recorrido favorable antes del vencimiento",
             "no_rejection_wick": "Sin rechazo visible en zona",
             "zone_too_weak":     "Zona insuficientemente fuerte",
             "counter_trend":     "Contra tendencia dominante",

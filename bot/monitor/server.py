@@ -35,6 +35,9 @@ PID_FILE = BOT / "run_live.lock"
 IMPROVE_HEARTBEAT = BOT / "brain" / "improvement_heartbeat.json"
 BOT_HEARTBEAT = ROOT / "data" / "bot_heartbeat.json"
 ADJUSTMENTS_JSON = BOT / "brain" / "strategy_adjustments.json"
+TRADE_JOURNAL = (Path(os.getenv("BOT_DATA_DIR", "/app/data")) / "trade_journal.jsonl"
+                 if Path(os.getenv("BOT_DATA_DIR", "/app/data")).exists()
+                 else BOT / "data" / "trade_journal.jsonl")
 RUNTIME_CONFIG = ROOT / "data" / "runtime_config.json"
 DASHBOARD_HTML = Path(__file__).with_name("dashboard.html")
 DASHBOARD_TOKEN = os.getenv("DASHBOARD_TOKEN", "")
@@ -161,6 +164,58 @@ def trades(limit: int = 50):
     data = _read_json(TRADES_JSON)
     rows = data.get("trades", [])
     return {"trades": rows[-min(max(limit, 1), 500):], "count": len(rows)}
+
+
+@app.get("/api/diagnostics")
+def diagnostics(limit: int = 30):
+    """Observed price path around expiry; settlement is still broker-authoritative."""
+    rows = []
+    try:
+        if TRADE_JOURNAL.exists():
+            by_id = {}
+            with TRADE_JOURNAL.open(encoding="utf-8") as fh:
+                for line in fh:
+                    try:
+                        row = json.loads(line)
+                    except (ValueError, TypeError):
+                        continue
+                    if row.get("_event") == "diagnostic_update":
+                        if row.get("trade_id") in by_id:
+                            by_id[row["trade_id"]]["post_trade_diagnostic"] = row.get("post_trade_diagnostic")
+                    elif row.get("trade_id"):
+                        rows.append(row)
+                        by_id[row["trade_id"]] = row
+    except OSError:
+        pass
+    counts = {}
+    unresolved = 0
+    for row in rows:
+        result = row.get("result")
+        if result == "UNRESOLVED":
+            unresolved += 1
+        diag = row.get("post_trade_diagnostic") or {}
+        label = diag.get("timing_class", "pending_or_unavailable")
+        counts[label] = counts.get(label, 0) + 1
+    recent = []
+    for row in rows[-min(max(limit, 1), 200):]:
+        diag = row.get("post_trade_diagnostic") or {}
+        recent.append({"trade_id": row.get("trade_id"), "asset": row.get("asset"),
+            "direction": row.get("direction"), "result": row.get("result"),
+            "strategy": row.get("strategy"), "setup": row.get("setup"),
+            "pattern": row.get("pattern"), "zone_type": row.get("zone_type"),
+            "zone_strength": row.get("zone_strength"), "rsi": row.get("rsi"),
+            "trend_m5": row.get("trend_m5"), "trend_m15": row.get("trend_m15"),
+            "entry_time": row.get("entry_time"), "entry_price": row.get("entry_price"),
+            "expiration_seconds": row.get("expiration_seconds"),
+            "timing_class": diag.get("timing_class"),
+            "mfe_pct": diag.get("mfe_pct"), "mae_pct": diag.get("mae_pct"),
+            "expiry_return_proxy_pct": diag.get("expiry_return_proxy_pct"),
+            "post_expiry_return_pct": diag.get("post_expiry_return_pct"),
+            "data_quality": diag.get("data_quality"),
+            "chart_analysis": diag.get("chart_analysis", {}),
+            "chart_candles": diag.get("chart_candles", [])})
+    return {"trades": len(rows), "unresolved": unresolved,
+            "timing_classes": counts, "recent": recent}
 
 
 @app.get("/api/improvement")

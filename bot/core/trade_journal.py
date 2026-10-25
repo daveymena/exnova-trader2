@@ -31,7 +31,9 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-DEFAULT_PATH = Path(__file__).resolve().parent.parent / "data" / "trade_journal.jsonl"
+_persistent_data = Path(os.getenv("BOT_DATA_DIR", "/app/data"))
+DEFAULT_PATH = (_persistent_data / "trade_journal.jsonl" if _persistent_data.exists()
+                else Path(__file__).resolve().parent.parent / "data" / "trade_journal.jsonl")
 
 
 def _f(value: Any) -> float | None:
@@ -65,6 +67,8 @@ class TradeRecord:
     expiration_seconds: int
     amount: float
     payout: float | None
+    entry_price: float | None = None
+    entry_time: float | None = None
 
     # --- estado real del mercado en la entrada (None si no se pudo calcular) ---
     price: float | None = None
@@ -93,6 +97,7 @@ class TradeRecord:
     pnl: float | None = None
     exit_price: float | None = None
     closed_at: float | None = None
+    post_trade_diagnostic: dict | None = None
 
     extra: dict = field(default_factory=dict)
 
@@ -232,7 +237,8 @@ class TradeJournal:
         return rec
 
     def close_trade(self, trade_id: str, result: str, pnl: float,
-                    exit_price: float | None = None) -> TradeRecord | None:
+                    exit_price: float | None = None,
+                    post_trade_diagnostic: dict | None = None) -> TradeRecord | None:
         with self._lock:
             rec = self._open.pop(trade_id, None)
         if rec is None:
@@ -241,6 +247,7 @@ class TradeJournal:
         rec.pnl = _f(pnl)
         rec.exit_price = _f(exit_price)
         rec.closed_at = time.time()
+        rec.post_trade_diagnostic = post_trade_diagnostic
         self._append(rec)
         return rec
 
@@ -252,19 +259,83 @@ class TradeJournal:
                 fh.flush()
                 os.fsync(fh.fileno())
 
+    def update_diagnostic(self, trade_id: str, diagnostic: dict) -> None:
+        """Append a diagnostic enrichment without rewriting the journal."""
+        event = {"_event": "diagnostic_update", "trade_id": trade_id,
+                 "post_trade_diagnostic": diagnostic, "updated_at": time.time()}
+        with self._lock, open(self.path, "a", encoding="utf-8") as fh:
+            fh.write(json.dumps(event, ensure_ascii=False) + "\n")
+            fh.flush()
+            os.fsync(fh.fileno())
+
+    def update_pending_diagnostics(self, asset: str, candles: pd.DataFrame,
+                                   observed_at: float | None = None) -> int:
+        """Refresh post-expiry horizons for recent trades as new candles arrive."""
+        try:
+            from .trade_diagnostics import diagnose_price_path
+        except ImportError:
+            from core.trade_diagnostics import diagnose_price_path
+        data = self.load()
+        if data.empty:
+            return 0
+        now = float(observed_at if observed_at is not None else time.time())
+        updated = 0
+        recent = data[(data.get("asset") == asset) & data.get("result").isin(["WIN", "LOSS", "TIE", "DRAW", "UNRESOLVED"])]
+        for row in recent.tail(500).to_dict("records"):
+            entry_time = _f(row.get("entry_time")) or _f(row.get("timestamp"))
+            entry_price = _f(row.get("entry_price")) or _f(row.get("price"))
+            expiry = int(row.get("expiration_seconds") or 0)
+            if not entry_time or not entry_price or expiry <= 0 or now > entry_time + expiry + 8 * 60:
+                continue
+            current = row.get("post_trade_diagnostic") or {}
+            if len(current.get("post_expiry_close", {})) >= 3 and all(current.get("post_expiry_close", {}).values()):
+                continue
+            diag = diagnose_price_path(candles, entry_time=entry_time,
+                entry_price=entry_price, direction=row.get("direction"),
+                expiry_seconds=expiry, broker_result=row.get("result"),
+                observed_at=now)
+            # Una actualización posterior puede traer menos histórico que el
+            # snapshot inicial. Se fusionan por hora para no perder las velas
+            # que explican el patrón previo a la entrada.
+            merged_candles = {
+                candle.get("time"): candle
+                for candle in (current.get("chart_candles") or [])
+                if candle.get("time") is not None
+            }
+            merged_candles.update({
+                candle.get("time"): candle
+                for candle in (diag.get("chart_candles") or [])
+                if candle.get("time") is not None
+            })
+            diag["chart_candles"] = [merged_candles[key] for key in sorted(merged_candles)]
+            if not diag.get("chart_analysis") and current.get("chart_analysis"):
+                diag["chart_analysis"] = current["chart_analysis"]
+            if diag != current:
+                self.update_diagnostic(str(row["trade_id"]), diag)
+                updated += 1
+        return updated
+
     # -- lectura ----------------------------------------------------------
 
     def load(self) -> pd.DataFrame:
         if not self.path.exists():
             return pd.DataFrame()
         rows = []
+        by_id: dict[str, dict] = {}
         with open(self.path, encoding="utf-8") as fh:
             for line in fh:
                 line = line.strip()
                 if not line:
                     continue
                 try:
-                    rows.append(json.loads(line))
+                    row = json.loads(line)
+                    if row.get("_event") == "diagnostic_update":
+                        if row.get("trade_id") in by_id:
+                            by_id[row["trade_id"]]["post_trade_diagnostic"] = row.get("post_trade_diagnostic")
+                        continue
+                    rows.append(row)
+                    if row.get("trade_id"):
+                        by_id[row["trade_id"]] = row
                 except json.JSONDecodeError:
                     continue          # una linea truncada no invalida el resto
         return pd.DataFrame(rows)
