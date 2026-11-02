@@ -13,6 +13,7 @@ from seguir_retroceso import validated_rows
 from app.services.exnova_broker import ExnovaBroker
 from app.data.schemas import Timeframe
 from app.research.reaction_memory import observe
+from graficos_mercado import save_chart
 
 
 def save_rows(db_path, asset, rows):
@@ -41,6 +42,13 @@ def main():
     if not assets:
         raise SystemExit('RESEARCH_ASSETS está vacío')
     db_path = os.getenv('RESEARCH_DATABASE_PATH', '/app/data/research.db')
+    chart_dir = os.getenv('RESEARCH_CHART_DIR', '/app/data/graficos')
+    try:
+        chart_interval = max(60, int(os.getenv('RESEARCH_CHART_INTERVAL_SECONDS', '300')))
+    except ValueError:
+        raise SystemExit('RESEARCH_CHART_INTERVAL_SECONDS debe ser entero')
+    last_chart = {}
+    last_signal = {}
     Path(db_path).parent.mkdir(parents=True, exist_ok=True)
     broker = ExnovaBroker(email, password, account_type='PRACTICE')
     try:
@@ -57,6 +65,15 @@ def main():
                         now = datetime.now(timezone.utc)
                         rows = validated_rows(broker.get_candles(asset, 10, 500), now)
                         signal = save_rows(db_path, asset, rows)
+                        signal_key = signal['signal_time'] if signal else None
+                        is_new_signal = bool(signal_key and last_signal.get(asset) != signal_key)
+                        if is_new_signal or time.monotonic() - last_chart.get(asset, 0) >= chart_interval:
+                            chart = save_chart(db_path, chart_dir, asset, rows, signal if is_new_signal else None,
+                                               'senal' if is_new_signal else 'periodico')
+                            last_chart[asset] = time.monotonic()
+                            if is_new_signal:
+                                last_signal[asset] = signal_key
+                            print(f'[GRAFICO] {chart}', flush=True)
                         m1 = broker.get_candles_as_schema(asset, Timeframe.M1, 100)
                         # Exnova's adapter returns naive UTC timestamps.
                         closed = [c for c in m1 if c.open_time.replace(tzinfo=timezone.utc).timestamp()+60 <= time.time()]
