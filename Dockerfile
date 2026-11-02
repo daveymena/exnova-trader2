@@ -32,6 +32,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # otro. Se fusionaron en bot/run_live.py, que es ahora el unico canonico.
 COPY bot/ ./bot/
 COPY app/ ./app/
+COPY lab/ ./lab/
 COPY opencode.json ./opencode.json
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 COPY .env.example ./.env.example

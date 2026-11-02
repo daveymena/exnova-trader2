@@ -74,6 +74,25 @@ echo "[entrypoint] Arrancando bot de trading (bot/run_live.py) con auto-restart.
 BOT_PID=$!
 echo "[entrypoint] Bot supervisor PID: $BOT_PID (log: /app/data/bot.log)"
 
+# Segunda sesión de investigación, desactivada por defecto para no alterar el
+# servicio existente sin comprobar que el broker permita sesiones paralelas.
+OBS_PID=""
+if [ "${RESEARCH_OBSERVER_ENABLED:-false}" = "true" ]; then
+    if [ "${BROKER_NAME:-exnova}" = "exnova" ] && [ -n "${EXNOVA_EMAIL:-}" ] && [ -n "${EXNOVA_PASSWORD:-}" ]; then
+        echo "[entrypoint] Arrancando observador de mercado PRACTICE (solo lectura)"
+        (
+            while true; do
+                PYTHONPATH="/app/bot${PYTHONPATH:+:$PYTHONPATH}" python3 -u lab/observador_exnova.py || true
+                echo "[entrypoint] Observador detenido; reintento en 30s"
+                sleep 30
+            done
+        ) &
+        OBS_PID=$!
+    else
+        echo "[entrypoint] Observador no iniciado: broker o credenciales no disponibles"
+    fi
+fi
+
 # 3. Monitor HTTP (dashboard + API JSON en puerto PORT=8000).
 # Lee los JSON de persistencia del bot (read-only) y expone /api/* y dashboard.
 echo "[entrypoint] Arrancando monitor HTTP (bot/monitor/server.py, puerto ${PORT:-8000})..."
@@ -107,7 +126,7 @@ else
 fi
 
 # 5. Trap de señales: al recibir SIGTERM/SIGINT matar a los hijos graceful.
-trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill $BOT_PID 2>/dev/null; kill $MON_PID 2>/dev/null; [ -n "$IMP_PID" ] && kill $IMP_PID 2>/dev/null; [ -n "$SUP_PID" ] && kill $SUP_PID 2>/dev/null; exit 0' TERM INT
+trap 'echo "[entrypoint] signal recibida, deteniendo..."; kill "$BOT_PID" "$MON_PID" 2>/dev/null || true; [ -z "$IMP_PID" ] || kill "$IMP_PID" 2>/dev/null || true; [ -z "$SUP_PID" ] || kill "$SUP_PID" 2>/dev/null || true; [ -z "$OBS_PID" ] || kill "$OBS_PID" 2>/dev/null || true; exit 0' TERM INT
 
 # 6. Mantener el contenedor vivo mientras corran los procesos hijas. El bot se
 # auto-reinicia (loop en background), asi que esperamos indefinidamente y solo
