@@ -1,0 +1,308 @@
+========================================================================================================
+LABORATORIO DE TRAMPAS EN ZONAS S/R
+========================================================================================================
+Payout 0.860 -> break-even 53.76%   |   horizonte N=5 barras M1   |   banda = 0.2 ATR   |   pivote wing=5
+
+--------------------------------------------------------------------------------------------------------
+1. INVENTARIO DE EVENTOS POR ACTIVO
+--------------------------------------------------------------------------------------------------------
+  activo          mercado      velas  eventos   mecha  cierre  trampa%  ruptura%   indef%
+  EURUSD-op       real         30708     2537    1240    1297    57.8%     33.6%     8.6%
+  EURUSD-OTC      sintetico    43050     3663    1706    1957    59.9%     31.4%     8.7%
+  GBPUSD-op       real         30708     2564    1285    1279    62.1%     29.0%     8.9%
+  GBPUSD-OTC      sintetico    43155     3710    1689    2021    59.6%     32.2%     8.2%
+  US30_N          real         29334     2453    1234    1219    58.1%     32.1%     9.8%
+  USDJPY-op       real         30708     2592    1304    1288    59.7%     31.5%     8.8%
+  USDJPY-OTC      sintetico    43155     3646    1667    1979    58.5%     32.3%     9.2%
+  USNDAQ100_N     real         29334     2382    1231    1151    60.1%     31.0%     8.9%
+  USSPX500_N      real         29334     2491    1343    1148    61.4%     29.4%     9.2%
+  XAUUSD-op       real         29330     2422    1219    1203    59.6%     31.5%     8.9%
+
+--------------------------------------------------------------------------------------------------------
+2. TASA GLOBAL DE TRAMPA
+--------------------------------------------------------------------------------------------------------
+  Eventos totales (10 activos)      : 28460
+  TRAMPA                            :  16972   59.6%  IC95%[59.1%, 60.2%]
+  RUPTURA_REAL                      :   8957   31.5%
+  INDEFINIDO                        :   2531    8.9%
+  Proporcion trampa : ruptura real  : 1.89 a 1
+  (base para todo el informe: la tasa de trampa global de arriba)
+
+  DISTINCION CLAVE - la perforacion por mecha y la de cierre NO son
+  el mismo evento. Se separan siempre:
+  perforacion_mecha       13918  trampa  73.3% IC[ 72.6, 74.1]  rup  18.7% indef   8.0%  POR ENCIMA
+  perforacion_cierre      14542  trampa  46.5% IC[ 45.7, 47.3]  rup  43.7% indef   9.8%  POR DEBAJO
+  Diferencia mecha vs cierre: z=46.12  p=0.00e+00
+
+  2.1 CONTROL PLACEBO: las mismas medidas sobre zonas FALSAS
+      (niveles a distancia comparable, pero que no son swings).
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  zonas REALES            28460  trampa  59.6% IC[ 59.1, 60.2]  rup  31.5% indef   8.9%  =         
+  zonas PLACEBO           25984  trampa  59.9% IC[ 59.3, 60.5]  rup  31.1% indef   9.0%  =         
+  placebo/mecha           12893  trampa  73.0% IC[ 72.2, 73.8]  rup  18.7% indef   8.3%  POR ENCIMA
+  placebo/cierre          13091  trampa  47.0% IC[ 46.1, 47.8]  rup  43.4% indef   9.6%  POR DEBAJO
+  Real vs placebo: 59.6% vs 59.9%  z=-0.61  p=0.543
+  LECTURA: un nivel inventado se comporta IGUAL que uno real.
+  La estructura de soporte/resistencia no aporta informacion
+  medible sobre la tasa de trampa; lo que manda es la geometria.
+  Winrate de operar la reversion en PLACEBO a 5m: 50.6% IC[50.0%,51.2%] (n=25805)
+
+--------------------------------------------------------------------------------------------------------
+3. DESGLOSES DE LA TASA DE TRAMPA
+--------------------------------------------------------------------------------------------------------
+
+3.1 POR NUMERO DE TOQUES PREVIOS DE LA ZONA:
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  0 toques                 6989  trampa  60.2% IC[ 59.0, 61.3]  rup  31.2% indef   8.6%  =         
+  1 toques                11542  trampa  59.0% IC[ 58.1, 59.9]  rup  31.9% indef   9.1%  =         
+  2 toques                 5151  trampa  59.8% IC[ 58.4, 61.1]  rup  31.5% indef   8.7%  =         
+  3 toques                 2487  trampa  61.0% IC[ 59.1, 62.9]  rup  30.5% indef   8.4%  =         
+  4+ toques                2291  trampa  59.5% IC[ 57.4, 61.4]  rup  31.2% indef   9.4%  =         
+
+3.2 POR MERCADO (sintetico OTC vs indice real):
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  sintetico               11019  trampa  59.3% IC[ 58.4, 60.3]  rup  32.0% indef   8.7%  =         
+  real                    17441  trampa  59.8% IC[ 59.1, 60.5]  rup  31.2% indef   9.0%  =         
+
+3.3 POR HORA UTC (solo horas con muestra; el resto se omite):
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  00:00 UTC                1293  trampa  61.3% IC[ 58.6, 63.9]  rup  30.1% indef   8.6%  =         
+  01:00 UTC                1276  trampa  58.5% IC[ 55.7, 61.1]  rup  33.2% indef   8.4%  =         
+  02:00 UTC                1224  trampa  60.1% IC[ 57.4, 62.8]  rup  30.3% indef   9.6%  =         
+  03:00 UTC                1186  trampa  58.6% IC[ 55.8, 61.4]  rup  32.6% indef   8.8%  =         
+  04:00 UTC                1102  trampa  59.0% IC[ 56.1, 61.9]  rup  32.7% indef   8.3%  =         
+  05:00 UTC                1276  trampa  61.8% IC[ 59.1, 64.5]  rup  30.2% indef   8.0%  =         
+  06:00 UTC                1273  trampa  58.0% IC[ 55.2, 60.7]  rup  34.2% indef   7.8%  =         
+  07:00 UTC                1217  trampa  60.1% IC[ 57.3, 62.8]  rup  32.6% indef   7.3%  =         
+  08:00 UTC                1200  trampa  59.3% IC[ 56.5, 62.1]  rup  31.7% indef   9.0%  =         
+  09:00 UTC                1206  trampa  61.0% IC[ 58.2, 63.7]  rup  29.9% indef   9.1%  =         
+  10:00 UTC                1213  trampa  61.2% IC[ 58.4, 63.9]  rup  28.9% indef  10.0%  =         
+  11:00 UTC                1204  trampa  59.4% IC[ 56.6, 62.1]  rup  31.4% indef   9.2%  =         
+  12:00 UTC                1254  trampa  58.9% IC[ 56.2, 61.6]  rup  33.3% indef   7.8%  =         
+  13:00 UTC                1295  trampa  60.9% IC[ 58.2, 63.5]  rup  31.1% indef   8.0%  =         
+  14:00 UTC                1212  trampa  60.2% IC[ 57.4, 62.9]  rup  29.8% indef  10.0%  =         
+  15:00 UTC                1134  trampa  56.5% IC[ 53.6, 59.4]  rup  34.0% indef   9.4%  POR DEBAJO
+  16:00 UTC                1113  trampa  57.4% IC[ 54.5, 60.3]  rup  33.1% indef   9.5%  =         
+  17:00 UTC                1163  trampa  59.0% IC[ 56.1, 61.8]  rup  31.8% indef   9.2%  =         
+  18:00 UTC                1173  trampa  59.0% IC[ 56.2, 61.8]  rup  30.3% indef  10.7%  =         
+  19:00 UTC                1191  trampa  63.1% IC[ 60.3, 65.8]  rup  28.3% indef   8.6%  POR ENCIMA
+  20:00 UTC                1061  trampa  58.7% IC[ 55.7, 61.6]  rup  30.4% indef  10.8%  =         
+  21:00 UTC                 755  trampa  63.6% IC[ 60.1, 66.9]  rup  28.2% indef   8.2%  POR ENCIMA
+  22:00 UTC                1167  trampa  57.6% IC[ 54.7, 60.4]  rup  32.0% indef  10.4%  =         
+  23:00 UTC                1272  trampa  58.7% IC[ 56.0, 61.4]  rup  34.1% indef   7.2%  =         
+
+3.4 POR TAMANO DEL CUERPO DE LA VELA QUE ROMPE:
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  <0.5 ATR                 8737  trampa  71.8% IC[ 70.8, 72.7]  rup  19.4% indef   8.8%  POR ENCIMA
+  0.5-1 ATR                9990  trampa  59.8% IC[ 58.9, 60.8]  rup  31.4% indef   8.8%  =         
+  1-1.5 ATR                6329  trampa  50.7% IC[ 49.5, 51.9]  rup  39.8% indef   9.5%  POR DEBAJO
+  1.5-2 ATR                2306  trampa  45.1% IC[ 43.1, 47.1]  rup  45.7% indef   9.2%  POR DEBAJO
+  >2 ATR                   1098  trampa  43.5% IC[ 40.6, 46.5]  rup  50.4% indef   6.1%  POR DEBAJO
+
+3.5 POR PROFUNDIDAD DE LA PENETRACION (mas alla de la banda):
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  <0.25 ATR               13488  trampa  69.6% IC[ 68.8, 70.3]  rup  22.2% indef   8.2%  POR ENCIMA
+  0.25-0.5                 7787  trampa  58.5% IC[ 57.4, 59.5]  rup  32.1% indef   9.5%  POR DEBAJO
+  0.5-1.0                  5627  trampa  45.5% IC[ 44.2, 46.8]  rup  44.6% indef   9.8%  POR DEBAJO
+  >1.0 ATR                 1558  trampa  30.5% IC[ 28.3, 32.8]  rup  60.8% indef   8.7%  POR DEBAJO
+
+3.6 POR ALINEACION CON LA TENDENCIA M5+M15:
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  a_favor                 11334  trampa  59.8% IC[ 58.9, 60.7]  rup  31.4% indef   8.7%  =         
+  mixta                    8051  trampa  59.2% IC[ 58.1, 60.3]  rup  31.7% indef   9.1%  =         
+  en_contra                9075  trampa  59.8% IC[ 58.8, 60.8]  rup  31.4% indef   8.9%  =         
+  eventos sin tendencia calculable (excluidos, NO imputados): 0
+
+3.7 CRUCE tipo de perforacion x alineacion de tendencia:
+  grupo                       n  tasa de trampa (IC95%)                 ruptura     indef        vs base
+  mecha/a_favor            5543  trampa  73.9% IC[ 72.7, 75.0]  rup  18.2% indef   7.9%  POR ENCIMA
+  mecha/mixta              3946  trampa  72.5% IC[ 71.1, 73.9]  rup  19.1% indef   8.4%  POR ENCIMA
+  mecha/en_contra          4429  trampa  73.4% IC[ 72.1, 74.7]  rup  18.9% indef   7.7%  POR ENCIMA
+  cierre/a_favor           5791  trampa  46.4% IC[ 45.2, 47.7]  rup  44.1% indef   9.5%  POR DEBAJO
+  cierre/mixta             4105  trampa  46.4% IC[ 44.8, 47.9]  rup  43.8% indef   9.9%  POR DEBAJO
+  cierre/en_contra         4646  trampa  46.7% IC[ 45.3, 48.2]  rup  43.2% indef  10.0%  POR DEBAJO
+
+3.8 CONTROL DE GEOMETRIA: la tasa de trampa observada frente a la
+    que produciria un paseo aleatorio con la MISMA distancia al nivel.
+    Si ambas coinciden, la 'trampa' no es reaccion: es cercania.
+  grupo                         n  dist(sigmas)  trampa obs  trampa paseo  diferencia
+  GLOBAL                    28460          0.52       59.6%         78.9%      -19.3pp
+  perforacion_mecha         13918          0.28       73.3%         88.6%      -15.2pp
+  perforacion_cierre        14542          0.77       46.5%         69.6%      -23.1pp
+  cuerpo <0.5 ATR            8737          0.27       71.8%         88.9%      -17.1pp
+  cuerpo 0.5-1 ATR           9990          0.55       59.8%         79.9%      -20.1pp
+  cuerpo 1-1.5 ATR           6329          0.74       50.7%         72.6%      -21.9pp
+  cuerpo 1.5-2 ATR           2306          0.91       45.1%         66.4%      -21.3pp
+  cuerpo >2 ATR              1098          1.29       43.5%         53.4%       -9.9pp
+  penetra <0.25 ATR         13488          0.36       69.6%         86.6%      -17.0pp
+  penetra 0.25-0.5           7787          0.59       58.5%         80.0%      -21.5pp
+  penetra 0.5-1.0            5627          0.97       45.5%         68.2%      -22.7pp
+  penetra >1.0 ATR           1558          1.68       30.5%         46.0%      -15.5pp
+  PLACEBO global            25984          0.52       59.9%         79.0%      -19.1pp
+
+--------------------------------------------------------------------------------------------------------
+4. CUANTO TARDA EL PRECIO EN REVERTIR (determina la expiracion)
+--------------------------------------------------------------------------------------------------------
+  Eventos que revierten dentro de 30 barras: 23316 de 28460 (81.9%)
+  Barras hasta el primer cierre de vuelta:  p10=1  p25=1  MEDIANA=2  p75=6  p90=14
+  Acumulado de reversiones por minuto:
+    1m:38% 2m:53% 3m:62% 4m:68% 5m:73% 6m:77% 7m:79% 8m:82% 9m:84% 10m:85% 11m:87% 12m:88% 13m:89% 14m:90% 15m:92%
+  Lectura: la mediana en 2 barras respalda N=5 como horizonte operativo.
+
+  4.1 OPERAR LA REVERSION tras CUALQUIER perforacion, por expiracion:
+    exp       n   winrate  IC95%               esperanza  veredicto
+     1m   28027     50.4%  [ 49.8%, 51.0%]     -0.0625  PIERDE
+     2m   28118     50.6%  [ 50.0%, 51.2%]     -0.0588  PIERDE
+     3m   28214     50.7%  [ 50.2%, 51.3%]     -0.0561  PIERDE
+     4m   28220     50.6%  [ 50.0%, 51.2%]     -0.0591  PIERDE
+     5m   28277     50.8%  [ 50.2%, 51.4%]     -0.0557  PIERDE
+     6m   28282     50.8%  [ 50.2%, 51.4%]     -0.0557  PIERDE
+     7m   28294     50.7%  [ 50.1%, 51.3%]     -0.0565  PIERDE
+     8m   28302     50.9%  [ 50.3%, 51.5%]     -0.0534  PIERDE
+     9m   28312     50.7%  [ 50.1%, 51.3%]     -0.0575  PIERDE
+    10m   28305     50.7%  [ 50.1%, 51.3%]     -0.0565  PIERDE
+    11m   28320     50.7%  [ 50.1%, 51.3%]     -0.0565  PIERDE
+    12m   28328     50.7%  [ 50.1%, 51.3%]     -0.0568  PIERDE
+    13m   28343     50.7%  [ 50.1%, 51.3%]     -0.0570  PIERDE
+    14m   28350     50.6%  [ 50.0%, 51.2%]     -0.0588  PIERDE
+    15m   28351     50.4%  [ 49.9%, 51.0%]     -0.0617  PIERDE
+
+  4.2 Lo mismo restringido a perforacion POR MECHA (la trampa clasica):
+    exp       n   winrate  IC95%               esperanza  veredicto
+     1m   13689     49.9%  [ 49.1%, 50.7%]     -0.0720  PIERDE
+     2m   13747     50.2%  [ 49.4%, 51.1%]     -0.0656  PIERDE
+     3m   13796     50.6%  [ 49.7%, 51.4%]     -0.0598  PIERDE
+     4m   13782     50.4%  [ 49.6%, 51.3%]     -0.0620  PIERDE
+     5m   13827     51.0%  [ 50.2%, 51.8%]     -0.0515  PIERDE
+     6m   13823     51.1%  [ 50.3%, 51.9%]     -0.0496  PIERDE
+     7m   13843     50.7%  [ 49.9%, 51.6%]     -0.0561  PIERDE
+     8m   13838     50.5%  [ 49.7%, 51.3%]     -0.0610  PIERDE
+     9m   13839     50.8%  [ 50.0%, 51.7%]     -0.0543  PIERDE
+    10m   13845     50.5%  [ 49.7%, 51.3%]     -0.0605  PIERDE
+    11m   13848     50.6%  [ 49.8%, 51.4%]     -0.0590  PIERDE
+    12m   13850     50.4%  [ 49.5%, 51.2%]     -0.0629  PIERDE
+    13m   13860     50.5%  [ 49.6%, 51.3%]     -0.0611  PIERDE
+    14m   13865     50.4%  [ 49.6%, 51.2%]     -0.0627  PIERDE
+    15m   13864     50.1%  [ 49.2%, 50.9%]     -0.0691  PIERDE
+
+  4.3 SENSIBILIDAD: la tasa de trampa segun donde se ponga N
+     N   trampa%   ruptura%    indef%   IC95% de trampa
+     3     50.8%      37.5%     11.7%   [50.3%, 51.4%]
+     5     59.6%      31.5%      8.9%   [59.1%, 60.2%]
+    10     69.9%      23.8%      6.3%   [69.4%, 70.5%]
+    15     75.0%      19.7%      5.3%   [74.5%, 75.5%]
+
+  4.4 CUANTO SE MUEVE EL PRECIO tras la perforacion, en ATR, a 5 barras
+      (a favor = hacia la reversion; en contra = a favor de la ruptura)
+  grupo                         n  a_favor p50  a_favor p90  en_contra p50  ratio p50
+  GLOBAL                    28460         0.99         2.55           0.96       1.03
+  mecha                     13918         0.99         2.53           0.97       1.02
+  cierre                    14542         0.99         2.57           0.96       1.03
+  clase TRAMPA              16972         1.53         2.96           0.58       2.64
+  clase RUPTURA_REAL         8957         0.32         0.88           1.88       0.17
+  Un ratio cercano a 1.00 significa que el precio se mueve lo mismo
+  en las dos direcciones: no hay rechazo, hay oscilacion simetrica.
+
+--------------------------------------------------------------------------------------------------------
+5. HAY ALGUN FILTRO OBSERVABLE QUE SEPARE TRAMPA DE RUPTURA REAL?
+--------------------------------------------------------------------------------------------------------
+  Universo binario (se excluyen los INDEFINIDO): 25929 eventos, 16972 trampas
+  PREVALENCIA BASE de trampa = 65.46%  <- cualquier filtro debe
+  batir esto para aportar algo. Un clasificador que diga siempre TRAMPA
+  tiene precision 65.5% y recall 100%.
+  Split cronologico 70/30: in-sample n=18150, out-of-sample n=7779 (prevalencia OOS 65.5%)
+  22 filtros probados -> Bonferroni exige z=3.05 en vez de 1.96
+
+  Ordenados por PRECISION IN-SAMPLE (la eleccion se hace ahi; la nota
+  la pone el out-of-sample, que nunca se uso para elegir):
+  filtro                      n_is  prec_is  n_oos  prec_oos  rec_oos   lift  IC95% prec_oos          z  sig
+  mecha_Y_vela_pequena        4867    81.2%   2032     81.2%    32.4%   1.24  [ 79.4%, 82.8%]  17.31  SI
+  mecha_Y_contratendencia     2868    79.8%   1221     79.0%    18.9%   1.21  [ 76.6%, 81.1%]  10.76  SI
+  perforacion_por_mecha       8978    79.6%   3830     80.0%    60.1%   1.22  [ 78.7%, 81.2%]  26.48  SI
+  mecha_Y_2+_toques           3103    78.9%   1369     80.5%    21.6%   1.23  [ 78.3%, 82.5%]  12.85  SI
+  vela_pequena_<0.5atr        5619    78.9%   2348     78.3%    36.1%   1.20  [ 76.6%, 79.9%]  15.63  SI
+  mecha_Y_rsi_extremo         2655    77.8%   1134     77.8%    17.3%   1.19  [ 75.3%, 80.1%]   9.40  SI
+  penetracion_leve_<0.25      8691    75.6%   3690     76.2%    55.2%   1.16  [ 74.8%, 77.6%]  18.90  SI
+  volatilidad_baja_<0.8       1915    67.6%    793     66.3%    10.3%   1.01  [ 63.0%, 69.5%]   0.51  no
+  zona_virgen_0_toques        4469    66.3%   1916     64.8%    24.4%   0.99  [ 62.7%, 66.9%]  -0.73  no
+  contra_tendencia_m5m15      5774    65.9%   2496     64.9%    31.8%   0.99  [ 63.0%, 66.7%]  -0.82  no
+  zona_con_2+_toques          6306    65.5%   2751     66.5%    35.9%   1.02  [ 64.7%, 68.3%]   1.39  no
+  zona_con_3+_toques          2972    65.3%   1381     68.0%    18.4%   1.04  [ 65.5%, 70.4%]   2.14  no
+  a_favor_tendencia_m5m15     7299    65.0%   3045     67.0%    40.0%   1.02  [ 65.3%, 68.6%]   2.16  no
+  horario_ny_13_15h           2322    65.0%    988     65.9%    12.8%   1.01  [ 62.9%, 68.8%]   0.27  no
+  llega_extendido_>2atr      15514    63.5%   6680     63.4%    83.1%   0.97  [ 62.2%, 64.5%]  -9.73  SI
+  volatilidad_alta_>1.3       1636    62.5%    635     64.6%     8.0%   0.99  [ 60.8%, 68.2%]  -0.52  no
+  rsi_extremo                 3050    57.3%   1382     57.1%    15.5%   0.87  [ 54.5%, 59.7%]  -7.26  SI
+  perforacion_por_cierre      9172    51.6%   3949     51.5%    39.9%   0.79  [ 49.9%, 53.0%] -26.48  SI
+  cierre_Y_a_favor            3680    50.5%   1560     53.3%    16.3%   0.81  [ 50.8%, 55.7%] -11.38  SI
+  vela_grande_>1.5atr         2144    48.6%    980     48.5%     9.3%   0.74  [ 45.4%, 51.6%] -12.00  SI
+  cierre_Y_penetra_>0.5       3902    42.0%   1751     41.7%    14.3%   0.64  [ 39.5%, 44.1%] -23.76  SI
+  penetracion_fuerte_>0.75    2091    39.1%    925     38.3%     6.9%   0.58  [ 35.2%, 41.4%] -18.57  SI
+
+  AVISO SOBRE ESTA TABLA: una precision alta aqui NO es una senal.
+  La etiqueta TRAMPA depende de la distancia al nivel (seccion 3.8),
+  y los filtros de arriba seleccionan justamente eventos pegados al
+  nivel. Miden geometria, no comportamiento. La prueba esta abajo.
+
+  5.1 LO QUE DE VERDAD IMPORTA: winrate de operar la reversion
+      a 5m tras cada filtro, sobre TODOS los eventos que
+      lo pasan (incluidos los INDEFINIDO). Break-even 53.76%.
+  filtro                          n  winrate  IC95%               esperanza  veredicto
+  mecha_Y_rsi_extremo          4073    51.9%  [ 50.4%, 53.4%]    -0.0346  PIERDE SEGURO
+  volatilidad_alta_>1.3        2477    51.8%  [ 49.9%, 53.8%]    -0.0358  ruido
+  mecha_Y_contratendencia      4403    51.6%  [ 50.2%, 53.1%]    -0.0394  PIERDE SEGURO
+  rsi_extremo                  4839    51.5%  [ 50.1%, 52.9%]    -0.0417  PIERDE SEGURO
+  zona_con_3+_toques           4751    51.4%  [ 50.0%, 52.8%]    -0.0436  PIERDE SEGURO
+  zona_con_2+_toques           9871    51.2%  [ 50.2%, 52.2%]    -0.0471  PIERDE SEGURO
+  perforacion_por_mecha       13827    51.0%  [ 50.2%, 51.8%]    -0.0515  PIERDE SEGURO
+  vela_grande_>1.5atr          3382    51.0%  [ 49.3%, 52.7%]    -0.0519  PIERDE SEGURO
+  penetracion_leve_<0.25      13403    50.9%  [ 50.1%, 51.8%]    -0.0531  PIERDE SEGURO
+  llega_extendido_>2atr       24225    50.9%  [ 50.2%, 51.5%]    -0.0537  PIERDE SEGURO
+  penetracion_fuerte_>0.75     3308    50.9%  [ 49.2%, 52.6%]    -0.0537  PIERDE SEGURO
+  contra_tendencia_m5m15       9018    50.8%  [ 49.8%, 51.9%]    -0.0543  PIERDE SEGURO
+  vela_pequena_<0.5atr         8679    50.7%  [ 49.7%, 51.8%]    -0.0568  PIERDE SEGURO
+  a_favor_tendencia_m5m15     11253    50.6%  [ 49.7%, 51.5%]    -0.0583  PIERDE SEGURO
+  mecha_Y_vela_pequena         7476    50.6%  [ 49.5%, 51.7%]    -0.0591  PIERDE SEGURO
+  perforacion_por_cierre      14450    50.6%  [ 49.7%, 51.4%]    -0.0597  PIERDE SEGURO
+  zona_virgen_0_toques         6936    50.5%  [ 49.4%, 51.7%]    -0.0598  PIERDE SEGURO
+  mecha_Y_2+_toques            4824    50.5%  [ 49.1%, 51.9%]    -0.0607  PIERDE SEGURO
+  horario_ny_13_15h            3633    50.5%  [ 48.9%, 52.1%]    -0.0610  PIERDE SEGURO
+  cierre_Y_penetra_>0.5        6224    50.4%  [ 49.2%, 51.7%]    -0.0616  PIERDE SEGURO
+  cierre_Y_a_favor             5749    50.4%  [ 49.1%, 51.7%]    -0.0621  PIERDE SEGURO
+  volatilidad_baja_<0.8        2954    50.0%  [ 48.2%, 51.8%]    -0.0694  PIERDE SEGURO
+
+========================================================================================================
+6. VEREDICTO
+========================================================================================================
+  Filtros con separacion trampa/ruptura significativa tras Bonferroni: 14 de 22
+    - mecha_Y_vela_pequena: precision OOS 81.2% (lift 1.24) -> MAS trampas de lo esperable
+    - mecha_Y_contratendencia: precision OOS 79.0% (lift 1.21) -> MAS trampas de lo esperable
+    - perforacion_por_mecha: precision OOS 80.0% (lift 1.22) -> MAS trampas de lo esperable
+    - mecha_Y_2+_toques: precision OOS 80.5% (lift 1.23) -> MAS trampas de lo esperable
+    - vela_pequena_<0.5atr: precision OOS 78.3% (lift 1.20) -> MAS trampas de lo esperable
+    - mecha_Y_rsi_extremo: precision OOS 77.8% (lift 1.19) -> MAS trampas de lo esperable
+    - penetracion_leve_<0.25: precision OOS 76.2% (lift 1.16) -> MAS trampas de lo esperable
+    - llega_extendido_>2atr: precision OOS 63.4% (lift 0.97) -> MENOS trampas de lo esperable
+    - rsi_extremo: precision OOS 57.1% (lift 0.87) -> MENOS trampas de lo esperable
+    - perforacion_por_cierre: precision OOS 51.5% (lift 0.79) -> MENOS trampas de lo esperable
+    - cierre_Y_a_favor: precision OOS 53.3% (lift 0.81) -> MENOS trampas de lo esperable
+    - vela_grande_>1.5atr: precision OOS 48.5% (lift 0.74) -> MENOS trampas de lo esperable
+    - cierre_Y_penetra_>0.5: precision OOS 41.7% (lift 0.64) -> MENOS trampas de lo esperable
+    - penetracion_fuerte_>0.75: precision OOS 38.3% (lift 0.58) -> MENOS trampas de lo esperable
+  Filtros con winrate operable por encima del break-even (IC95% entero): 0
+    NINGUNO. Separar trampa de ruptura mejor que el azar NO implica
+    automaticamente una entrada rentable: hace falta que el IC95%
+    entero quede por encima del break-even, y aqui no ocurre.
+
+  RESUMEN EN UNA FRASE:
+  - Las perforaciones acaban en trampa el 59.6% de las veces (n=28460), 1.8 veces mas
+    que en ruptura real, y por mecha esa tasa sube por encima del 70%.
+  - Pero un paseo aleatorio con la misma geometria predice 78.9%:
+    la diferencia real es de -19.3 puntos.
+  - Y niveles INVENTADOS dan 59.9% (n=25984), practicamente lo mismo.
+  - El mejor filtro operable (mecha_Y_rsi_extremo) da 51.9% con n=4073,
+    frente al 53.76% necesario. Su IC95% incluye el 50%.
+  - CONCLUSION: la trampa EXISTE y es medible, pero es un fenomeno de
+    geometria, no de reaccion del mercado. No hay aqui una entrada
+    rentable; usar 'evitar la trampa' como filtro de entrada, tal cual,
+    no mueve el winrate por encima del break-even en estos 10 activos.

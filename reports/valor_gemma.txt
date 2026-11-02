@@ -1,0 +1,3 @@
+Actualizado 2026-11-02 12:21 UTC. A 3 min, un caso por activo cada 4 min.
+Toda la operativa real: 121 lecturas | Gemma aprueba 23/44 = 52% [38-66] | Gemma rechaza 10/19 = 53% [32-73]
+Real, reglas actuales: 16 lecturas | Gemma aprueba 4/5 = 80% [38-96] | Gemma rechaza 1/1 = 100% [21-100]

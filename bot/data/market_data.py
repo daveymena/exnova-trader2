@@ -22,6 +22,20 @@ except ImportError:
     IQ_Option = None
 
 
+def register_iq_actives(api):
+    """
+    Carga en las constantes de iqoptionapi los activos que hoy ofrece el broker.
+
+    La tabla interna de la libreria no conoce los nombres nuevos (EURUSD-op,
+    USSPX500:N...), y sin el id get_candles/buy fallan con "not found on consts".
+    """
+    import iqoptionapi.constants as OP_code
+    init = api.get_all_init_v2() or {}
+    for kind in ("turbo", "binary"):
+        for active_id, a in (init.get(kind) or {}).get("actives", {}).items():
+            OP_code.ACTIVES[str(a["name"]).split(".")[-1]] = int(active_id)
+
+
 class MarketDataHandler:
     def __init__(self, broker_name="exnova", account_type="PRACTICE"):
         self.broker_name = broker_name.lower()
@@ -75,6 +89,7 @@ class MarketDataHandler:
                     check, reason = self.api.connect()
                     if check:
                         self.api.change_balance(self.account_type)
+                        register_iq_actives(self.api)
                         self.connected = True
                         return True
                     else:

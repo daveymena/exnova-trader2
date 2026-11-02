@@ -1,0 +1,71 @@
+====================================================================================================
+CONTINUACION vs REVERSION EN ZONAS S/R, CONDICIONADO A TENDENCIA HTF
+====================================================================================================
+Activos: 10  |  Expiraciones: [1, 3, 5, 15] min
+Break-even (payout 0.86): 53.76%
+Correccion aproximada por multiplicidad: z=3.46 en vez de 1.96
+
+Total observaciones (toque x expiracion): 104105
+
+----------------------------------------------------------------------------------------------------
+POR ALINEACION CON TENDENCIA H1
+----------------------------------------------------------------------------------------------------
+grupo                     exp      n  winrate   IC corregido           veredicto
+en_contra                 15m  13109    50.9%   [ 49.4%, 52.4%]   PERDEDOR
+en_contra                  3m  13038    50.9%   [ 49.4%, 52.4%]   PERDEDOR
+en_contra                  5m  13078    50.3%   [ 48.8%, 51.8%]   PERDEDOR
+a_favor                    1m  12910    50.2%   [ 48.7%, 51.7%]   PERDEDOR
+a_favor                   15m  13026    50.2%   [ 48.7%, 51.7%]   PERDEDOR
+a_favor                    3m  12980    50.1%   [ 48.6%, 51.6%]   PERDEDOR
+a_favor                    5m  12993    49.9%   [ 48.4%, 51.4%]   PERDEDOR
+en_contra                  1m  12971    49.9%   [ 48.4%, 51.4%]   PERDEDOR
+
+----------------------------------------------------------------------------------------------------
+POR ALINEACION CON TENDENCIA H4
+----------------------------------------------------------------------------------------------------
+grupo                     exp      n  winrate   IC corregido           veredicto
+neutral                    1m    189    56.1%   [ 43.6%, 67.8%]   ruido
+en_contra                  3m  12821    50.7%   [ 49.2%, 52.2%]   PERDEDOR
+a_favor                   15m  13074    50.7%   [ 49.2%, 52.2%]   PERDEDOR
+a_favor                    1m  12922    50.5%   [ 49.0%, 52.0%]   PERDEDOR
+en_contra                 15m  12869    50.5%   [ 48.9%, 52.0%]   PERDEDOR
+a_favor                    3m  13005    50.3%   [ 48.8%, 51.8%]   PERDEDOR
+neutral                    5m    189    50.3%   [ 38.1%, 62.4%]   ruido
+a_favor                    5m  13029    50.2%   [ 48.7%, 51.8%]   PERDEDOR
+neutral                   15m    192    50.0%   [ 37.9%, 62.1%]   ruido
+en_contra                  5m  12853    49.9%   [ 48.4%, 51.5%]   PERDEDOR
+en_contra                  1m  12770    49.5%   [ 47.9%, 51.0%]   PERDEDOR
+neutral                    3m    192    47.9%   [ 35.9%, 60.1%]   ruido
+
+----------------------------------------------------------------------------------------------------
+POR COMBINACION H1+H4 (la hipotesis completa del usuario)
+----------------------------------------------------------------------------------------------------
+grupo                     exp      n  winrate   IC corregido           veredicto
+h1_en_contra_h4_a_favor   15m   4456    51.0%   [ 48.4%, 53.6%]   PERDEDOR
+h1_en_contra_h4_a_favor    3m   4424    50.9%   [ 48.3%, 53.5%]   PERDEDOR
+h1_en_contra_h4_en_contr   3m   8514    50.8%   [ 48.9%, 52.6%]   PERDEDOR
+h1_en_contra_h4_en_contr  15m   8553    50.7%   [ 48.9%, 52.6%]   PERDEDOR
+h1_a_favor_h4_a_favor      1m   8525    50.7%   [ 48.8%, 52.5%]   PERDEDOR
+h1_a_favor_h4_en_contra    3m   4307    50.6%   [ 48.0%, 53.3%]   PERDEDOR
+h1_a_favor_h4_a_favor     15m   8618    50.5%   [ 48.6%, 52.3%]   PERDEDOR
+h1_en_contra_h4_a_favor    5m   4443    50.5%   [ 47.9%, 53.1%]   PERDEDOR
+h1_en_contra_h4_a_favor    1m   4397    50.2%   [ 47.6%, 52.8%]   PERDEDOR
+h1_a_favor_h4_a_favor      5m   8586    50.1%   [ 48.3%, 52.0%]   PERDEDOR
+h1_en_contra_h4_en_contr   5m   8537    50.1%   [ 48.2%, 51.9%]   PERDEDOR
+h1_a_favor_h4_a_favor      3m   8581    50.0%   [ 48.1%, 51.9%]   PERDEDOR
+h1_a_favor_h4_en_contra   15m   4316    49.9%   [ 47.3%, 52.5%]   PERDEDOR
+h1_a_favor_h4_en_contra    5m   4316    49.7%   [ 47.0%, 52.3%]   PERDEDOR
+h1_en_contra_h4_en_contr   1m   8475    49.6%   [ 47.7%, 51.4%]   PERDEDOR
+h1_a_favor_h4_en_contra    1m   4295    49.3%   [ 46.7%, 51.9%]   PERDEDOR
+
+====================================================================================================
+VEREDICTO
+====================================================================================================
+Base global (sin condicionar): 50.3% acierto, IC95%[50.0%,50.6%], n=104105
+
+NINGUNA combinacion de alineacion H1/H4, a ninguna expiracion probada,
+separa continuacion de reversion por encima del break-even con muestra
+suficiente y correccion aplicada. La intuicion de que la tendencia de
+timeframe superior predice si el precio va a retroceder-y-seguir o a
+revertir del todo NO se confirma con estos datos. No es un fallo de
+deteccion: es lo que dicen los datos sobre estos 10 activos y 10 dias.

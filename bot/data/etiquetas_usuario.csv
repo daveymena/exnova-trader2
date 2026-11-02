@@ -1,0 +1,9 @@
+hora_utc,activo,direccion,etiqueta,motivo
+2026-11-02 00:09:32,USDZAR-OTC,call,mala,compro llegando a resistencia
+2026-11-02 01:01:31,AUDCAD-OTC,call,mala,compro un rebote dentro de una caida
+2026-11-02 01:22:16,US30:N,put,mala,vendio en el piso del rango
+2026-11-02 01:26:31,JUPUSD-OTC,put,buena,buena entrada segun el usuario
+2026-11-02 02:16:45,US30:N,call,mala,sin confirmacion ni fuerza en lateral
+2026-11-02 04:03:16,GBPUSD-OTC,put,mala,patron donde el precio suele girar
+2026-11-02 04:09:45,US30:N,call,buena,entrada perfecta y limpia segun el usuario
+2026-11-02 04:16:15,PEPEUSD-OTC,call,mala,no estuvo bien medida segun el usuario

@@ -111,6 +111,8 @@ def main() -> int:
     ap.add_argument("--days", type=int, default=30, help="Dias de historico (default 30)")
     ap.add_argument("--timeframes", default="60,300,900",
                     help="Timeframes en segundos separados por comas (default 60,300,900)")
+    ap.add_argument("--broker", default="exnova", choices=("exnova", "iq"),
+                    help="exnova o iq (IQ Option); mismas credenciales del .env")
     args = ap.parse_args()
 
     assets = [a.strip() for a in args.assets.split(",") if a.strip()]
@@ -130,9 +132,9 @@ def main() -> int:
 
     # La descarga es de solo lectura, pero conectamos en PRACTICE por seguridad:
     # este script nunca debe tocar el saldo real.
-    handler = MarketDataHandler(broker_name="exnova", account_type="PRACTICE")
+    handler = MarketDataHandler(broker_name=args.broker, account_type="PRACTICE")
     if not handler.connect(os.getenv("EXNOVA_EMAIL"), os.getenv("EXNOVA_PASSWORD")):
-        print("ERROR: no se pudo conectar a Exnova")
+        print(f"ERROR: no se pudo conectar a {args.broker}")
         return 1
 
     print(f"Descargando {len(assets)} activos x {len(timeframes)} timeframes x {args.days} dias\n")
@@ -163,4 +165,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    # os._exit: los hilos del websocket no son daemon y bloquean la salida.
+    code = main()
+    sys.stdout.flush()
+    os._exit(code)

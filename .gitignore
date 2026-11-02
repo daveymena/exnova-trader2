@@ -111,3 +111,18 @@ RESUMEN_SISTEMA_FINAL.md
 RESUMEN_SISTEMA_IA_FINAL.md
 SOLUCION_COMPLETA_ZONA_MAPPING.md
 INFORMACION_COMPLETA_SISTEMA.md
+
+# Estado en vivo de los bots (se regenera; no es codigo)
+bot/data/*.pid
+bot/data/REAL_FINALIZADO
+bot/data/REAL_OPS
+bot/data/PARAR_REAL
+bot/data/PARAR_*
+bot/data/operaciones_abiertas.json
+bot/data/*_live.csv
+bot/data/*_senales.csv
+bot/data/*_analisis.csv
+bot/data/gemma_sombra*.csv
+bot/data/gemma_repaso.csv
+bot/data/gemma_aprendizaje.csv
+reports/labs_iq/*.err

@@ -1,0 +1,489 @@
+====================================================================================================
+LABORATORIO DE REACCION EN ZONAS DE SOPORTE Y RESISTENCIA
+====================================================================================================
+Pivotes wing=5 confirmados en i+5, usables desde i+5+1
+Zona = nivel +- 0.5 * ATR14   |   caducidad 1440 barras   |   separacion minima entre toques 5 barras
+Payout 0.86 -> break-even 53.76%
+Direccion: zona tocada desde arriba = soporte -> CALL; desde abajo = resistencia -> PUT
+Entrada = apertura de la vela SIGUIENTE al toque. Empates excluidos del denominador.
+
+INVENTARIO POR ACTIVO
+----------------------------------------------------------------------------------------------------
+  activo            velas   pivotes  zonas_viv  toques  %barras  %cierres en zona  sin_entrada  sin_contig(h30)
+  EURUSD-OTC        43050   5185          48.4  15043     35.0%           82.9%  14           327
+  GBPUSD-OTC        43155   5215          45.4  15802     36.6%           84.0%  5            113
+  USDJPY-OTC        43155   5017          48.1  15089     35.0%           81.9%  3            122
+  XAUUSD-OTC        SIN DATOS UTILIZABLES
+  LTCUSD-OTC        SIN DATOS UTILIZABLES
+  USSPX500_N        29334   4215          51.0  10307     35.2%           81.3%  10           146
+  USNDAQ100_N       29334   3512          49.8  10064     34.3%           81.7%  5            154
+  US30_N            29334   3920          55.0  10570     36.1%           79.1%  7            133
+  US2000_N          SIN DATOS UTILIZABLES
+  JAPAN225_N        SIN DATOS UTILIZABLES
+
+TOTAL toques medidos: 76875   |   muestra independiente (>=30 barras entre toques): 6774
+Los toques solapados comparten futuro: sus IC son mas estrechos de lo legitimo. Por eso
+toda conclusion se exige tambien sobre la muestra independiente.
+Distribucion del numero de toque: p50=11.0 p90=36.0 max=157   |   reparto 1:4551  2:4302  3:4089  4+:63933
+Cortes probados: 32 x 6 horizontes = 192 celdas -> z Bonferroni = 3.652
+
+====================================================================================================
+1) PROBABILIDAD DE ESTAR A FAVOR AL VENCIMIENTO = WINRATE DE LA BINARIA
+====================================================================================================
+
+TODAS LAS MUESTRAS (solapadas)
+------------------------------
+  TODOS                      h=1   n=75957 wr=50.11% IC95[49.76,50.47] ICbonf[49.45,50.78] empates=918  ruido
+  TODOS                      h=3   n=76264 wr=50.60% IC95[50.25,50.96] ICbonf[49.94,51.26] empates=537  ruido
+  TODOS                      h=5   n=76301 wr=50.31% IC95[49.96,50.67] ICbonf[49.65,50.97] empates=421  ruido
+  TODOS                      h=10  n=76253 wr=50.16% IC95[49.81,50.52] ICbonf[49.50,50.82] empates=289  ruido
+  TODOS                      h=15  n=76127 wr=50.18% IC95[49.82,50.53] ICbonf[49.51,50.84] empates=241  ruido
+  TODOS                      h=30  n=75703 wr=50.53% IC95[50.17,50.89] ICbonf[49.87,51.19] empates=177  ruido
+
+  sintetico_otc              h=1   n=45586 wr=49.80% IC95[49.35,50.26] ICbonf[48.95,50.66] empates=348  ruido
+  sintetico_otc              h=3   n=45703 wr=50.18% IC95[49.72,50.64] ICbonf[49.33,51.04] empates=184  ruido
+  sintetico_otc              h=5   n=45691 wr=49.92% IC95[49.46,50.38] ICbonf[49.07,50.77] empates=158  ruido
+  sintetico_otc              h=10  n=45623 wr=49.96% IC95[49.50,50.42] ICbonf[49.10,50.81] empates=125  ruido
+  sintetico_otc              h=15  n=45558 wr=49.84% IC95[49.38,50.29] ICbonf[48.98,50.69] empates=94   ruido
+  sintetico_otc              h=30  n=45298 wr=50.64% IC95[50.18,51.10] ICbonf[49.78,51.49] empates=74   ruido
+
+  indice_real                h=1   n=30371 wr=50.58% IC95[50.02,51.14] ICbonf[49.53,51.63] empates=570  ruido
+  indice_real                h=3   n=30561 wr=51.23% IC95[50.67,51.79] ICbonf[50.19,52.28] empates=353  ruido
+  indice_real                h=5   n=30610 wr=50.90% IC95[50.34,51.46] ICbonf[49.86,51.94] empates=263  ruido
+  indice_real                h=10  n=30630 wr=50.46% IC95[49.90,51.02] ICbonf[49.42,51.50] empates=164  ruido
+  indice_real                h=15  n=30569 wr=50.69% IC95[50.12,51.25] ICbonf[49.64,51.73] empates=147  ruido
+  indice_real                h=30  n=30405 wr=50.37% IC95[49.81,50.94] ICbonf[49.33,51.42] empates=103  ruido
+
+
+MUESTRA INDEPENDIENTE (sin solape)
+----------------------------------
+  TODOS indep.               h=1   n=6697  wr=48.35% IC95[47.15,49.55] ICbonf[46.13,50.58] empates=77   ruido
+  TODOS indep.               h=3   n=6709  wr=49.59% IC95[48.39,50.79] ICbonf[47.36,51.82] empates=54   ruido
+  TODOS indep.               h=5   n=6714  wr=48.91% IC95[47.72,50.11] ICbonf[46.69,51.14] empates=43   ruido
+  TODOS indep.               h=10  n=6705  wr=49.19% IC95[47.99,50.38] ICbonf[46.96,51.42] empates=24   ruido
+  TODOS indep.               h=15  n=6677  wr=48.90% IC95[47.70,50.10] ICbonf[46.67,51.13] empates=34   ruido
+  TODOS indep.               h=30  n=6649  wr=50.52% IC95[49.32,51.72] ICbonf[48.28,52.75] empates=11   ruido
+
+  sintetico_otc indep.       h=1   n=4003  wr=48.46% IC95[46.92,50.01] ICbonf[45.59,51.35] empates=31   ruido
+  sintetico_otc indep.       h=3   n=4014  wr=48.46% IC95[46.91,50.00] ICbonf[45.58,51.34] empates=14   ruido
+  sintetico_otc indep.       h=5   n=4016  wr=48.13% IC95[46.59,49.68] ICbonf[45.26,51.01] empates=10   ruido
+  sintetico_otc indep.       h=10  n=4006  wr=49.05% IC95[47.50,50.60] ICbonf[46.18,51.93] empates=10   ruido
+  sintetico_otc indep.       h=15  n=3998  wr=47.97% IC95[46.43,49.52] ICbonf[45.10,50.86] empates=8    ruido
+  sintetico_otc indep.       h=30  n=3981  wr=49.96% IC95[48.41,51.51] ICbonf[47.07,52.85] empates=3    ruido
+
+  indice_real indep.         h=1   n=2694  wr=48.18% IC95[46.30,50.07] ICbonf[44.68,51.70] empates=46   ruido
+  indice_real indep.         h=3   n=2695  wr=51.28% IC95[49.39,53.16] ICbonf[47.77,54.78] empates=40   ruido
+  indice_real indep.         h=5   n=2698  wr=50.07% IC95[48.19,51.96] ICbonf[46.57,53.58] empates=33   ruido
+  indice_real indep.         h=10  n=2699  wr=49.39% IC95[47.50,51.27] ICbonf[45.89,52.90] empates=14   ruido
+  indice_real indep.         h=15  n=2679  wr=50.28% IC95[48.39,52.17] ICbonf[46.76,53.80] empates=26   ruido
+  indice_real indep.         h=30  n=2668  wr=51.35% IC95[49.45,53.24] ICbonf[47.82,54.87] empates=8    ruido
+
+
+====================================================================================================
+2) CUANTO SUBE Y CUANTO BAJA
+====================================================================================================
+
+EXCURSIONES EN ATRs (MFE favorable / MAE adversa) POR HORIZONTE
+------------------------------------------------------------------------------
+  grupo                      h    n     MFE p50 MFE p75  MAE p50 MAE p75  %MFE>=1  %MAE>=1
+  TODOS                      1    76875   0.40    0.73    0.41    0.73    12.4%    12.8%
+  TODOS                      3    76801   0.74    1.30    0.73    1.29    36.8%    36.4%
+  TODOS                      5    76722   0.96    1.69    0.95    1.68    48.4%    47.9%
+  TODOS                      10   76542   1.37    2.39    1.36    2.39    61.9%    61.4%
+  TODOS                      15   76368   1.69    2.93    1.67    2.94    68.4%    68.1%
+  TODOS                      30   75880   2.41    4.19    2.39    4.17    77.6%    77.2%
+
+  sintetico_otc              1    45934   0.41    0.73    0.41    0.73    12.2%    12.2%
+  sintetico_otc              3    45887   0.74    1.30    0.74    1.30    37.0%    36.9%
+  sintetico_otc              5    45849   0.96    1.69    0.96    1.69    48.4%    48.5%
+  sintetico_otc              10   45748   1.39    2.42    1.39    2.40    61.9%    62.2%
+  sintetico_otc              15   45652   1.71    2.95    1.71    2.95    68.5%    68.9%
+  sintetico_otc              30   45372   2.45    4.22    2.44    4.16    77.8%    77.9%
+
+  indice_real                1    30941   0.40    0.72    0.40    0.74    12.7%    13.8%
+  indice_real                3    30914   0.74    1.29    0.71    1.29    36.6%    35.7%
+  indice_real                5    30873   0.96    1.68    0.93    1.67    48.4%    47.0%
+  indice_real                10   30794   1.35    2.35    1.32    2.37    61.8%    60.3%
+  indice_real                15   30716   1.66    2.88    1.61    2.94    68.2%    66.8%
+  indice_real                30   30508   2.36    4.15    2.32    4.19    77.2%    76.3%
+
+
+====================================================================================================
+3) EN CUANTO TIEMPO
+====================================================================================================
+
+TIEMPO HASTA EL EXTREMO dentro de la ventana de 30 min (minutos)
+------------------------------------------------------------------------------
+  grupo                      n     tMFE p25 p50 p75   tMAE p25 p50 p75   %MFE<=5min  %MAE<=5min
+  TODOS                      75880  5.0 15.0 26.0     5.0 15.0 26.0       27.0%     27.8%
+  sintetico_otc              45372  5.0 16.0 26.0     5.0 15.0 26.0       26.5%     27.0%
+  indice_real                30508  5.0 15.0 25.0     4.0 14.0 25.0       27.8%     29.0%
+
+TRAMPA: quien llega primero en 30 min, la excursion favorable o la adversa
+------------------------------------------------------------------------------
+  grupo                      umbral  n     %favor  %adverso  %misma  %ninguno
+  TODOS                      0.5     75880   47.4%     47.4%    5.1%     0.0%
+  TODOS                      1.0     75880   49.9%     49.7%    0.2%     0.1%
+
+  sintetico_otc              0.5     45372   47.7%     48.0%    4.3%     0.0%
+  sintetico_otc              1.0     45372   49.8%     50.1%    0.1%     0.0%
+
+  indice_real                0.5     30508   47.0%     46.6%    6.4%     0.0%
+  indice_real                1.0     30508   50.2%     49.2%    0.5%     0.1%
+
+
+====================================================================================================
+4) DESGLOSE POR NUMERO DE TOQUES PREVIOS DE LA ZONA
+====================================================================================================
+   toque 1 = primer retest despues de confirmarse el pivote
+
+probabilidad a favor - sintetico_otc
+------------------------------------
+  sintetico_otc toque 1      h=1   n=2505  wr=47.50% IC95[45.55,49.46] ICbonf[43.88,51.15] empates=18   ruido
+  sintetico_otc toque 1      h=3   n=2510  wr=49.16% IC95[47.21,51.12] ICbonf[45.53,52.80] empates=12   ruido
+  sintetico_otc toque 1      h=5   n=2514  wr=48.89% IC95[46.94,50.84] ICbonf[45.26,52.52] empates=5    ruido
+  sintetico_otc toque 1      h=10  n=2506  wr=49.72% IC95[47.76,51.68] ICbonf[46.08,53.36] empates=8    ruido
+  sintetico_otc toque 1      h=15  n=2503  wr=49.50% IC95[47.54,51.46] ICbonf[45.86,53.14] empates=6    ruido
+  sintetico_otc toque 1      h=30  n=2490  wr=50.40% IC95[48.44,52.36] ICbonf[46.75,54.05] empates=4    ruido
+
+  sintetico_otc toque 2      h=1   n=2368  wr=49.83% IC95[47.82,51.84] ICbonf[46.09,53.57] empates=12   ruido
+  sintetico_otc toque 2      h=3   n=2370  wr=50.04% IC95[48.03,52.05] ICbonf[46.30,53.78] empates=8    ruido
+  sintetico_otc toque 2      h=5   n=2373  wr=50.95% IC95[48.94,52.96] ICbonf[47.21,54.68] empates=4    ruido
+  sintetico_otc toque 2      h=10  n=2364  wr=49.45% IC95[47.44,51.46] ICbonf[45.71,53.20] empates=7    ruido
+  sintetico_otc toque 2      h=15  n=2356  wr=50.04% IC95[48.03,52.06] ICbonf[46.29,53.79] empates=7    ruido
+  sintetico_otc toque 2      h=30  n=2347  wr=51.43% IC95[49.40,53.45] ICbonf[47.66,55.18] empates=6    ruido
+
+  sintetico_otc toque 3      h=1   n=2262  wr=49.43% IC95[47.37,51.48] ICbonf[45.60,53.26] empates=12   ruido
+  sintetico_otc toque 3      h=3   n=2259  wr=49.62% IC95[47.56,51.68] ICbonf[45.80,53.46] empates=11   ruido
+  sintetico_otc toque 3      h=5   n=2257  wr=49.58% IC95[47.52,51.64] ICbonf[45.75,53.41] empates=11   ruido
+  sintetico_otc toque 3      h=10  n=2258  wr=50.35% IC95[48.29,52.41] ICbonf[46.52,54.18] empates=6    ruido
+  sintetico_otc toque 3      h=15  n=2254  wr=47.83% IC95[45.77,49.89] ICbonf[44.01,51.67] empates=6    ruido
+  sintetico_otc toque 3      h=30  n=2243  wr=49.89% IC95[47.82,51.96] ICbonf[46.05,53.73] empates=6    ruido
+
+  sintetico_otc toque 4+     h=1   n=38451 wr=49.98% IC95[49.48,50.48] ICbonf[49.04,50.91] empates=306  ruido
+  sintetico_otc toque 4+     h=3   n=38564 wr=50.29% IC95[49.79,50.79] ICbonf[49.36,51.22] empates=153  ruido
+  sintetico_otc toque 4+     h=5   n=38547 wr=49.94% IC95[49.45,50.44] ICbonf[49.01,50.87] empates=138  ruido
+  sintetico_otc toque 4+     h=10  n=38495 wr=49.98% IC95[49.48,50.48] ICbonf[49.05,50.91] empates=104  ruido
+  sintetico_otc toque 4+     h=15  n=38445 wr=49.96% IC95[49.46,50.46] ICbonf[49.03,50.89] empates=75   ruido
+  sintetico_otc toque 4+     h=30  n=38218 wr=50.65% IC95[50.15,51.15] ICbonf[49.71,51.58] empates=58   ruido
+
+
+EXCURSIONES EN ATRs (MFE favorable / MAE adversa) POR HORIZONTE
+------------------------------------------------------------------------------
+  grupo                      h    n     MFE p50 MFE p75  MAE p50 MAE p75  %MFE>=1  %MAE>=1
+  sintetico_otc toque 1      1    2523    0.38    0.71    0.42    0.77    11.7%    14.1%
+  sintetico_otc toque 1      3    2522    0.71    1.26    0.75    1.34    36.1%    38.7%
+  sintetico_otc toque 1      5    2519    0.94    1.66    0.99    1.72    47.6%    49.7%
+  sintetico_otc toque 1      10   2514    1.34    2.34    1.42    2.44    60.0%    63.5%
+  sintetico_otc toque 1      15   2509    1.68    2.91    1.72    2.96    67.5%    69.2%
+  sintetico_otc toque 1      30   2494    2.38    4.22    2.46    4.17    76.3%    78.3%
+
+  sintetico_otc toque 2      1    2380    0.40    0.72    0.41    0.74    13.0%    13.4%
+  sintetico_otc toque 2      3    2378    0.74    1.28    0.74    1.31    36.9%    36.9%
+  sintetico_otc toque 2      5    2377    0.99    1.68    0.96    1.71    49.7%    48.4%
+  sintetico_otc toque 2      10   2371    1.40    2.48    1.37    2.38    62.5%    62.0%
+  sintetico_otc toque 2      15   2363    1.73    2.98    1.73    2.89    69.5%    68.4%
+  sintetico_otc toque 2      30   2353    2.42    4.32    2.42    4.08    79.1%    76.7%
+
+  sintetico_otc toque 3      1    2274    0.40    0.73    0.41    0.73    12.5%    12.3%
+  sintetico_otc toque 3      3    2270    0.76    1.30    0.74    1.31    36.5%    37.6%
+  sintetico_otc toque 3      5    2268    0.95    1.65    0.97    1.68    47.8%    48.6%
+  sintetico_otc toque 3      10   2264    1.40    2.38    1.39    2.35    61.4%    63.3%
+  sintetico_otc toque 3      15   2260    1.70    2.93    1.71    2.94    67.9%    69.8%
+  sintetico_otc toque 3      30   2249    2.35    4.17    2.48    4.15    76.9%    78.5%
+
+  sintetico_otc toque 4+     1    38757   0.41    0.74    0.41    0.73    12.1%    12.0%
+  sintetico_otc toque 4+     3    38717   0.74    1.30    0.74    1.29    37.1%    36.7%
+  sintetico_otc toque 4+     5    38685   0.96    1.70    0.96    1.69    48.4%    48.4%
+  sintetico_otc toque 4+     10   38599   1.39    2.42    1.38    2.40    62.0%    62.1%
+  sintetico_otc toque 4+     15   38520   1.71    2.95    1.71    2.95    68.5%    68.9%
+  sintetico_otc toque 4+     30   38276   2.47    4.22    2.44    4.16    77.8%    77.9%
+
+
+probabilidad a favor - indice_real
+----------------------------------
+  indice_real toque 1        h=1   n=1996  wr=49.40% IC95[47.21,51.59] ICbonf[45.33,53.48] empates=32   ruido
+  indice_real toque 1        h=3   n=1996  wr=50.70% IC95[48.51,52.89] ICbonf[46.62,54.77] empates=31   ruido
+  indice_real toque 1        h=5   n=2002  wr=49.60% IC95[47.41,51.79] ICbonf[45.54,53.67] empates=18   ruido
+  indice_real toque 1        h=10  n=1996  wr=49.45% IC95[47.26,51.64] ICbonf[45.38,53.53] empates=17   ruido
+  indice_real toque 1        h=15  n=1994  wr=50.90% IC95[48.71,53.09] ICbonf[46.82,54.97] empates=14   ruido
+  indice_real toque 1        h=30  n=1983  wr=50.28% IC95[48.08,52.48] ICbonf[46.19,54.36] empates=4    ruido
+
+  indice_real toque 2        h=1   n=1878  wr=48.83% IC95[46.57,51.09] ICbonf[44.64,53.03] empates=44   ruido
+  indice_real toque 2        h=3   n=1892  wr=48.89% IC95[46.64,51.14] ICbonf[44.72,53.08] empates=27   ruido
+  indice_real toque 2        h=5   n=1901  wr=49.29% IC95[47.05,51.54] ICbonf[45.12,53.47] empates=14   ruido
+  indice_real toque 2        h=10  n=1897  wr=48.81% IC95[46.57,51.06] ICbonf[44.65,53.00] empates=12   ruido
+  indice_real toque 2        h=15  n=1890  wr=49.37% IC95[47.11,51.62] ICbonf[45.18,53.55] empates=12   ruido
+  indice_real toque 2        h=30  n=1882  wr=49.89% IC95[47.64,52.15] ICbonf[45.70,54.09] empates=8    ruido
+
+  indice_real toque 3        h=1   n=1779  wr=50.70% IC95[48.38,53.02] ICbonf[46.38,55.01] empates=36   ruido
+  indice_real toque 3        h=3   n=1790  wr=51.01% IC95[48.69,53.32] ICbonf[46.70,55.30] empates=24   ruido
+  indice_real toque 3        h=5   n=1784  wr=51.57% IC95[49.25,53.88] ICbonf[47.25,55.86] empates=28   ruido
+  indice_real toque 3        h=10  n=1794  wr=50.95% IC95[48.63,53.26] ICbonf[46.65,55.23] empates=11   ruido
+  indice_real toque 3        h=15  n=1794  wr=51.73% IC95[49.41,54.03] ICbonf[47.42,56.01] empates=10   ruido
+  indice_real toque 3        h=30  n=1775  wr=49.35% IC95[47.03,51.68] ICbonf[45.04,53.67] empates=14   ruido
+
+  indice_real toque 4+       h=1   n=24718 wr=50.80% IC95[50.17,51.42] ICbonf[49.64,51.96] empates=458  ruido
+  indice_real toque 4+       h=3   n=24883 wr=51.47% IC95[50.85,52.09] ICbonf[50.31,52.62] empates=271  ruido
+  indice_real toque 4+       h=5   n=24923 wr=51.08% IC95[50.46,51.70] ICbonf[49.92,52.24] empates=203  ruido
+  indice_real toque 4+       h=10  n=24943 wr=50.63% IC95[50.01,51.25] ICbonf[49.48,51.79] empates=124  ruido
+  indice_real toque 4+       h=15  n=24891 wr=50.69% IC95[50.07,51.31] ICbonf[49.54,51.85] empates=111  ruido
+  indice_real toque 4+       h=30  n=24765 wr=50.49% IC95[49.87,51.11] ICbonf[49.33,51.65] empates=77   ruido
+
+
+EXCURSIONES EN ATRs (MFE favorable / MAE adversa) POR HORIZONTE
+------------------------------------------------------------------------------
+  grupo                      h    n     MFE p50 MFE p75  MAE p50 MAE p75  %MFE>=1  %MAE>=1
+  indice_real toque 1        1    2028    0.40    0.74    0.42    0.79    12.7%    16.0%
+  indice_real toque 1        3    2027    0.73    1.31    0.74    1.34    36.6%    37.3%
+  indice_real toque 1        5    2020    0.94    1.71    0.97    1.74    47.2%    48.7%
+  indice_real toque 1        10   2013    1.31    2.31    1.34    2.43    60.8%    61.1%
+  indice_real toque 1        15   2008    1.66    2.94    1.62    3.01    67.8%    67.8%
+  indice_real toque 1        30   1987    2.39    4.26    2.35    4.30    77.0%    77.1%
+
+  indice_real toque 2        1    1922    0.39    0.70    0.41    0.71    11.8%    12.7%
+  indice_real toque 2        3    1919    0.71    1.24    0.77    1.32    34.2%    37.9%
+  indice_real toque 2        5    1915    0.91    1.62    0.99    1.76    46.2%    49.7%
+  indice_real toque 2        10   1909    1.27    2.33    1.40    2.53    59.9%    61.8%
+  indice_real toque 2        15   1902    1.58    2.79    1.68    3.08    66.5%    68.0%
+  indice_real toque 2        30   1890    2.28    4.10    2.41    4.35    76.3%    77.2%
+
+  indice_real toque 3        1    1815    0.40    0.73    0.41    0.76    12.8%    15.0%
+  indice_real toque 3        3    1814    0.77    1.29    0.72    1.31    37.4%    36.6%
+  indice_real toque 3        5    1812    1.00    1.67    0.93    1.65    49.9%    47.0%
+  indice_real toque 3        10   1805    1.37    2.33    1.32    2.37    62.9%    60.8%
+  indice_real toque 3        15   1804    1.68    2.89    1.57    2.89    69.6%    66.0%
+  indice_real toque 3        30   1789    2.35    4.15    2.27    4.11    78.0%    75.2%
+
+  indice_real toque 4+       1    25176   0.40    0.72    0.40    0.74    12.7%    13.6%
+  indice_real toque 4+       3    25154   0.74    1.30    0.71    1.28    36.7%    35.4%
+  indice_real toque 4+       5    25126   0.96    1.68    0.92    1.66    48.5%    46.6%
+  indice_real toque 4+       10   25067   1.36    2.35    1.31    2.36    62.0%    60.1%
+  indice_real toque 4+       15   25002   1.66    2.88    1.60    2.92    68.2%    66.7%
+  indice_real toque 4+       30   24842   2.36    4.14    2.32    4.18    77.3%    76.2%
+
+
+====================================================================================================
+5) DESGLOSE HORARIO (UTC). El pico de volatilidad real esta en 13-15h
+====================================================================================================
+
+probabilidad a favor por sesion - sintetico_otc
+-----------------------------------------------
+  sintetico_otc 00-06 asia   h=1   n=11780 wr=50.03% IC95[49.12,50.93] ICbonf[48.34,51.71] empates=79   ruido
+  sintetico_otc 00-06 asia   h=3   n=11788 wr=49.94% IC95[49.04,50.84] ICbonf[48.26,51.62] empates=49   ruido
+  sintetico_otc 00-06 asia   h=5   n=11788 wr=49.68% IC95[48.78,50.58] ICbonf[48.00,51.36] empates=36   ruido
+  sintetico_otc 00-06 asia   h=10  n=11751 wr=49.87% IC95[48.96,50.77] ICbonf[48.18,51.55] empates=29   ruido
+  sintetico_otc 00-06 asia   h=15  n=11710 wr=49.88% IC95[48.98,50.79] ICbonf[48.19,51.57] empates=29   ruido
+  sintetico_otc 00-06 asia   h=30  n=11603 wr=50.10% IC95[49.19,51.01] ICbonf[48.40,51.79] empates=15   ruido
+
+  sintetico_otc 06-13 europa h=1   n=13207 wr=49.35% IC95[48.50,50.21] ICbonf[47.77,50.94] empates=110  ruido
+  sintetico_otc 06-13 europa h=3   n=13248 wr=49.89% IC95[49.04,50.75] ICbonf[48.31,51.48] empates=44   ruido
+  sintetico_otc 06-13 europa h=5   n=13215 wr=50.09% IC95[49.24,50.95] ICbonf[48.51,51.68] empates=52   ruido
+  sintetico_otc 06-13 europa h=10  n=13168 wr=50.44% IC95[49.59,51.29] ICbonf[48.85,52.03] empates=42   ruido
+  sintetico_otc 06-13 europa h=15  n=13132 wr=49.50% IC95[48.64,50.35] ICbonf[47.91,51.09] empates=23   ruido
+  sintetico_otc 06-13 europa h=30  n=12971 wr=50.59% IC95[49.73,51.45] ICbonf[48.99,52.19] empates=25   ruido
+
+  sintetico_otc 13-15 apertura NY h=1   n=3594  wr=49.89% IC95[48.26,51.52] ICbonf[46.85,52.93] empates=37   ruido
+  sintetico_otc 13-15 apertura NY h=3   n=3614  wr=50.50% IC95[48.87,52.13] ICbonf[47.46,53.53] empates=17   ruido
+  sintetico_otc 13-15 apertura NY h=5   n=3620  wr=49.56% IC95[47.93,51.19] ICbonf[46.53,52.59] empates=11   ruido
+  sintetico_otc 13-15 apertura NY h=10  n=3621  wr=49.57% IC95[47.94,51.20] ICbonf[46.54,52.60] empates=10   ruido
+  sintetico_otc 13-15 apertura NY h=15  n=3625  wr=49.93% IC95[48.30,51.56] ICbonf[46.90,52.96] empates=6    ruido
+  sintetico_otc 13-15 apertura NY h=30  n=3624  wr=50.83% IC95[49.20,52.45] ICbonf[47.80,53.85] empates=7    ruido
+
+  sintetico_otc 15-21 tarde NY h=1   n=11256 wr=50.05% IC95[49.13,50.98] ICbonf[48.33,51.77] empates=82   ruido
+  sintetico_otc 15-21 tarde NY h=3   n=11288 wr=50.67% IC95[49.75,51.60] ICbonf[48.96,52.39] empates=50   ruido
+  sintetico_otc 15-21 tarde NY h=5   n=11303 wr=49.85% IC95[48.93,50.78] ICbonf[48.14,51.57] empates=35   ruido
+  sintetico_otc 15-21 tarde NY h=10  n=11305 wr=49.84% IC95[48.91,50.76] ICbonf[48.12,51.55] empates=33   ruido
+  sintetico_otc 15-21 tarde NY h=15  n=11312 wr=50.27% IC95[49.35,51.20] ICbonf[48.56,51.99] empates=26   ruido
+  sintetico_otc 15-21 tarde NY h=30  n=11325 wr=50.83% IC95[49.90,51.75] ICbonf[49.11,52.54] empates=13   ruido
+
+  sintetico_otc 21-24 cierre h=1   n=5749  wr=49.85% IC95[48.56,51.14] ICbonf[47.45,52.26] empates=40   ruido
+  sintetico_otc 21-24 cierre h=3   n=5765  wr=50.18% IC95[48.89,51.47] ICbonf[47.78,52.58] empates=24   ruido
+  sintetico_otc 21-24 cierre h=5   n=5765  wr=50.37% IC95[49.08,51.66] ICbonf[47.97,52.77] empates=24   ruido
+  sintetico_otc 21-24 cierre h=10  n=5778  wr=49.53% IC95[48.24,50.82] ICbonf[47.13,51.93] empates=11   ruido
+  sintetico_otc 21-24 cierre h=15  n=5779  wr=49.59% IC95[48.30,50.88] ICbonf[47.20,51.99] empates=10   ruido
+  sintetico_otc 21-24 cierre h=30  n=5775  wr=51.32% IC95[50.04,52.61] ICbonf[48.92,53.72] empates=14   ruido
+
+
+probabilidad a favor por sesion - indice_real
+---------------------------------------------
+  indice_real 00-06 asia     h=1   n=7786  wr=50.57% IC95[49.45,51.68] ICbonf[48.50,52.63] empates=217  ruido
+  indice_real 00-06 asia     h=3   n=7857  wr=52.73% IC95[51.63,53.83] ICbonf[50.67,54.78] empates=145  ruido
+  indice_real 00-06 asia     h=5   n=7900  wr=52.39% IC95[51.29,53.49] ICbonf[50.34,54.44] empates=99   ruido
+  indice_real 00-06 asia     h=10  n=7921  wr=52.13% IC95[51.03,53.23] ICbonf[50.08,54.17] empates=68   ruido
+  indice_real 00-06 asia     h=15  n=7929  wr=52.13% IC95[51.02,53.22] ICbonf[50.07,54.17] empates=55   ruido
+  indice_real 00-06 asia     h=30  n=7925  wr=50.45% IC95[49.35,51.55] ICbonf[48.40,52.50] empates=45   ruido
+
+  indice_real 06-13 europa   h=1   n=10131 wr=50.77% IC95[49.80,51.75] ICbonf[48.96,52.59] empates=138  ruido
+  indice_real 06-13 europa   h=3   n=10164 wr=50.89% IC95[49.91,51.86] ICbonf[49.07,52.69] empates=105  ruido
+  indice_real 06-13 europa   h=5   n=10196 wr=50.67% IC95[49.70,51.64] ICbonf[48.86,52.47] empates=73   ruido
+  indice_real 06-13 europa   h=10  n=10220 wr=49.82% IC95[48.85,50.79] ICbonf[48.02,51.63] empates=49   ruido
+  indice_real 06-13 europa   h=15  n=10228 wr=50.42% IC95[49.45,51.39] ICbonf[48.62,52.22] empates=41   ruido
+  indice_real 06-13 europa   h=30  n=10252 wr=50.20% IC95[49.24,51.17] ICbonf[48.40,52.01] empates=17   ruido
+
+  indice_real 13-15 apertura NY h=1   n=3397  wr=53.16% IC95[51.48,54.84] ICbonf[50.03,56.27] empates=34   ruido
+  indice_real 13-15 apertura NY h=3   n=3422  wr=52.16% IC95[50.49,53.83] ICbonf[49.04,55.27] empates=9    ruido
+  indice_real 13-15 apertura NY h=5   n=3423  wr=51.12% IC95[49.45,52.80] ICbonf[48.01,54.23] empates=8    ruido
+  indice_real 13-15 apertura NY h=10  n=3425  wr=50.98% IC95[49.30,52.65] ICbonf[47.86,54.09] empates=6    ruido
+  indice_real 13-15 apertura NY h=15  n=3423  wr=49.72% IC95[48.05,51.40] ICbonf[46.61,52.84] empates=8    ruido
+  indice_real 13-15 apertura NY h=30  n=3426  wr=48.74% IC95[47.07,50.42] ICbonf[45.64,51.86] empates=5    ruido
+
+  indice_real 15-21 tarde NY h=1   n=7019  wr=49.71% IC95[48.54,50.88] ICbonf[47.53,51.89] empates=94   ruido
+  indice_real 15-21 tarde NY h=3   n=7035  wr=51.26% IC95[50.09,52.43] ICbonf[49.08,53.43] empates=52   ruido
+  indice_real 15-21 tarde NY h=5   n=6989  wr=51.15% IC95[49.98,52.32] ICbonf[48.97,53.33] empates=60   ruido
+  indice_real 15-21 tarde NY h=10  n=6954  wr=50.10% IC95[48.93,51.28] ICbonf[47.91,52.29] empates=26   ruido
+  indice_real 15-21 tarde NY h=15  n=6879  wr=51.39% IC95[50.21,52.57] ICbonf[49.19,53.58] empates=28   ruido
+  indice_real 15-21 tarde NY h=30  n=6688  wr=52.18% IC95[50.98,53.38] ICbonf[49.95,54.41] empates=25   ruido
+
+  indice_real 21-24 cierre   h=1   n=2038  wr=48.33% IC95[46.17,50.50] ICbonf[44.31,52.37] empates=87   ruido
+  indice_real 21-24 cierre   h=3   n=2083  wr=45.66% IC95[43.53,47.80] ICbonf[41.71,49.66] empates=42   ruido
+  indice_real 21-24 cierre   h=5   n=2102  wr=45.24% IC95[43.13,47.38] ICbonf[41.32,49.22] empates=23   ruido
+  indice_real 21-24 cierre   h=10  n=2110  wr=47.63% IC95[45.51,49.76] ICbonf[43.69,51.60] empates=15   ruido
+  indice_real 21-24 cierre   h=15  n=2110  wr=45.83% IC95[43.71,47.96] ICbonf[41.91,49.80] empates=15   ruido
+  indice_real 21-24 cierre   h=30  n=2114  wr=47.82% IC95[45.70,49.96] ICbonf[43.88,51.79] empates=11   ruido
+
+
+====================================================================================================
+6) DESGLOSE POR LADO DE LA ZONA
+====================================================================================================
+
+probabilidad a favor por lado
+-----------------------------
+  soporte (CALL)             h=1   n=38224 wr=49.78% IC95[49.28,50.28] ICbonf[48.85,50.72] empates=460  ruido
+  soporte (CALL)             h=3   n=38388 wr=50.26% IC95[49.76,50.76] ICbonf[49.33,51.19] empates=253  ruido
+  soporte (CALL)             h=5   n=38400 wr=50.01% IC95[49.51,50.51] ICbonf[49.08,50.94] empates=209  ruido
+  soporte (CALL)             h=10  n=38375 wr=50.01% IC95[49.51,50.51] ICbonf[49.08,50.94] empates=154  ruido
+  soporte (CALL)             h=15  n=38308 wr=50.01% IC95[49.51,50.51] ICbonf[49.08,50.95] empates=128  ruido
+  soporte (CALL)             h=30  n=38113 wr=49.98% IC95[49.47,50.48] ICbonf[49.04,50.91] empates=87   ruido
+
+  resistencia (PUT)          h=1   n=37733 wr=50.45% IC95[49.94,50.95] ICbonf[49.51,51.39] empates=458  ruido
+  resistencia (PUT)          h=3   n=37876 wr=50.95% IC95[50.45,51.46] ICbonf[50.01,51.89] empates=284  ruido
+  resistencia (PUT)          h=5   n=37901 wr=50.62% IC95[50.12,51.13] ICbonf[49.69,51.56] empates=212  ruido
+  resistencia (PUT)          h=10  n=37878 wr=50.31% IC95[49.81,50.82] ICbonf[49.38,51.25] empates=135  ruido
+  resistencia (PUT)          h=15  n=37819 wr=50.34% IC95[49.84,50.85] ICbonf[49.40,51.28] empates=113  ruido
+  resistencia (PUT)          h=30  n=37590 wr=51.09% IC95[50.59,51.60] ICbonf[50.15,52.03] empates=90   ruido
+
+
+====================================================================================================
+7) DESGLOSE POR FUERZA DE LA ZONA (pivotes distintos que la formaron)
+====================================================================================================
+   Es el filtro de calidad: una zona tocada por 3 pivotes es la que un
+   operador dibujaria; una de 1 solo pivote es cualquier maximo local.
+
+probabilidad a favor por fuerza de zona
+---------------------------------------
+  1 pivote                   h=1   n=16770 wr=49.98% IC95[49.22,50.73] ICbonf[48.57,51.39] empates=205  ruido
+  1 pivote                   h=3   n=16828 wr=50.08% IC95[49.32,50.83] ICbonf[48.67,51.48] empates=131  ruido
+  1 pivote                   h=5   n=16851 wr=50.53% IC95[49.78,51.29] ICbonf[49.12,51.94] empates=91   ruido
+  1 pivote                   h=10  n=16826 wr=49.82% IC95[49.07,50.58] ICbonf[48.41,51.23] empates=79   ruido
+  1 pivote                   h=15  n=16806 wr=49.67% IC95[48.91,50.42] ICbonf[48.26,51.07] empates=62   ruido
+  1 pivote                   h=30  n=16718 wr=50.04% IC95[49.28,50.80] ICbonf[48.63,51.45] empates=45   ruido
+
+  2 pivotes                  h=1   n=11721 wr=49.66% IC95[48.76,50.57] ICbonf[47.98,51.35] empates=123  ruido
+  2 pivotes                  h=3   n=11752 wr=50.41% IC95[49.50,51.31] ICbonf[48.72,52.09] empates=79   ruido
+  2 pivotes                  h=5   n=11766 wr=50.13% IC95[49.22,51.03] ICbonf[48.44,51.81] empates=57   ruido
+  2 pivotes                  h=10  n=11748 wr=50.72% IC95[49.82,51.63] ICbonf[49.04,52.41] empates=42   ruido
+  2 pivotes                  h=15  n=11717 wr=49.85% IC95[48.95,50.76] ICbonf[48.16,51.54] empates=41   ruido
+  2 pivotes                  h=30  n=11681 wr=51.09% IC95[50.18,52.00] ICbonf[49.40,52.78] empates=24   ruido
+
+  3+ pivotes                 h=1   n=47466 wr=50.27% IC95[49.82,50.72] ICbonf[49.44,51.11] empates=590  ruido
+  3+ pivotes                 h=3   n=47684 wr=50.84% IC95[50.39,51.29] ICbonf[50.00,51.67] empates=327  ruido
+  3+ pivotes                 h=5   n=47684 wr=50.28% IC95[49.83,50.73] ICbonf[49.45,51.12] empates=273  ruido
+  3+ pivotes                 h=10  n=47679 wr=50.14% IC95[49.69,50.59] ICbonf[49.31,50.98] empates=168  ruido
+  3+ pivotes                 h=15  n=47604 wr=50.44% IC95[49.99,50.89] ICbonf[49.60,51.27] empates=138  ruido
+  3+ pivotes                 h=30  n=47304 wr=50.56% IC95[50.11,51.01] ICbonf[49.72,51.40] empates=108  ruido
+
+
+EXCURSIONES EN ATRs (MFE favorable / MAE adversa) POR HORIZONTE
+------------------------------------------------------------------------------
+  grupo                      h    n     MFE p50 MFE p75  MAE p50 MAE p75  %MFE>=1  %MAE>=1
+  1 pivote                   1    16975   0.40    0.73    0.41    0.74    12.5%    13.5%
+  1 pivote                   3    16959   0.74    1.30    0.72    1.30    37.0%    36.9%
+  1 pivote                   5    16942   0.96    1.68    0.96    1.70    48.3%    48.2%
+  1 pivote                   10   16905   1.37    2.36    1.35    2.40    61.7%    61.6%
+  1 pivote                   15   16868   1.69    2.88    1.68    2.95    68.1%    68.3%
+  1 pivote                   30   16763   2.37    4.12    2.40    4.18    77.2%    77.7%
+
+  2 pivotes                  1    11844   0.40    0.73    0.41    0.74    12.4%    12.8%
+  2 pivotes                  3    11831   0.75    1.29    0.74    1.29    36.9%    36.7%
+  2 pivotes                  5    11823   0.97    1.68    0.96    1.68    48.5%    48.0%
+  2 pivotes                  10   11790   1.38    2.38    1.34    2.39    62.3%    61.2%
+  2 pivotes                  15   11758   1.67    2.91    1.66    2.91    68.8%    68.0%
+  2 pivotes                  30   11705   2.42    4.21    2.36    4.11    77.8%    76.6%
+
+  3+ pivotes                 1    48056   0.40    0.73    0.41    0.73    12.3%    12.6%
+  3+ pivotes                 3    48011   0.74    1.30    0.73    1.29    36.7%    36.2%
+  3+ pivotes                 5    47957   0.96    1.69    0.95    1.68    48.4%    47.7%
+  3+ pivotes                 10   47847   1.37    2.41    1.36    2.39    61.8%    61.4%
+  3+ pivotes                 15   47742   1.69    2.94    1.67    2.95    68.4%    68.0%
+  3+ pivotes                 30   47412   2.43    4.22    2.40    4.18    77.6%    77.2%
+
+
+====================================================================================================
+8) EL CAJON '4+' ABIERTO: reparto fino del numero de toque
+====================================================================================================
+
+probabilidad a favor por numero de toque (fino)
+-----------------------------------------------
+  toque 1                    h=1   n=4501  wr=48.34% IC95[46.89,49.81] ICbonf[45.63,51.07] empates=50   ruido
+  toque 1                    h=3   n=4506  wr=49.84% IC95[48.39,51.30] ICbonf[47.13,52.56] empates=43   ruido
+  toque 1                    h=5   n=4516  wr=49.20% IC95[47.75,50.66] ICbonf[46.49,51.92] empates=23   ruido
+  toque 1                    h=10  n=4502  wr=49.60% IC95[48.14,51.06] ICbonf[46.88,52.32] empates=25   ruido
+  toque 1                    h=15  n=4497  wr=50.12% IC95[48.66,51.58] ICbonf[47.40,52.84] empates=20   ruido
+  toque 1                    h=30  n=4473  wr=50.35% IC95[48.88,51.81] ICbonf[47.62,53.07] empates=8    ruido
+
+  toque 2                    h=1   n=4246  wr=49.39% IC95[47.89,50.89] ICbonf[46.59,52.19] empates=56   ruido
+  toque 2                    h=3   n=4262  wr=49.53% IC95[48.03,51.03] ICbonf[46.74,52.32] empates=35   ruido
+  toque 2                    h=5   n=4274  wr=50.21% IC95[48.71,51.71] ICbonf[47.42,53.00] empates=18   ruido
+  toque 2                    h=10  n=4261  wr=49.17% IC95[47.67,50.67] ICbonf[46.38,51.96] empates=19   ruido
+  toque 2                    h=15  n=4246  wr=49.74% IC95[48.24,51.24] ICbonf[46.94,52.54] empates=19   ruido
+  toque 2                    h=30  n=4229  wr=50.74% IC95[49.24,52.25] ICbonf[47.94,53.55] empates=14   ruido
+
+  toque 3                    h=1   n=4041  wr=49.99% IC95[48.45,51.53] ICbonf[47.12,52.86] empates=48   ruido
+  toque 3                    h=3   n=4049  wr=50.23% IC95[48.70,51.77] ICbonf[47.37,53.10] empates=35   ruido
+  toque 3                    h=5   n=4041  wr=50.46% IC95[48.92,52.00] ICbonf[47.59,53.32] empates=39   ruido
+  toque 3                    h=10  n=4052  wr=50.62% IC95[49.08,52.16] ICbonf[47.75,53.48] empates=17   ruido
+  toque 3                    h=15  n=4048  wr=49.56% IC95[48.02,51.10] ICbonf[46.69,52.42] empates=16   ruido
+  toque 3                    h=30  n=4018  wr=49.65% IC95[48.11,51.20] ICbonf[46.78,52.53] empates=20   ruido
+
+  toque 4-6                  h=1   n=10916 wr=50.13% IC95[49.19,51.07] ICbonf[48.38,51.87] empates=134  ruido
+  toque 4-6                  h=3   n=10965 wr=49.93% IC95[49.00,50.87] ICbonf[48.19,51.67] empates=73   ruido
+  toque 4-6                  h=5   n=10972 wr=49.97% IC95[49.04,50.91] ICbonf[48.23,51.71] empates=58   ruido
+  toque 4-6                  h=10  n=10957 wr=49.89% IC95[48.95,50.82] ICbonf[48.14,51.63] empates=47   ruido
+  toque 4-6                  h=15  n=10943 wr=49.31% IC95[48.37,50.25] ICbonf[47.57,51.06] empates=34   ruido
+  toque 4-6                  h=30  n=10897 wr=50.44% IC95[49.50,51.37] ICbonf[48.69,52.18] empates=28   ruido
+
+  toque 7-12                 h=1   n=16818 wr=51.01% IC95[50.26,51.77] ICbonf[49.60,52.42] empates=211  ruido
+  toque 7-12                 h=3   n=16901 wr=51.36% IC95[50.60,52.11] ICbonf[49.95,52.76] empates=118  ruido
+  toque 7-12                 h=5   n=16926 wr=50.62% IC95[49.87,51.37] ICbonf[49.22,52.02] empates=78   ruido
+  toque 7-12                 h=10  n=16907 wr=50.17% IC95[49.41,50.92] ICbonf[48.76,51.57] empates=60   ruido
+  toque 7-12                 h=15  n=16881 wr=50.15% IC95[49.40,50.91] ICbonf[48.75,51.56] empates=56   ruido
+  toque 7-12                 h=30  n=16810 wr=50.32% IC95[49.57,51.08] ICbonf[48.91,51.73] empates=34   ruido
+
+  toque 13+                  h=1   n=35435 wr=50.01% IC95[49.49,50.53] ICbonf[49.04,50.98] empates=419  ruido
+  toque 13+                  h=3   n=35581 wr=50.72% IC95[50.20,51.24] ICbonf[49.75,51.69] empates=233  ruido
+  toque 13+                  h=5   n=35572 wr=50.41% IC95[49.89,50.93] ICbonf[49.44,51.38] empates=205  ruido
+  toque 13+                  h=10  n=35574 wr=50.38% IC95[49.86,50.90] ICbonf[49.41,51.35] empates=121  ruido
+  toque 13+                  h=15  n=35512 wr=50.59% IC95[50.07,51.11] ICbonf[49.62,51.55] empates=96   ruido
+  toque 13+                  h=30  n=35276 wr=50.76% IC95[50.24,51.28] ICbonf[49.78,51.73] empates=73   ruido
+
+====================================================================================================
+VEREDICTO: EXISTE UN HORIZONTE CON PROBABILIDAD > BREAK-EVEN?
+====================================================================================================
+NO. Con n>=200 y IC95% de Wilson, ninguno de los 32 cortes probados 
+(mercado, numero de toques, sesion, lado, fuerza de la zona) alcanza un limite inferior
+por encima del break-even de 53.76% en ninguno de los horizontes [1, 3, 5, 10, 15, 30].
+
+La celda mas alta de todo el barrido, que aun asi NO concluye:
+  indice_real 13-15 apertura NY  h=1   n=3397   wr=53.16% IC95[51.48,54.84] -> el break-even 53.76% cae DENTRO del intervalo
+
+Traducido: tocar una zona S/R no da, por si solo, ninguna expiracion rentable en estos
+datos. El filtro que falta no esta en la zona: esta en lo que pasa DESPUES del toque.
+
+LECTURA DE LAS TABLAS
+  - 'ruido' significa que el IC95% cruza el break-even: no se puede afirmar nada, ni a favor
+    ni en contra. No es 'casi rentable': es desconocido.
+  - 'MUESTRA INSUFICIENTE' es n < 200. Esos numeros no se deben citar.
+  - MFE y MAE estan en ATRs del momento del toque, comparables entre activos y regimenes.
+  - El tiempo hasta el extremo se mide dentro de la ventana de 30 min; un extremo en el
+    minuto 30 puede ser un extremo truncado por el borde de la ventana.

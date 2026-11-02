@@ -1,0 +1,396 @@
+﻿====================================================================================================
+LAB DE RITMO: a cuanto tiempo sube y en cuanto tiempo baja
+====================================================================================================
+activo             velas desde             hasta              segm  planas% mercado
+EURUSD-OTC         43050 2026-09-27 04:47:00 2026-10-27 04:46:00    31     0.95 sintetico OTC
+GBPUSD-OTC         43155 2026-09-27 04:47:00 2026-10-27 04:46:00    10     1.21 sintetico OTC
+USDJPY-OTC         43155 2026-09-27 04:48:00 2026-10-27 04:47:00    10     0.19 sintetico OTC
+EURUSD-op          30708 2026-09-27 21:01:00 2026-10-27 04:52:00     5     3.98 mercado real
+GBPUSD-op          30708 2026-09-27 21:01:00 2026-10-27 04:52:00     5     4.51 mercado real
+US30_N             29334 2026-09-27 22:00:00 2026-10-27 04:53:00    22     4.13 mercado real
+USDJPY-op          30708 2026-09-27 21:01:00 2026-10-27 04:52:00     5     2.65 mercado real
+USNDAQ100_N        29334 2026-09-27 22:00:00 2026-10-27 04:53:00    22     0.41 mercado real
+USSPX500_N         29334 2026-09-27 22:00:00 2026-10-27 04:53:00    22     3.57 mercado real
+XAUUSD-op          29330 2026-09-27 22:00:00 2026-10-27 04:52:00    22     0.13 mercado real
+
+====================================================================================================
+1. DURACION DE LOS TRAMOS (velas M1 consecutivas en la misma direccion)
+====================================================================================================
+Duracion en VELAS direccionales. Vela plana (cierre identico) = transparente.
+Columna med_rmp = mediana con el criterio alternativo (la plana corta el tramo).
+Referencia teorica: en un paseo aleatorio p=0.5 la duracion media de un tramo es 2.00.
+
+activo           dir        n  media   p50   p75   p90   p95   max med_rmp
+--------------------------------------------------------------------------
+EURUSD-OTC       UP     10599   2.01   1.0   3.0   4.0   5.0    13     1.0
+EURUSD-OTC       DOWN   10603   2.00   1.0   3.0   4.0   5.0    14     1.0
+GBPUSD-OTC       UP     10558   1.99   2.0   2.0   4.0   5.0    15     1.0
+GBPUSD-OTC       DOWN   10561   2.03   2.0   3.0   4.0   5.0    20     1.0
+USDJPY-OTC       UP     10835   1.97   1.0   2.0   4.0   5.0    13     1.0
+USDJPY-OTC       DOWN   10837   2.00   2.0   3.0   4.0   5.0    14     2.0
+--------------------------------------------------------------------------
+AGREGADO OTC     UP     31992   1.99   1.0   2.0   4.0   5.0    15        
+AGREGADO OTC     DOWN   32001   2.01   2.0   3.0   4.0   5.0    20        
+==========================================================================
+EURUSD-op        UP      7533   1.94   1.0   2.0   4.0   5.0    15     1.0
+EURUSD-op        DOWN    7534   1.96   1.0   2.0   4.0   5.0    14     1.0
+GBPUSD-op        UP      7452   1.96   1.0   2.0   4.0   5.0    14     1.0
+GBPUSD-op        DOWN    7453   1.96   1.0   2.0   4.0   5.0    13     1.0
+US30_N           UP      7049   2.00   2.0   2.0   4.0   5.0    14     1.0
+US30_N           DOWN    7049   1.98   1.0   2.0   4.0   5.0    16     1.0
+USDJPY-op        UP      7711   1.96   2.0   2.0   4.0   5.0    12     1.0
+USDJPY-op        DOWN    7713   1.90   1.0   2.0   4.0   5.0    13     1.0
+USNDAQ100_N      UP      7292   1.98   2.0   3.0   4.0   5.0    13     2.0
+USNDAQ100_N      DOWN    7288   2.01   2.0   3.0   4.0   5.0    13     2.0
+USSPX500_N       UP      7164   1.97   2.0   2.0   4.0   5.0    13     1.0
+USSPX500_N       DOWN    7161   1.96   2.0   2.0   4.0   5.0    12     1.0
+XAUUSD-op        UP      7460   1.93   1.0   2.0   4.0   5.0    16     1.0
+XAUUSD-op        DOWN    7459   1.98   1.0   2.0   4.0   5.0    13     1.0
+--------------------------------------------------------------------------
+AGREGADO REAL    UP     51661   1.96   1.0   2.0   4.0   5.0    16        
+AGREGADO REAL    DOWN   51657   1.96   1.0   2.0   4.0   5.0    16        
+==========================================================================
+
+1b. DISTRIBUCION DE FRECUENCIAS DE LA DURACION (esto es lo que hay que mirar,
+    no la mediana: con masa 0.50 en el valor 1 la mediana salta entre 1 y 2 por
+    decimas y no significa nada).
+    TEORICO = moneda justa independiente: P(L=j)=0.5^j -> 0.500 0.250 0.125 |
+    P(L>=4)=0.1250  P(L>=6)=0.0313. Si lo observado no se distingue de esto,
+    el ritmo no tiene persistencia que explotar.
+    Se prueban 20 celdas P(L>=4) a la vez -> z Bonferroni = 3.023
+
+activo           dir        n  P(L=1)  P(L=2)  P(L=3)  P(L>=4)    IC95% P(L>=4)  P(L>=6)  vs moneda
+---------------------------------------------------------------------------------------------------
+EURUSD-OTC       UP     10599   0.503   0.245   0.123   0.1283 [ 12.2,  13.5]   0.0317  indistinguible de moneda
+EURUSD-OTC       DOWN   10603   0.500   0.249   0.124   0.1265 [ 12.0,  13.3]   0.0317  indistinguible de moneda
+GBPUSD-OTC       UP     10558   0.499   0.256   0.117   0.1276 [ 12.1,  13.4]   0.0278  indistinguible de moneda
+GBPUSD-OTC       DOWN   10561   0.498   0.246   0.127   0.1293 [ 12.3,  13.6]   0.0351  indistinguible de moneda
+USDJPY-OTC       UP     10835   0.509   0.252   0.118   0.1210 [ 11.5,  12.7]   0.0283  indistinguible de moneda
+USDJPY-OTC       DOWN   10837   0.496   0.252   0.131   0.1212 [ 11.5,  12.7]   0.0305  indistinguible de moneda
+---------------------------------------------------------------------------------------------------
+EURUSD-op        UP      7533   0.517   0.249   0.114   0.1200 [ 11.3,  12.8]   0.0256  indistinguible de moneda
+EURUSD-op        DOWN    7534   0.513   0.245   0.122   0.1201 [ 11.3,  12.8]   0.0267  indistinguible de moneda
+GBPUSD-op        UP      7452   0.508   0.254   0.117   0.1210 [ 11.4,  12.9]   0.0286  indistinguible de moneda
+GBPUSD-op        DOWN    7453   0.509   0.250   0.124   0.1170 [ 11.0,  12.4]   0.0270  indistinguible de moneda
+US30_N           UP      7049   0.492   0.258   0.129   0.1207 [ 11.3,  12.9]   0.0305  indistinguible de moneda
+US30_N           DOWN    7049   0.503   0.260   0.117   0.1209 [ 11.3,  12.9]   0.0270  indistinguible de moneda
+USDJPY-op        UP      7711   0.499   0.265   0.121   0.1162 [ 10.9,  12.4]   0.0246  indistinguible de moneda
+USDJPY-op        DOWN    7713   0.525   0.250   0.119   0.1057 [  9.9,  11.3]   0.0261  MENOS PERSISTENTE
+USNDAQ100_N      UP      7292   0.495   0.255   0.133   0.1175 [ 11.0,  12.5]   0.0281  indistinguible de moneda
+USNDAQ100_N      DOWN    7288   0.489   0.260   0.126   0.1247 [ 11.7,  13.3]   0.0302  indistinguible de moneda
+USSPX500_N       UP      7164   0.495   0.262   0.129   0.1145 [ 10.7,  12.2]   0.0269  indistinguible de moneda
+USSPX500_N       DOWN    7161   0.499   0.259   0.126   0.1156 [ 10.8,  12.3]   0.0256  indistinguible de moneda
+XAUUSD-op        UP      7460   0.516   0.252   0.122   0.1102 [ 10.3,  11.7]   0.0252  MENOS PERSISTENTE
+XAUUSD-op        DOWN    7459   0.504   0.248   0.122   0.1255 [ 11.8,  13.3]   0.0288  indistinguible de moneda
+---------------------------------------------------------------------------------------------------
+
+====================================================================================================
+2. AMPLITUD DE LOS TRAMOS, EN ATRs (ATR14 de la vela ANTERIOR al arranque)
+====================================================================================================
+Amplitud = |cierre_final - cierre_previo_al_tramo| / ATR14 previo. Sin ATR valido -> descartado.
+
+activo           dir        n  desc  media   p50   p75   p90   p95    max
+-------------------------------------------------------------------------
+EURUSD-OTC       UP     10599     0   1.07  0.81  1.46  2.32  2.94   8.56
+EURUSD-OTC       DOWN   10603     0   1.08  0.82  1.47  2.32  2.94   8.60
+GBPUSD-OTC       UP     10558     0   1.10  0.85  1.50  2.36  3.03  10.71
+GBPUSD-OTC       DOWN   10561     0   1.11  0.84  1.49  2.40  3.08  10.13
+USDJPY-OTC       UP     10835     0   1.08  0.82  1.47  2.32  2.99   8.72
+USDJPY-OTC       DOWN   10837     0   1.10  0.83  1.49  2.38  3.03  10.22
+-------------------------------------------------------------------------
+EURUSD-op        UP      7533     0   1.08  0.75  1.41  2.35  3.08  23.26
+EURUSD-op        DOWN    7534     0   1.10  0.78  1.44  2.37  3.14  41.35
+GBPUSD-op        UP      7452     0   1.13  0.82  1.50  2.43  3.11  41.47
+GBPUSD-op        DOWN    7453     0   1.11  0.80  1.48  2.42  3.12  22.98
+US30_N           UP      7049     0   1.09  0.78  1.46  2.37  3.07  15.79
+US30_N           DOWN    7049     0   1.08  0.79  1.42  2.29  3.01  18.78
+USDJPY-op        UP      7711     0   1.04  0.76  1.39  2.26  2.99  16.30
+USDJPY-op        DOWN    7713     0   1.06  0.74  1.38  2.32  3.06  21.68
+USNDAQ100_N      UP      7292     0   1.02  0.72  1.33  2.22  2.95  13.81
+USNDAQ100_N      DOWN    7288     0   1.05  0.75  1.39  2.27  2.96  16.22
+USSPX500_N       UP      7164     0   1.04  0.74  1.37  2.27  2.98  14.76
+USSPX500_N       DOWN    7161     0   1.05  0.75  1.41  2.25  2.97  25.98
+XAUUSD-op        UP      7460     0   1.03  0.71  1.37  2.29  2.99  15.31
+XAUUSD-op        DOWN    7459     0   1.05  0.75  1.40  2.30  2.99  21.51
+-------------------------------------------------------------------------
+
+====================================================================================================
+3. AUTOCORRELACION DE LA DURACION (hay memoria explotable en el ritmo?)
+====================================================================================================
+rho1 = Spearman entre un tramo y el SIGUIENTE (direccion contraria).
+rho2 = Spearman entre un tramo y el siguiente de la MISMA direccion.
+Bajo paseo aleatorio ambos son 0. |rho| < 0.05 es irrelevante aunque p < 0.05.
+
+activo            n_pares    rho1        p1    rho2        p2  lectura
+----------------------------------------------------------------------
+EURUSD-OTC          21171   0.002    0.8247   0.004    0.5620  sin memoria util
+GBPUSD-OTC          21109   0.005    0.4491  -0.014    0.0433  sin memoria util
+USDJPY-OTC          21662   0.013    0.0572   0.008    0.2329  sin memoria util
+----------------------------------------------------------------------
+EURUSD-op           15062  -0.001    0.9221   0.005    0.5476  sin memoria util
+GBPUSD-op           14900   0.004    0.5880   0.002    0.8516  sin memoria util
+US30_N              14076  -0.001    0.9519   0.009    0.2727  sin memoria util
+USDJPY-op           15419   0.006    0.4764  -0.007    0.3642  sin memoria util
+USNDAQ100_N         14558   0.017    0.0441  -0.001    0.9387  sin memoria util
+USSPX500_N          14303   0.024    0.0046   0.002    0.8405  sin memoria util
+XAUUSD-op           14897   0.000    0.9545  -0.005    0.5763  sin memoria util
+----------------------------------------------------------------------
+
+Version en probabilidades: P(tramo siguiente largo | tramo actual largo), largo = p75 del activo.
+activo            umbral  base_p       base IC95%  cond_p       cond IC95%  n_cond  lectura
+-------------------------------------------------------------------------------------------
+EURUSD-OTC           3.0  0.2511 [ 24.5,  25.7]  0.2513 [ 24.0,  26.3]    5320  ruido (IC cubre la base)
+GBPUSD-OTC           3.0  0.2508 [ 24.5,  25.7]  0.2559 [ 24.4,  26.8]    5292  ruido (IC cubre la base)
+USDJPY-OTC           2.0  0.4976 [ 49.1,  50.4]  0.5035 [ 49.4,  51.3]   10780  ruido (IC cubre la base)
+-------------------------------------------------------------------------------------------
+EURUSD-op            2.0  0.4851 [ 47.7,  49.3]  0.4853 [ 47.4,  49.7]    7303  ruido (IC cubre la base)
+GBPUSD-op            2.0  0.4915 [ 48.3,  50.0]  0.4922 [ 48.1,  50.4]    7322  ruido (IC cubre la base)
+US30_N               2.0  0.5027 [ 49.4,  51.1]  0.5026 [ 49.1,  51.4]    7071  ruido (IC cubre la base)
+USDJPY-op            2.0  0.4881 [ 48.0,  49.6]  0.4883 [ 47.7,  50.0]    7524  ruido (IC cubre la base)
+USNDAQ100_N          3.0  0.2506 [ 24.4,  25.8]  0.2549 [ 24.1,  26.9]    3649  ruido (IC cubre la base)
+USSPX500_N           2.0  0.5030 [ 49.5,  51.1]  0.5171 [ 50.6,  52.9]    7198  DIFERENCIA REAL
+XAUUSD-op            2.0  0.4901 [ 48.2,  49.8]  0.4903 [ 47.9,  50.2]    7298  ruido (IC cubre la base)
+-------------------------------------------------------------------------------------------
+
+====================================================================================================
+4. PERFIL HORARIO UTC: VOLATILIDAD vs SESGO DIRECCIONAL (no son lo mismo)
+====================================================================================================
+vol_bps  = media de |log(cierre/apertura)| por vela, en puntos basicos.
+p_up     = P(cierre > apertura) de la misma vela = desenlace de una binaria M1.
+Los IC usan n EFECTIVO (corregido por correlacion cruzada entre activos agregados).
+bonf     = intervalo corregido por las 24 comparaciones simultaneas (una por hora).
+dur      = duracion media de los tramos que ARRANCAN en esa hora, en velas.
+
+z normal = 1.960 | z Bonferroni (24 pruebas) = 3.078
+
+--- sintetico OTC (3 activos: EURUSD-OTC, GBPUSD-OTC, USDJPY-OTC)
+    correlacion cruzada media de retornos M1: rho=0.046 -> n efectivo = n / 1.09
+     h       n   n_eff  vol_bps          drift_bps IC95%   p_up      IC95% p_up   dur  veredicto
+    --------------------------------------------------------------------------------------------
+     0    5400    4943     2.09   -0.078 [ -0.156,  0.000] 0.4871 [ 47.3,  50.1]  2.03  ruido
+     1    5400    4943     2.10   -0.002 [ -0.081,  0.076] 0.5064 [ 49.2,  52.0]  1.99  ruido
+     2    5400    4943     2.09    0.048 [ -0.030,  0.126] 0.5068 [ 49.3,  52.1]  2.01  ruido
+     3    5400    4943     2.07    0.016 [ -0.061,  0.094] 0.5034 [ 48.9,  51.7]  2.00  ruido
+     4    5272    4826     2.49 *  0.200 [ -0.059,  0.460] 0.4984 [ 48.4,  51.3]  1.97  ruido
+     5    5220    4779     2.11    0.006 [ -0.074,  0.087] 0.4984 [ 48.4,  51.3]  2.02  ruido
+     6    5318    4868     2.12   -0.033 [ -0.113,  0.047] 0.4984 [ 48.4,  51.2]  2.00  ruido
+     7    5400    4943     2.05    0.017 [ -0.060,  0.093] 0.4952 [ 48.1,  50.9]  2.02  ruido
+     8    5250    4806     2.67 *  0.090 [ -0.210,  0.390] 0.4940 [ 48.0,  50.8]  1.95  ruido
+     9    5400    4943     2.08    0.053 [ -0.025,  0.131] 0.5047 [ 49.1,  51.9]  1.99  ruido
+    10    5400    4943     2.07   -0.017 [ -0.094,  0.060] 0.4968 [ 48.3,  51.1]  2.01  ruido
+    11    5400    4943     2.08    0.030 [ -0.048,  0.107] 0.5007 [ 48.7,  51.5]  2.00  ruido
+    12    5400    4943     2.10   -0.057 [ -0.135,  0.021] 0.4845 [ 47.1,  49.8]  2.06  SESGO BAJISTA (cae con bonf)
+    13    5400    4943     2.07   -0.007 [ -0.085,  0.071] 0.4957 [ 48.2,  51.0]  2.02  ruido
+    14    5400    4943     2.07   -0.042 [ -0.119,  0.036] 0.4893 [ 47.5,  50.3]  1.96  ruido
+    15    5400    4943     2.11   -0.009 [ -0.088,  0.070] 0.4986 [ 48.5,  51.3]  2.04  ruido
+    16    5400    4943     2.04   -0.025 [ -0.101,  0.051] 0.4985 [ 48.5,  51.2]  2.01  ruido
+    17    5400    4943     2.08   -0.048 [ -0.126,  0.030] 0.4794 [ 46.5,  49.3]  1.99  SESGO BAJISTA (cae con bonf)
+    18    5400    4943     2.02   -0.009 [ -0.085,  0.067] 0.4952 [ 48.1,  50.9]  1.95  ruido
+    19    5400    4943     2.14 *  0.091 [  0.011,  0.171] 0.5167 [ 50.3,  53.1]  1.98  SESGO ALCISTA (cae con bonf)
+    20    5400    4943     2.08   -0.004 [ -0.082,  0.074] 0.4972 [ 48.3,  51.1]  1.99  ruido
+    21    5400    4943     2.11   -0.009 [ -0.088,  0.070] 0.4958 [ 48.2,  51.0]  1.95  ruido
+    22    5400    4943     2.12   -0.080 [ -0.159, -0.001] 0.4880 [ 47.4,  50.2]  2.00  ruido
+    23    5400    4943     2.11   -0.026 [ -0.105,  0.053] 0.4988 [ 48.5,  51.3]  2.06  ruido
+    (* = hora dentro del 80% superior de volatilidad de su mercado)
+    VENTANA 13-15h UTC: volatilidad 2.08 bps vs 2.13 bps en el resto = 0.98x
+    VENTANA 13-15h UTC: p_up=0.4945 IC95%[ 48.6,  50.3] n=16074 (n_eff=14715) -> ruido
+    Leer con cuidado: mas volatilidad = velas mas grandes, NO mas
+    probabilidad de acertar la direccion. Son dos cosas distintas.
+
+--- mercado real (7 activos: EURUSD-op, GBPUSD-op, US30_N, USDJPY-op, USNDAQ100_N, USSPX500_N, XAUUSD-op)
+    correlacion cruzada media de retornos M1: rho=0.225 -> n efectivo = n / 2.35
+     h       n   n_eff  vol_bps          drift_bps IC95%   p_up      IC95% p_up   dur  veredicto
+    --------------------------------------------------------------------------------------------
+     0    9240    3933     1.22   -0.015 [ -0.076,  0.046] 0.5002 [ 48.4,  51.6]  1.99  ruido
+     1    9240    3933     1.27    0.021 [ -0.045,  0.086] 0.5027 [ 48.7,  51.9]  1.97  ruido
+     2    9240    3933     1.02    0.021 [ -0.030,  0.073] 0.5046 [ 48.9,  52.0]  1.97  ruido
+     3    9240    3933     0.89    0.015 [ -0.030,  0.060] 0.5046 [ 48.9,  52.0]  1.99  ruido
+     4    9194    3914     0.77    0.002 [ -0.034,  0.039] 0.5020 [ 48.6,  51.8]  1.92  ruido
+     5    8820    3755     1.03   -0.043 [ -0.097,  0.010] 0.4885 [ 47.2,  50.5]  2.01  ruido
+     6    8820    3755     1.19   -0.011 [ -0.066,  0.044] 0.5009 [ 48.5,  51.7]  2.02  ruido
+     7    8820    3755     1.35   -0.016 [ -0.078,  0.046] 0.4926 [ 47.7,  50.9]  1.96  ruido
+     8    8820    3755     1.31   -0.023 [ -0.083,  0.037] 0.4946 [ 47.8,  51.1]  2.00  ruido
+     9    8820    3755     1.08   -0.018 [ -0.067,  0.031] 0.4960 [ 48.0,  51.2]  1.97  ruido
+    10    8820    3755     1.10   -0.016 [ -0.067,  0.036] 0.4926 [ 47.6,  50.9]  1.95  ruido
+    11    8820    3755     1.25    0.030 [ -0.029,  0.088] 0.5046 [ 48.8,  52.1]  1.97  ruido
+    12    8820    3755     1.75   -0.019 [ -0.120,  0.081] 0.4987 [ 48.3,  51.5]  1.97  ruido
+    13    8820    3755     2.20 * -0.044 [ -0.156,  0.067] 0.4973 [ 48.1,  51.3]  2.01  ruido
+    14    8820    3755     2.16 *  0.040 [ -0.062,  0.141] 0.5054 [ 48.9,  52.2]  1.97  ruido
+    15    8820    3755     1.67   -0.069 [ -0.149,  0.011] 0.4903 [ 47.4,  50.6]  1.97  ruido
+    16    8820    3755     1.42   -0.049 [ -0.121,  0.024] 0.5028 [ 48.7,  51.9]  1.96  ruido
+    17    8820    3755     1.31    0.033 [ -0.037,  0.103] 0.5166 [ 50.0,  53.3]  2.02  SESGO ALCISTA (cae con bonf)
+    18    8820    3755     1.16    0.001 [ -0.058,  0.060] 0.4990 [ 48.3,  51.5]  1.96  ruido
+    19    8820    3755     1.16    0.027 [ -0.033,  0.087] 0.5068 [ 49.1,  52.3]  1.97  ruido
+    20    8580    3652     0.69    0.025 [ -0.014,  0.063] 0.5041 [ 48.8,  52.1]  1.86  ruido
+    21    3768    1604     0.41   -0.010 [ -0.062,  0.042] 0.4966 [ 47.1,  52.2]  1.73  ruido
+    22    8874    3778     0.78    0.036 [ -0.017,  0.089] 0.4972 [ 48.1,  51.4]  1.92  ruido
+    23    9080    3865     0.76   -0.017 [ -0.056,  0.022] 0.5008 [ 48.5,  51.7]  1.95  ruido
+    (* = hora dentro del 80% superior de volatilidad de su mercado)
+    VENTANA 13-15h UTC: volatilidad 2.01 bps vs 1.09 bps en el resto = 1.84x
+    VENTANA 13-15h UTC: p_up=0.4977 IC95%[ 48.8,  50.7] n=26169 (n_eff=11140) -> ruido
+    Leer con cuidado: mas volatilidad = velas mas grandes, NO mas
+    probabilidad de acertar la direccion. Son dos cosas distintas.
+
+====================================================================================================
+5. HALF-LIFE DE REVERSION A LA EMA21 TRAS DESVIARSE k ATRs
+====================================================================================================
+Evento: |cierre - EMA21| / ATR14 cruza k al alza. Todo causal en el momento de la entrada.
+half-life = minutos hasta que esa desviacion se reduce a la MITAD de la de entrada.
+Horizonte maximo 180 min. Censura = eventos que no revierten dentro del horizonte.
+Si la censura pasa del 50% la mediana NO es estimable y se devuelve n/d.
+
+activo               k=1.0     k=1.5     k=2.0     k=2.5     k=3.0   AR1_hl
+---------------------------------------------------------------------------
+EURUSD-OTC             4.0       4.0       5.0       6.0       7.0      7.7
+GBPUSD-OTC             4.0       4.0       5.0       6.0       6.0      7.5
+USDJPY-OTC             4.0       5.0       5.0       6.0       7.0      7.5
+---------------------------------------------------------------------------
+EURUSD-op              4.0       5.0       5.0       6.0       6.0      7.2
+GBPUSD-op              4.0       4.0       5.0       5.0       6.0      6.5
+US30_N                 4.0       5.0       5.0       6.0       5.0      7.2
+USDJPY-op              4.0       5.0       5.0       5.0       6.0      6.5
+USNDAQ100_N            4.0       5.0       5.0       5.0       6.0      6.9
+USSPX500_N             4.0       5.0       5.0       6.0       6.0      6.9
+XAUUSD-op              4.0       5.0       5.0       6.0       6.0      6.8
+---------------------------------------------------------------------------
+(mediana de minutos hasta halving; AR1_hl = half-life analitica del AR(1) sobre la desviacion)
+
+Detalle por evento: cuanto tarda, cuanto se extiende antes (la trampa) y QUIEN cierra el hueco.
+f_precio = fraccion mediana del hueco cerrada por el PRECIO; el resto lo cierra la EMA
+           subiendo hacia el precio. Por debajo de 0.50 la 'reversion' la hace la media,
+           no el precio, y NO paga una binaria.
+activo              k   n_ev    p25    p50    p75  censura  p_ext      IC95% p_ext  f_precio
+--------------------------------------------------------------------------------------------
+EURUSD-OTC        1.0   4573    2.0    4.0    9.0    0.005  0.339 [ 32.5,  35.2]     0.610
+EURUSD-OTC        1.5   3405    2.0    4.0    9.0    0.004  0.220 [ 20.6,  23.4]     0.525
+EURUSD-OTC        2.0   2222    3.0    5.0   10.0    0.005  0.128 [ 11.5,  14.3]     0.425
+EURUSD-OTC        2.5   1201    3.0    6.0   10.0    0.005  0.052 [  4.1,   6.7]     0.330
+EURUSD-OTC        3.0    592    4.0    7.0   10.0    0.008  0.007 [  0.3,   1.7]     0.216
+GBPUSD-OTC        1.0   4663    2.0    4.0    9.0    0.003  0.359 [ 34.6,  37.3]     0.595
+GBPUSD-OTC        1.5   3481    2.0    4.0    9.0    0.003  0.232 [ 21.9,  24.7]     0.518
+GBPUSD-OTC        2.0   2284    3.0    5.0    9.0    0.003  0.134 [ 12.1,  14.9]     0.431
+GBPUSD-OTC        2.5   1295    3.0    6.0   10.0    0.005  0.057 [  4.6,   7.1]     0.354
+GBPUSD-OTC        3.0    648    4.0    6.0   10.2    0.006  0.023 [  1.4,   3.8]     0.259
+USDJPY-OTC        1.0   4657    2.0    4.0    9.0    0.001  0.338 [ 32.5,  35.2]     0.615
+USDJPY-OTC        1.5   3459    2.0    5.0   10.0    0.000  0.241 [ 22.7,  25.6]     0.479
+USDJPY-OTC        2.0   2346    3.0    5.0   10.0    0.000  0.142 [ 12.8,  15.6]     0.396
+USDJPY-OTC        2.5   1359    3.0    6.0   10.0    0.000  0.049 [  3.9,   6.2]     0.320
+USDJPY-OTC        3.0    687    4.0    7.0   10.0    0.000  0.007 [  0.3,   1.7]     0.255
+--------------------------------------------------------------------------------------------
+EURUSD-op         1.0   3076    2.0    4.0    9.0    0.002  0.327 [ 31.1,  34.4]     0.608
+EURUSD-op         1.5   2214    3.0    5.0   10.0    0.002  0.238 [ 22.0,  25.6]     0.479
+EURUSD-op         2.0   1508    3.0    5.0   10.0    0.002  0.156 [ 13.9,  17.6]     0.422
+EURUSD-op         2.5    868    3.0    6.0   11.0    0.002  0.115 [  9.6,  13.8]     0.343
+EURUSD-op         3.0    491    3.0    6.0   10.0    0.004  0.073 [  5.3,  10.0]     0.332
+GBPUSD-op         1.0   3214    2.0    4.0    9.0    0.001  0.324 [ 30.8,  34.1]     0.649
+GBPUSD-op         1.5   2349    2.0    4.0    9.0    0.002  0.231 [ 21.5,  24.9]     0.534
+GBPUSD-op         2.0   1464    3.0    5.0   10.0    0.001  0.151 [ 13.4,  17.0]     0.451
+GBPUSD-op         2.5    861    3.0    5.0   10.0    0.001  0.084 [  6.7,  10.4]     0.392
+GBPUSD-op         3.0    501    3.0    6.0    9.0    0.004  0.060 [  4.2,   8.4]     0.342
+US30_N            1.0   2900    2.0    4.0    9.0    0.004  0.342 [ 32.5,  36.0]     0.593
+US30_N            1.5   2144    2.0    5.0   10.0    0.004  0.249 [ 23.1,  26.7]     0.443
+US30_N            2.0   1439    3.0    5.0   10.0    0.007  0.152 [ 13.5,  17.2]     0.409
+US30_N            2.5    846    3.0    6.0   10.0    0.011  0.092 [  7.5,  11.4]     0.299
+US30_N            3.0    478    3.0    5.0   10.0    0.019  0.050 [  3.4,   7.4]     0.347
+USDJPY-op         1.0   3041    2.0    4.0    9.0    0.001  0.323 [ 30.7,  34.0]     0.602
+USDJPY-op         1.5   2211    3.0    5.0    9.0    0.001  0.227 [ 21.0,  24.5]     0.494
+USDJPY-op         2.0   1456    3.0    5.0    9.0    0.000  0.135 [ 11.9,  15.4]     0.446
+USDJPY-op         2.5    854    3.0    5.0    9.8    0.000  0.101 [  8.2,  12.3]     0.376
+USDJPY-op         3.0    459    4.0    6.0    9.0    0.000  0.037 [  2.3,   5.9]     0.294
+USNDAQ100_N       1.0   2973    2.0    4.0    9.0    0.004  0.330 [ 31.4,  34.7]     0.585
+USNDAQ100_N       1.5   2112    2.0    5.0    9.0    0.005  0.227 [ 21.0,  24.6]     0.481
+USNDAQ100_N       2.0   1348    3.0    5.0    9.0    0.002  0.139 [ 12.1,  15.8]     0.396
+USNDAQ100_N       2.5    773    3.0    5.0    9.0    0.006  0.085 [  6.8,  10.7]     0.381
+USNDAQ100_N       3.0    365    3.0    6.0   10.0    0.005  0.041 [  2.5,   6.7]     0.332
+USSPX500_N        1.0   2982    2.0    4.0    9.0    0.006  0.321 [ 30.4,  33.8]     0.614
+USSPX500_N        1.5   2097    2.0    5.0    9.0    0.006  0.224 [ 20.6,  24.2]     0.493
+USSPX500_N        2.0   1310    3.0    5.0    9.0    0.005  0.129 [ 11.2,  14.8]     0.423
+USSPX500_N        2.5    745    3.0    6.0   10.0    0.007  0.064 [  4.9,   8.4]     0.366
+USSPX500_N        3.0    380    4.0    6.0   10.0    0.016  0.021 [  1.1,   4.1]     0.249
+XAUUSD-op         1.0   3056    2.0    4.0    9.0    0.008  0.328 [ 31.1,  34.4]     0.603
+XAUUSD-op         1.5   2238    3.0    5.0   10.0    0.007  0.239 [ 22.2,  25.8]     0.465
+XAUUSD-op         2.0   1459    3.0    5.0   10.0    0.011  0.138 [ 12.2,  15.7]     0.406
+XAUUSD-op         2.5    868    3.0    6.0   10.0    0.012  0.076 [  6.0,   9.6]     0.363
+XAUUSD-op         3.0    424    3.0    6.0    9.0    0.009  0.035 [  2.2,   5.8]     0.344
+--------------------------------------------------------------------------------------------
+p_ext = P(la desviacion llega a 1.5x la de entrada ANTES de reducirse a la mitad).
+Es la probabilidad de que el mercado siga estirandose contra el que opera reversion.
+
+====================================================================================================
+5b. LA PRUEBA DE FUEGO: EL PRECIO SE MUEVE DE VERDAD EN CONTRA DE LA DESVIACION?
+====================================================================================================
+Que el hueco contra la EMA se cierre no implica que el precio baje: puede subir la media.
+Aqui se mide el desenlace de una binaria abierta EN CONTRA de la desviacion, entrada en
+el cierre de la vela del evento, con expiracion de N minutos. Empates excluidos.
+Referencia: break-even con payout 0.86 = 53.76%. La linea de 50% es el azar puro.
+Los n de mercado real van corregidos por la correlacion cruzada entre indices.
+
+grupo                     k                   N=1                   N=3                   N=5                  N=10
+-------------------------------------------------------------------------------------------------------------------
+AGREGADO OTC            1.0 0.4965 [ 48.8,  50.5] 13791 0.4942 [ 48.5,  50.3] 13823 0.4973 [ 48.9,  50.6] 13816 0.4962 [ 48.8,  50.5] 13802
+AGREGADO OTC            1.5 0.5025 [ 49.2,  51.3] 10276 0.5054 [ 49.5,  51.6] 10286 0.5029 [ 49.3,  51.3] 10286 0.5046 [ 49.5,  51.5] 10277
+AGREGADO OTC            2.0 0.5099 [ 49.8,  52.2]  6799 0.5171*[ 50.5,  53.0]  6807 0.5101 [ 49.8,  52.2]  6826 0.5099 [ 49.7,  52.2]  6815
+AGREGADO OTC            2.5 0.5003 [ 48.4,  51.7]  3836 0.5108 [ 49.4,  52.7]  3831 0.5005 [ 48.4,  51.7]  3828 0.5078 [ 49.1,  52.4]  3834
+AGREGADO OTC            3.0 0.4843 [ 46.1,  50.8]  1916 0.4880 [ 46.5,  51.1]  1916 0.4888 [ 46.5,  51.2]  1915 0.5031 [ 48.0,  52.6]  1916
+-------------------------------------------------------------------------------------------------------------------
+AGREGADO REAL           1.0 0.5184*[ 50.8,  52.9] 20722 0.5140*[ 50.4,  52.4] 20924 0.5087 [ 49.8,  51.9] 20968 0.5098 [ 49.9,  52.0] 20975
+AGREGADO REAL           1.5 0.5099 [ 49.8,  52.2] 14967 0.5115 [ 49.9,  52.4] 15121 0.5086 [ 49.6,  52.1] 15174 0.5115 [ 49.9,  52.4] 15168
+AGREGADO REAL           2.0 0.5184*[ 50.3,  53.4]  9732 0.5171*[ 50.2,  53.2]  9841 0.5179*[ 50.3,  53.3]  9859 0.5223*[ 50.7,  53.7]  9849
+AGREGADO REAL           2.5 0.5161 [ 49.6,  53.6]  5669 0.5187 [ 49.9,  53.8]  5734 0.5204*[ 50.1,  54.0]  5744 0.5230*[ 50.3,  54.3]  5732
+AGREGADO REAL           3.0 0.5207 [ 49.3,  54.8]  3021 0.5287*[ 50.1,  55.6]  3049 0.5256 [ 49.8,  55.3]  3052 0.5257 [ 49.9,  55.3]  3053
+-------------------------------------------------------------------------------------------------------------------
+Formato de celda: p_reversion (IC95% en %) n_bruto.  * = el IC excluye el 50%.
+n_bruto es el numero de barras evaluadas; el IC usa el n efectivo, que en mercado
+real es unas 3.8 veces menor porque los cinco indices se mueven juntos.
+
+====================================================================================================
+LECTURA OPERATIVA (que se puede usar y que es ruido)
+====================================================================================================
+
+[sintetico OTC]
+  Ritmo: duracion media 1.99 velas al alza y 2.01 a la baja (teorico moneda = 2.00).
+    P(tramo>=4 velas): alza 0.1256 IC95%[ 12.2,  12.9], baja 0.1256 IC95%[ 12.2,  12.9], teorico 0.1250.
+    Un tramo dura mas de 5 velas solo el 5% de las veces: ahi esta el techo practico de cualquier seguimiento de tendencia M1.
+  Amplitud mediana: subida 0.83 ATR, bajada 0.83 ATR. p95: 2.98 / 3.02 ATR.
+  Memoria del ritmo: |rho1| maximo entre activos = 0.013. Sin memoria explotable en la duracion.
+  Volatilidad horaria: ratio max/min = 1.32x, pico a las 8h UTC.
+  Correlacion cruzada entre los 5 activos del grupo: rho=0.046 -> son independientes entre si.
+  Horas con sesgo direccional al 95% sin corregir: [12, 17, 19]
+  Horas que aguantan Bonferroni (24 pruebas): NINGUNA
+  -> El pico de volatilidad NO viene acompanado de sesgo direccional medible.
+     Mas movimiento no es mas probabilidad de acertar la direccion.
+  Expiracion natural de una reversion desde 2.0 ATR: mediana 5 min (rango entre activos 5-5 min).
+  Quien cierra el hueco desde 2.0 ATR: la EMA alcanzando al precio (fraccion mediana aportada por el precio = 0.421).
+  Mejor expiracion para operar EN CONTRA de una desviacion de 2.0 ATR: N=3 min, p=0.5171 IC95%[ 50.5,  53.0] (n=6807, n_eff=6231)
+    -> supera el 50% de forma medible; break-even con payout 0.86 = 0.5376 (y tampoco lo alcanza).
+
+[mercado real]
+  Ritmo: duracion media 1.96 velas al alza y 1.96 a la baja (teorico moneda = 2.00).
+    P(tramo>=4 velas): alza 0.1171 IC95%[ 11.4,  12.0], baja 0.1184 IC95%[ 11.6,  12.1], teorico 0.1250.
+    Un tramo dura mas de 5 velas solo el 5% de las veces: ahi esta el techo practico de cualquier seguimiento de tendencia M1.
+  Amplitud mediana: subida 0.75 ATR, bajada 0.77 ATR. p95: 3.03 / 3.04 ATR.
+  Memoria del ritmo: |rho1| maximo entre activos = 0.024. Sin memoria explotable en la duracion.
+  Volatilidad horaria: ratio max/min = 5.34x, pico a las 13h UTC.
+  Correlacion cruzada entre los 5 activos del grupo: rho=0.225 -> son independientes entre si.
+  Horas con sesgo direccional al 95% sin corregir: [17]
+  Horas que aguantan Bonferroni (24 pruebas): NINGUNA
+  -> El pico de volatilidad NO viene acompanado de sesgo direccional medible.
+     Mas movimiento no es mas probabilidad de acertar la direccion.
+  Expiracion natural de una reversion desde 2.0 ATR: mediana 5 min (rango entre activos 5-5 min).
+  Quien cierra el hueco desde 2.0 ATR: la EMA alcanzando al precio (fraccion mediana aportada por el precio = 0.424).
+  Mejor expiracion para operar EN CONTRA de una desviacion de 2.0 ATR: N=10 min, p=0.5223 IC95%[ 50.7,  53.7] (n=9849, n_eff=4193)
+    -> supera el 50% de forma medible; break-even con payout 0.86 = 0.5376 (y tampoco lo alcanza).
+
+====================================================================================================
+ADVERTENCIAS DE LECTURA
+====================================================================================================
+1. Los tramos son estadistica descriptiva: se cierran 1 vela DESPUES de su ultima
+   vela. Nada de lo medido aqui es una senal operable tal cual.
+2. Los cinco indices reales estan muy correlacionados: el n agregado NO es n
+   independiente. Los IC del perfil horario ya usan el n efectivo corregido.
+3. El perfil horario prueba 24 hipotesis: sin Bonferroni se esperan ~1.2 horas
+   'significativas' por puro azar. Solo cuentan las que aguantan la correccion.
+4. Historico de ~10 dias: cada hora UTC tiene unos 10 dias de muestra por activo.
+   Un efecto de calendario (una noticia, un dia raro) no es distinguible de un
+   patron horario estable con esta ventana. Repetir con 60+ dias antes de creer.
+5. Cualquier celda 'n/d' significa NO CALCULABLE, no cero y no valor por defecto.
